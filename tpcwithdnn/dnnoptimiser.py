@@ -8,7 +8,7 @@ from ROOT import TH1F, TH2F, TFile # pylint: disable=import-error, no-name-in-mo
 from SymmetricPadding3D import SymmetricPadding3D
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
-from modelDataCurrentRegressionKerasNoRoot import UNet, GetFluctuation
+from utilitiesdnn import UNet, GetFluctuation
 
 # pylint: disable=too-many-instance-attributes, too-many-statements
 class DnnOptimiser:
