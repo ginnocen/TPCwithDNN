@@ -22,10 +22,10 @@ function swallow() {
 
 if [[ $TRAVIS_PULL_REQUEST != "false" && $TRAVIS_COMMIT_RANGE ]]; then
   # Only check changed Python files (snappier)
-  CHANGED_FILES=($(git diff --name-only $TRAVIS_COMMIT_RANGE | grep -E '\.py$' | grep -vE '^setup\.py$' | grep -vE '*legacy*.py|fluctuationDataGenerator\.py|SymmetricPadding3D\.py' || true))
+  CHANGED_FILES=($(git diff --name-only $TRAVIS_COMMIT_RANGE | grep -E '\.py$' | grep -vE '^setup\.py$' | grep -vE '*legacy*.py|symmetrypadding3d\.py' || true))
 else
   # Check all Python files
-  CHANGED_FILES=($(find . -name '*.py' -a -not -name setup.py | grep -vE '*legacy*.py|fluctuationDataGenerator\.py|SymmetricPadding3D\.py'))
+  CHANGED_FILES=($(find . -name '*.py' -a -not -name setup.py | grep -vE '*legacy*.py|symmetrypadding3d\.py'))
 fi
 
 ERRCHECK=
