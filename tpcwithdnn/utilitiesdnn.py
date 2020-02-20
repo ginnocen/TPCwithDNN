@@ -21,36 +21,7 @@ import h5py
 import itertools
 from SymmetricPadding3D import SymmetricPadding3D
 
-def GetFluctuation(phiSlice,rRow,zColumn,id,side=0):
-	"""
-	Get fluctuation id
-	"""
-	fluctuationDir = os.environ['FLUCTUATIONDIR']
-	dataDir = fluctuationDir + 'data/' + str(phiSlice) + '-' + str(rRow) + '-' + str(zColumn) + '/'
-	vecZPosFile  = dataDir + str(0) + '-vecZPos.npy'
-	scMeanFile = dataDir + str(id) + '-vecMeanSC.npy'
-	scRandomFile = dataDir + str(id) + '-vecRandomSC.npy'
-	distRMeanFile = dataDir + str(id) + '-vecMeanDistR.npy'
-	distRRandomFile = dataDir + str(id) + '-vecRandomDistR.npy'
-	distRPhiMeanFile = dataDir + str(id) + '-vecMeanDistRPhi.npy'
-	distRPhiRandomFile = dataDir + str(id) + '-vecRandomDistRPhi.npy'
-	distZMeanFile = dataDir + str(id) + '-vecMeanDistZ.npy'
-	distZRandomFile = dataDir + str(id) + '-vecRandomDistZ.npy'
-	vecZPos = np.load(vecZPosFile)
-	vecMeanSC = np.load(scMeanFile)
-	vecRandomSC = np.load(scRandomFile)
-	vecMeanDistR = np.load(distRMeanFile)
-	vecRandomDistR = np.load(distRRandomFile)
-	vecMeanDistRPhi = np.load(distRPhiMeanFile)
-	vecRandomDistRPhi = np.load(distRPhiRandomFile)
-	vecMeanDistZ = np.load(distZMeanFile)
-	vecRandomDistZ = np.load(distZRandomFile)
-	vecFluctuationSC = vecMeanSC[vecZPos >= 0] - vecRandomSC[vecZPos >= 0]
-	vecFluctuationDistR = vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
-	vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
-	vecFluctuationDistZ= vecMeanDistZ[vecZPos >= 0] - vecRandomDistZ[vecZPos >= 0]
-	return [vecFluctuationSC,vecFluctuationDistR,vecFluctuationDistRPhi,vecFluctuationDistZ]
-
+#https://github.com/mimrtl/DeepRad-Tools/blob/master/Examples/Unet.py
 def conv_block(m, dim, acti, bn, res, do=0):
 	n = Conv3D(dim, 3, activation=acti, padding='same', kernel_initializer="normal")(m)
 	n = BatchNormalization()(n) if bn else n
@@ -103,4 +74,3 @@ def UNet(input_shape,start_ch=4,depth=4,inc_rate=2.0,activation="relu",dropout=0
 	output_z	= Conv3D(1,1, activation="linear",padding="same", kernel_initializer="normal")(output_z)
 	o = concatenate([output_r,output_rphi,output_z])
 	return Model(inputs=i,outputs=output_r)
-
