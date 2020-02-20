@@ -1,5 +1,4 @@
 import os
-import time
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
@@ -95,6 +94,10 @@ class DnnOptimiser:
         print("Saved model to disk")
         # list all data in history
 
+    def groupbyindices(self, arrayflat):
+        return arrayflat.reshape(1, self.grid_phi, self.grid_r, self.grid_z, 1)
+
+    # pylint: disable=fixme
     def apply(self):
         print("APPLY")
         json_file = open("%s/model%s.json" % (self.dirmodel, self.suffix), "r")
@@ -107,43 +110,31 @@ class DnnOptimiser:
         myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
-            [vecFluctuationSC, vecFluctuationDistR,
-             vecFluctuationDistRPhi, vecFluctuationDistZ] = \
-                    GetFluctuation(self.grid_phi, self.grid_r, self.grid_z, indexev)
-            start = time.time()
-            distortionPredict = loaded_model.predict(vecFluctuationSC.reshape(1, \
-                self.grid_phi, self.grid_r, self.grid_z, 1))
-            end = time.time()
-            predictTime = end - start
-            print("Time to predict: " + str(predictTime) + " s")
+            #[vecFluctSC, vecFluctDistR, vecFluctDistRPhi, vecFluctDistZ] = \
+            [vecFluctSC_flata, vecFluctDistR_flata, _, _] = \
+                GetFluctuation(self.grid_phi, self.grid_r, self.grid_z, indexev)
 
-            if self.distortion_type == 0:
-                distortionNumeric = vecFluctuationDistR
-            elif self.distortion_type == 1:
-                distortionNumeric = vecFluctuationDistRPhi
-            else:
-                distortionNumeric = vecFluctuationDistZ
-            residueMean = np.absolute(distortionNumeric.reshape(1, \
-                self.grid_phi, self.grid_r, self.grid_z) - \
-                distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z)).mean()
-            residueStd = np.absolute(distortionNumeric.reshape(1, \
-                self.grid_phi, self.grid_r, self.grid_z) - \
-                distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z)).std()
-            print("residueMean\t" + str(residueMean))
-            print("residueStd\t" + str(residueStd))
+            vecFluctSC_group = self.groupbyindices(vecFluctSC_flata)
 
-            distortionNumeric_flat = distortionNumeric.flatten()
-            distortionPredict_flat = distortionPredict.flatten()
-            deltas = (distortionPredict_flat - distortionNumeric_flat)
+            distortionPredict_group = loaded_model.predict(vecFluctSC_group)
+            distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
+            distortionPredict_flata = distortionPredict_group.flatten()
+
+            #FIXME I AM HARDCODING THIS SHIT HERE FIXME PLEASE
+            distortionNumeric_flata = vecFluctDistR_flata
+            distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
+
+            deltas = (distortionPredict_flata - distortionNumeric_flata)
 
             h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "", 100, -3, 3, 100, -3, 3)
             h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
-            fill_hist(h_dist, np.concatenate((distortionNumeric.reshape(-1, 1), \
-                                             distortionPredict.reshape(-1, 1)), axis=1))
+            fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
+                                              distortionPredict_flatm), axis=1))
             fill_hist(h_deltas, deltas)
             h_dist.Write()
             h_deltas.Write()
         myfile.Close()
+        print("DONE APPLY")
 
     # pylint: disable=no-self-use
     def gridsearch(self):

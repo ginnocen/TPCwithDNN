@@ -1,4 +1,4 @@
 case: DNN_fluctuations
-dotrain: true
+dotrain: false
 doapply: true
 dogrid: false
