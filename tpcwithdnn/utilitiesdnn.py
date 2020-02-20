@@ -83,7 +83,7 @@ def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res):
 
 		#	m = Conv3D(dim, 3, activation=acti, padding='same',kernel_initializer="normal")(m)
 		else:
-            m = Conv3DTranspose(dim, 3, strides=2, activation=acti, padding='same')(m)
+                    m = Conv3DTranspose(dim, 3, strides=2, activation=acti, padding='same')(m)
 		n = concatenate([n, m])
 		m = conv_block(n, dim, acti, bn, res)
 	else:
