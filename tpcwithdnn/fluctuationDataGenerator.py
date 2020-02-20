@@ -80,11 +80,6 @@ class fluctuationDataGenerator(keras.utils.Sequence):
                 vecFluctuationDistR = vecMeanDistR - vecRandomDistR
                 vecFluctuationDistRPhi = vecMeanDistRPhi - vecRandomDistRPhi
                 vecFluctuationDistZ = vecMeanDistZ - vecRandomDistZ
-            # Store class
-            #scalerSC = scalerSC.fit(vecFluctuationSC)
-            #scalerDistR = scalerDistR.fit(vecFluctuationDistR)
-            #scalerDistRPhi = scalerDistRPhi.fit(vecFluctuationDistRPhi)
-            #scalerDistZ = scalerDistRPhi.fit(vecFluctuationDistZ)
             if self.use_scaler > 0:
                 vecFluctuationSC_scaled = self.scalerSC.transform(vecFluctuationSC.reshape(1, -1))
                 vecFluctuationDistR_scaled = self.scalerDistR.transform(vecFluctuationDistR.reshape(1, -1))
@@ -106,5 +101,4 @@ class fluctuationDataGenerator(keras.utils.Sequence):
                     Y[i, :, :, :, 0] = vecFluctuationDistRPhi.reshape(self.phi_slice, self.r_row, self.z_col)
                 else:
                     Y[i, :, :, :, 0] = vecFluctuationDistZ.reshape(self.phi_slice, self.r_row, self.z_col)
-
             return X, Y
