@@ -7,7 +7,7 @@ from keras.layers.convolutional import Conv3D, MaxPooling3D
 from SymmetricPadding3D import SymmetricPadding3D
 
 #https://github.com/mimrtl/DeepRad-Tools/blob/master/Examples/Unet.py
-    # pylint: disable=line-too-long
+# pylint: disable=line-too-long, invalid-name
 def conv_block(m, dim, acti, bn, res, do=0):
     n = Conv3D(dim, 3, activation=acti, padding='same', kernel_initializer="normal")(m)
     n = BatchNormalization()(n) if bn else n
@@ -55,5 +55,5 @@ def UNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", drop
 
     output_z = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
     output_z = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_z)
-    o = concatenate([output_r, output_rphi, output_z])
+    #o = concatenate([output_r, output_rphi, output_z])
     return Model(inputs=i, outputs=output_r)
