@@ -2,9 +2,9 @@ DNN_fluctuations:
   dirmodel: model
   dirval: validation
   dirinput:  /data/tpcml/data
-  grid_phi: 180
-  grid_z: 33
-  grid_r: 33
+  grid_phi: 90
+  grid_z: 17
+  grid_r: 17
   filters: 4
   pooling: 0
   batch_size: 8

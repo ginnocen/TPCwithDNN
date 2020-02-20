@@ -3,7 +3,6 @@ import time
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.externals import joblib
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from ROOT import TH1F, TH2F, TFile # pylint: disable=import-error, no-name-in-module
@@ -111,6 +110,7 @@ class DnnOptimiser:
             [vecFluctuationSC, vecFluctuationDistR, vecFluctuationDistRPhi, vecFluctuationDistZ] = \
                     GetFluctuation(self.grid_phi, self.grid_r, self.grid_z, indexev)
             if self.use_scaler > 0:
+                # pylint: disable=undefined-variable
                 scalerSC = joblib.load(self.dirinput + "scalerSC-" + str(self.use_scaler) + ".save")
                 scalerDistR = joblib.load(self.dirinput + "scalerDistR-" + str(self.use_scaler) + ".save")
                 scalerDistRPhi = joblib.load(self.dirinput + "scalerDistRPhi-" + str(self.use_scaler) + ".save")
