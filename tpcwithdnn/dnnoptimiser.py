@@ -11,7 +11,7 @@ from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from modelDataCurrentRegressionKerasNoRoot import UNet, GetFluctuation
 
-# pylint: disable=line-too-long, too-many-instance-attributes, too-many-statements
+# pylint: disable=too-many-instance-attributes, too-many-statements
 class DnnOptimiser:
     #Class Attribute
     species = "dnnoptimiser"
@@ -89,47 +89,30 @@ class DnnOptimiser:
         plt.savefig("plot.png")
 
         model_json = model.to_json()
-        with open("%s/modelLocalCurrent%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
+        with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
             json_file.write(model_json)
-        model.save_weights("%s/modelLocalCurrent%s.h5" % (self.dirmodel, self.suffix))
+        model.save_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
         print("Saved model to disk")
         # list all data in history
 
     def apply(self):
         print("APPLY")
-        json_file = open("%s/modelLocalCurrent%s.json" % (self.dirmodel, self.suffix), "r")
+        json_file = open("%s/model%s.json" % (self.dirmodel, self.suffix), "r")
         loaded_model_json = json_file.read()
         json_file.close()
-        loaded_model = model_from_json(loaded_model_json, {'SymmetricPadding3D' : SymmetricPadding3D})
-        loaded_model.load_weights("%s/modelLocalCurrent%s.h5" % (self.dirmodel, self.suffix))
+        loaded_model = \
+            model_from_json(loaded_model_json, {'SymmetricPadding3D' : SymmetricPadding3D})
+        loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
         os.chdir(self.dirval)
         myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
-            print(str(indexev))
-            [vecFluctuationSC, vecFluctuationDistR, vecFluctuationDistRPhi, vecFluctuationDistZ] = \
+            [vecFluctuationSC, vecFluctuationDistR,
+             vecFluctuationDistRPhi, vecFluctuationDistZ] = \
                     GetFluctuation(self.grid_phi, self.grid_r, self.grid_z, indexev)
-            if self.use_scaler > 0:
-                # pylint: disable=undefined-variable
-                scalerSC = joblib.load(self.dirinput + "scalerSC-" + str(self.use_scaler) + ".save")
-                scalerDistR = joblib.load(self.dirinput + "scalerDistR-" + str(self.use_scaler) + ".save")
-                scalerDistRPhi = joblib.load(self.dirinput + "scalerDistRPhi-" + str(self.use_scaler) + ".save")
-                scalerDistZ = joblib.load(self.dirinput + "scalerDistZ-" + str(self.use_scaler) + ".save")
-                if self.distortion_type == 0:
-                    scalerDist = scalerDistR
-                elif self.distortion_type == 1:
-                    scalerDist = scalerDistRPhi
-                else:
-                    scalerDist = scalerDistZ
-                vecFluctuationSC_scaled = scalerSC.transform(vecFluctuationSC.reshape(1, -1))
-            else:
-                start = time.time()
-
             start = time.time()
-            if self.use_scaler > 0:
-                distortionPredict = loaded_model.predict(vecFluctuationSC_scaled.reshape(1, self.grid_phi, self.grid_r, self.grid_z, 1))
-            else:
-                distortionPredict = loaded_model.predict(vecFluctuationSC.reshape(1, self.grid_phi, self.grid_r, self.grid_z, 1))
+            distortionPredict = loaded_model.predict(vecFluctuationSC.reshape(1, \
+                self.grid_phi, self.grid_r, self.grid_z, 1))
             end = time.time()
             predictTime = end - start
             print("Time to predict: " + str(predictTime) + " s")
@@ -140,14 +123,12 @@ class DnnOptimiser:
                 distortionNumeric = vecFluctuationDistRPhi
             else:
                 distortionNumeric = vecFluctuationDistZ
-            #distorsionPredict = distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z, -1)
-            if self.use_scaler > 0:
-                distortionPredict = scalerDist.inverse_transform(distortionPredict.reshape(1, -1))
-            residueMean = \
-            np.absolute(distortionNumeric.reshape(1, self.grid_phi, self.grid_r, self.grid_z) - \
-                        distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z)).mean()
-            residueStd = np.absolute(distortionNumeric.reshape(1, self.grid_phi, self.grid_r, self.grid_z) - \
-                       distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z)).std()
+            residueMean = np.absolute(distortionNumeric.reshape(1, \
+                self.grid_phi, self.grid_r, self.grid_z) - \
+                distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z)).mean()
+            residueStd = np.absolute(distortionNumeric.reshape(1, \
+                self.grid_phi, self.grid_r, self.grid_z) - \
+                distortionPredict.reshape(1, self.grid_phi, self.grid_r, self.grid_z)).std()
             print("residueMean\t" + str(residueMean))
             print("residueStd\t" + str(residueStd))
 
