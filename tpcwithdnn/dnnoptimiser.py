@@ -8,7 +8,7 @@ from ROOT import TH1F, TH2F, TFile # pylint: disable=import-error, no-name-in-mo
 from SymmetricPadding3D import SymmetricPadding3D
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
-from utilitiesdnn import UNet, GetFluctuation
+from utilitiesdnn import UNet
 
 # pylint: disable=too-many-instance-attributes, too-many-statements
 class DnnOptimiser:
@@ -59,6 +59,42 @@ class DnnOptimiser:
                 (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pooling,
                  self.dropout, self.depth, self.batch_normalization,
                  self.use_scaler, self.distortion_type)
+
+    def get_fluctuation(self, indexev):
+        vecZPosFile = self.dirinput + str(0) + '-vecZPos.npy'
+        scMeanFile = self.dirinput + str(indexev) + '-vecMeanSC.npy'
+        scRandomFile = self.dirinput + str(indexev) + '-vecRandomSC.npy'
+        distRMeanFile = self.dirinput + str(indexev) + '-vecMeanDistR.npy'
+        distRRandomFile = self.dirinput + str(indexev) + '-vecRandomDistR.npy'
+        distRPhiMeanFile = self.dirinput + str(indexev) + '-vecMeanDistRPhi.npy'
+        distRPhiRandomFile = self.dirinput + str(indexev) + '-vecRandomDistRPhi.npy'
+        distZMeanFile = self.dirinput + str(indexev) + '-vecMeanDistZ.npy'
+        distZRandomFile = self.dirinput + str(indexev) + '-vecRandomDistZ.npy'
+        vecZPos = np.load(vecZPosFile)
+        vecMeanSC = np.load(scMeanFile)
+        vecRandomSC = np.load(scRandomFile)
+        vecMeanDistR = np.load(distRMeanFile)
+        vecRandomDistR = np.load(distRRandomFile)
+        vecMeanDistRPhi = np.load(distRPhiMeanFile)
+        vecRandomDistRPhi = np.load(distRPhiRandomFile)
+        vecMeanDistZ = np.load(distZMeanFile)
+        vecRandomDistZ = np.load(distZRandomFile)
+        if self.side == 0:
+            vecFluctuationSC = vecMeanSC[vecZPos >= 0] - vecRandomSC[vecZPos >= 0]
+            vecFluctuationDistR = vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
+            vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
+            vecFluctuationDistZ = vecMeanDistZ[vecZPos >= 0] - vecRandomDistZ[vecZPos >= 0]
+        elif self.side == 1:
+            vecFluctuationSC = vecMeanSC[vecZPos < 0] - vecRandomSC[vecZPos < 0]
+            vecFluctuationDistR = vecMeanDistR[vecZPos < 0] - vecRandomDistR[vecZPos < 0]
+            vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos < 0] - vecRandomDistRPhi[vecZPos < 0]
+            vecFluctuationDistZ = vecMeanDistZ[vecZPos < 0] - vecRandomDistZ[vecZPos < 0]
+        elif self.side == 2:
+            vecFluctuationSC = vecMeanSC - vecRandomSC
+            vecFluctuationDistR = vecMeanDistR - vecRandomDistR
+            vecFluctuationDistRPhi = vecMeanDistRPhi - vecRandomDistRPhi
+            vecFluctuationDistZ = vecMeanDistZ - vecRandomDistZ
+        return [vecFluctuationSC, vecFluctuationDistR, vecFluctuationDistRPhi, vecFluctuationDistZ]
 
     def train(self):
         partition = {'train': np.arange(self.rangeevent_train[1]),
@@ -111,30 +147,29 @@ class DnnOptimiser:
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
             #[vecFluctSC, vecFluctDistR, vecFluctDistRPhi, vecFluctDistZ] = \
-            [vecFluctSC_flata, vecFluctDistR_flata, _, _] = \
-                GetFluctuation(self.grid_phi, self.grid_r, self.grid_z, indexev)
+            [vecFluctSC_flata, vecFluctDistR_flata, _, _] = self.get_fluctuation(indexev)
 
-#            vecFluctSC_group = self.groupbyindices(vecFluctSC_flata)
+            vecFluctSC_group = self.groupbyindices(vecFluctSC_flata)
 
-#            distortionPredict_group = loaded_model.predict(vecFluctSC_group)
-#            distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
-#            distortionPredict_flata = distortionPredict_group.flatten()
+            distortionPredict_group = loaded_model.predict(vecFluctSC_group)
+            distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
+            distortionPredict_flata = distortionPredict_group.flatten()
 
-#            #FIXME I AM HARDCODING THIS SHIT HERE FIXME PLEASE
-#            distortionNumeric_flata = vecFluctDistR_flata
-#            distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
+            #FIXME I AM HARDCODING THIS SHIT HERE FIXME PLEASE
+            distortionNumeric_flata = vecFluctDistR_flata
+            distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
 
-#            deltas = (distortionPredict_flata - distortionNumeric_flata)
+            deltas = (distortionPredict_flata - distortionNumeric_flata)
 
-#            h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "", 100, -3, 3, 100, -3, 3)
-#            h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
-#            fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
-#                                              distortionPredict_flatm), axis=1))
-#            fill_hist(h_deltas, deltas)
-#            h_dist.Write()
-#            h_deltas.Write()
-#        myfile.Close()
-#        print("DONE APPLY")
+            h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "", 100, -3, 3, 100, -3, 3)
+            h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
+            fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
+                                              distortionPredict_flatm), axis=1))
+            fill_hist(h_deltas, deltas)
+            h_dist.Write()
+            h_deltas.Write()
+        myfile.Close()
+        print("DONE APPLY")
 
     # pylint: disable=no-self-use
     def gridsearch(self):
