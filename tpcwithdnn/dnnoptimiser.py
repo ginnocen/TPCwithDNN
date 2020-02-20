@@ -114,27 +114,27 @@ class DnnOptimiser:
             [vecFluctSC_flata, vecFluctDistR_flata, _, _] = \
                 GetFluctuation(self.grid_phi, self.grid_r, self.grid_z, indexev)
 
-            vecFluctSC_group = self.groupbyindices(vecFluctSC_flata)
+#            vecFluctSC_group = self.groupbyindices(vecFluctSC_flata)
 
-            distortionPredict_group = loaded_model.predict(vecFluctSC_group)
-            distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
-            distortionPredict_flata = distortionPredict_group.flatten()
+#            distortionPredict_group = loaded_model.predict(vecFluctSC_group)
+#            distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
+#            distortionPredict_flata = distortionPredict_group.flatten()
 
-            #FIXME I AM HARDCODING THIS SHIT HERE FIXME PLEASE
-            distortionNumeric_flata = vecFluctDistR_flata
-            distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
+#            #FIXME I AM HARDCODING THIS SHIT HERE FIXME PLEASE
+#            distortionNumeric_flata = vecFluctDistR_flata
+#            distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
 
-            deltas = (distortionPredict_flata - distortionNumeric_flata)
+#            deltas = (distortionPredict_flata - distortionNumeric_flata)
 
-            h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "", 100, -3, 3, 100, -3, 3)
-            h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
-            fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
-                                              distortionPredict_flatm), axis=1))
-            fill_hist(h_deltas, deltas)
-            h_dist.Write()
-            h_deltas.Write()
-        myfile.Close()
-        print("DONE APPLY")
+#            h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "", 100, -3, 3, 100, -3, 3)
+#            h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
+#            fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
+#                                              distortionPredict_flatm), axis=1))
+#            fill_hist(h_deltas, deltas)
+#            h_dist.Write()
+#            h_deltas.Write()
+#        myfile.Close()
+#        print("DONE APPLY")
 
     # pylint: disable=no-self-use
     def gridsearch(self):
