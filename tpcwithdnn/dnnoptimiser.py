@@ -103,7 +103,7 @@ class DnnOptimiser:
         loaded_model = model_from_json(loaded_model_json, {'SymmetricPadding3D' : SymmetricPadding3D})
         loaded_model.load_weights("%s/modelLocalCurrent%s.h5" % (self.dirmodel, self.suffix))
         os.chdir(self.dirval)
-        myfile = TFile.Open("output.root", "recreate")
+        myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
             print(str(indexev))
