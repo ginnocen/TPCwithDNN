@@ -83,7 +83,7 @@ class fluctuationDataGenerator(keras.utils.Sequence):
 			elif self.side == 1:
 				vecFluctuationSC = vecMeanSC[vecZPos < 0] - vecRandomSC[vecZPos < 0]
 				vecFluctuationDistR = vecMeanDistR[vecZPos < 0] - vecRandomDistR[vecZPos < 0]
-				vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
+				vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos < 0] - vecRandomDistRPhi[vecZPos < 0]
 				vecFluctuationDistZ = vecMeanDistZ[vecZPos < 0] - vecRandomDistZ[vecZPos < 0]
 			else:
 				vecFluctuationSC = vecMeanSC - vecRandomSC
