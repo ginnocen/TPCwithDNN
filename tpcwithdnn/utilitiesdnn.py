@@ -4,7 +4,7 @@ from keras.layers import AveragePooling3D, Conv3DTranspose
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import Conv3D, MaxPooling3D
-from SymmetricPadding3D import SymmetricPadding3D
+from symmetrypadding3d import symmetryPadding3d
 
 #https://github.com/mimrtl/DeepRad-Tools/blob/master/Examples/Unet.py
 # pylint: disable=line-too-long, invalid-name
@@ -34,9 +34,9 @@ def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res):
             diff_r = n.shape[2] - m.shape[2]
             diff_z = n.shape[3] - m.shape[3]
             if diff_phi != 0:
-                m = SymmetricPadding3D(padding=((int(diff_phi), 0), (int(diff_r), 0), (int(diff_z), 0)), mode="SYMMETRIC")(m)
+                m = symmetryPadding3d(padding=((int(diff_phi), 0), (int(diff_r), 0), (int(diff_z), 0)), mode="SYMMETRIC")(m)
             elif (diff_r != 0 or diff_z != 0):
-                m = SymmetricPadding3D(padding=((int(diff_phi), 0), (int(diff_r), 0), (int(diff_z), 0)), mode="CONSTANT")(m)
+                m = symmetryPadding3d(padding=((int(diff_phi), 0), (int(diff_r), 0), (int(diff_z), 0)), mode="CONSTANT")(m)
         else:
             m = Conv3DTranspose(dim, 3, strides=2, activation=acti, padding='same')(m)
         n = concatenate([n, m])

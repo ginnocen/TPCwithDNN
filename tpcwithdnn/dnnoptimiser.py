@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from ROOT import TH1F, TH2F, TFile # pylint: disable=import-error, no-name-in-module
-from SymmetricPadding3D import SymmetricPadding3D
+from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
@@ -140,7 +140,7 @@ class DnnOptimiser:
         loaded_model_json = json_file.read()
         json_file.close()
         loaded_model = \
-            model_from_json(loaded_model_json, {'SymmetricPadding3D' : SymmetricPadding3D})
+            model_from_json(loaded_model_json, {'symmetryPadding3d' : symmetryPadding3d})
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
         os.chdir(self.dirval)
         myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
