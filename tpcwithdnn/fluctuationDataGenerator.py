@@ -1,8 +1,10 @@
-# pylint: disable=line-too-long, invalid-name, too-many-instance-attributes, too-many-arguments
+# pylint: disable=line-too-long, invalid-name, too-many-instance-attributes,
+# pylint: disable=fixme, pointless-string-statement, too-many-arguments
 import numpy as np
 import keras
 from sklearn.externals import joblib
 
+#https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 class fluctuationDataGenerator(keras.utils.Sequence):
 
     def __init__(self, list_IDs, batch_size=32, phi_slice=180, r_row=129, z_col=129, \

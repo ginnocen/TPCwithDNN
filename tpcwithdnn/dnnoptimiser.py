@@ -10,7 +10,7 @@ from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 
-# pylint: disable=too-many-instance-attributes, too-many-statements
+# pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
 class DnnOptimiser:
     #Class Attribute
     species = "dnnoptimiser"
@@ -61,6 +61,26 @@ class DnnOptimiser:
                  self.use_scaler, self.distortion_type)
 
     def get_fluctuation(self, indexev):
+        #FIXME
+        """ Here we define the functionalties to load the files from the input
+        directory which is set in the database. Here below the description of
+        the input files:
+            - 0-vecZPos.npy, 0-vecRPos.npy, 0-vecPhiPos.npy contains the
+            position of the FIXME. There is only one of these files for each
+            folder, therefore for each bunch of events
+            Input features for training:
+            - vecMeanSC.npy: average space charge in each bin of r, rphi and z.
+            - vecRandomSC.npy: fluctuation of the space charge.
+            Output from the numberical calculations:
+            - vecMeanDistR.npy average distorsion along the R axis in the same
+              grid. It represents the expected distorsion that an electron
+              passing by that region would have as a consequence of the IBF.
+            - vecRandomDistR.npy are the correponding fluctuations.
+            - All the distorsions along the other directions have a consistent
+              naming choice.
+
+        """
+
         vecZPosFile = self.dirinput + str(0) + '-vecZPos.npy'
         scMeanFile = self.dirinput + str(indexev) + '-vecMeanSC.npy'
         scRandomFile = self.dirinput + str(indexev) + '-vecRandomSC.npy'
@@ -79,6 +99,14 @@ class DnnOptimiser:
         vecRandomDistRPhi = np.load(distRPhiRandomFile)
         vecMeanDistZ = np.load(distZMeanFile)
         vecRandomDistZ = np.load(distZRandomFile)
+
+        #FIXME: wrong selection?
+        """What is the meaning of splitting along the z axis. Why dont we split
+        along other axes? In the previous version of this code, there was a
+        selection over the z-axis hardcoded. Is there a reason for that? I
+        currently have included all the three options, namely <,>, no choice.
+
+        """
         if self.side == 0:
             vecFluctuationSC = vecMeanSC[vecZPos >= 0] - vecRandomSC[vecZPos >= 0]
             vecFluctuationDistR = vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
@@ -97,6 +125,7 @@ class DnnOptimiser:
         return [vecFluctuationSC, vecFluctuationDistR, vecFluctuationDistRPhi, vecFluctuationDistZ]
 
     def train(self):
+        #FIXME: missing random extraction for training and testing events?
         partition = {'train': np.arange(self.rangeevent_train[1]),
                      'validation': np.arange(self.rangeevent_test[0], self.rangeevent_test[1])}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
@@ -155,7 +184,7 @@ class DnnOptimiser:
             distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
             distortionPredict_flata = distortionPredict_group.flatten()
 
-            #FIXME I AM HARDCODING THIS SHIT HERE FIXME PLEASE
+            #FIXME HARDCODED distorsions only along R are considered
             distortionNumeric_flata = vecFluctDistR_flata
             distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
 
