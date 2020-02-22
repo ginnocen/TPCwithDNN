@@ -172,5 +172,8 @@ class DnnOptimiser:
         print("DONE APPLY")
 
     # pylint: disable=no-self-use
+    def plot(self):
+        print("PLOT NOT YET IMPLEMENTED")
+    # pylint: disable=no-self-use
     def gridsearch(self):
         print("GRID SEARCH NOT YET IMPLEMENTED")

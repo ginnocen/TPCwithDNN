@@ -25,6 +25,7 @@ def do_entire_analysis():
 
     dotrain = default["dotrain"]
     doapply = default["doapply"]
+    doplot = default["doplot"]
     dogrid = default["dogrid"]
 
     #counter = 0
@@ -46,6 +47,8 @@ def do_entire_analysis():
         myopt.train()
     if doapply is True:
         myopt.apply()
+    if doplot is True:
+        myopt.plot()
     if dogrid is True:
         myopt.gridsearch()
 
