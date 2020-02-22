@@ -3,30 +3,29 @@
 import numpy as np
 import keras
 from sklearn.externals import joblib
+from dataloader import loaddata
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 class fluctuationDataGenerator(keras.utils.Sequence):
 
-    def __init__(self, list_IDs, batch_size=32, phi_slice=180, r_row=129, z_col=129, \
-        n_channels=3, side=0, shuffle=True, data_dir='data/', use_scaler=False, \
-        distortion_type=0):
+    def __init__(self, list_IDs,  phi_slice, r_row, z_col, batch_size, shuffle,
+                 opt_train, opt_predout, selopt_input, selopt_output, data_dir,
+                 use_scaler):
+        self.list_IDs = list_IDs
         self.phi_slice = phi_slice
         self.r_row = r_row
         self.z_col = z_col
         self.batch_size = batch_size
-        self.list_IDs = list_IDs
-        self.n_channels = n_channels
         self.shuffle = shuffle
         self.on_epoch_end()
+        self.opt_train = opt_train
+        self.opt_predout = opt_predout
+        self.dim_input = sum(self.opt_train)
+        self.dim_output = sum(self.opt_predout)
+        self.selopt_input = selopt_input
+        self.selopt_output = selopt_output
         self.data_dir = data_dir
-        self.side = side
         self.use_scaler = use_scaler
-        self.distortion_type = distortion_type
-        if use_scaler > 0:
-            self.scalerSC = joblib.load(self.data_dir + "scalerSC-" + str(use_scaler) + ".save")
-            self.scalerDistR = joblib.load(self.data_dir + "scalerDistR-" + str(use_scaler) + ".save")
-            self.scalerDistRPhi = joblib.load(self.data_dir + "scalerDistRPhi-" + str(use_scaler) + ".save")
-            self.scalerDistZ = joblib.load(self.data_dir + "scalerDistZ-" + str(use_scaler) + ".save")
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -50,57 +49,35 @@ class fluctuationDataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'
-        # X : (n_samples, *dim, n_channels)
+
         # Initialization
-        X = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, 1))
-        Y = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.n_channels))
-        vecZPos = np.load(self.data_dir + str(0) + '-vecZPos.npy')
+        X = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_input))
+        Y = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_output))
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Store
-            vecMeanSC = np.load(self.data_dir + str(ID) + '-vecMeanSC.npy')
-            vecRandomSC = np.load(self.data_dir + str(ID) + '-vecRandomSC.npy')
-            vecMeanDistR = np.load(self.data_dir + str(ID) + '-vecMeanDistR.npy')
-            vecRandomDistR = np.load(self.data_dir + str(ID) + '-vecRandomDistR.npy')
-            vecMeanDistRPhi = np.load(self.data_dir + str(ID) + '-vecMeanDistRPhi.npy')
-            vecRandomDistRPhi = np.load(self.data_dir + str(ID) + '-vecRandomDistRPhi.npy')
-            vecMeanDistZ = np.load(self.data_dir + str(ID) + '-vecMeanDistZ.npy')
-            vecRandomDistZ = np.load(self.data_dir + str(ID) + '-vecRandomDistZ.npy')
+            [vecMeanSC, vecFluctuationSC, vecFluctuationDistR,
+             vecFluctuationDistRPhi, vecFluctuationDistZ] = \
+                loaddata(self.data_dir, ID, self.selopt_input, self.selopt_output)
+            indexfillx = 0
+            if self.opt_train[0] == 1:
+                X[i, :, :, :, indexfillx] = vecMeanSC.reshape(self.phi_slice, self.r_row, self.z_col)
+                indexfillx = indexfillx + 1
+            if self.opt_train[1] == 1:
+                X[i, :, :, :, indexfillx] = vecFluctuationSC.reshape(self.phi_slice, self.r_row, self.z_col)
+                indexfillx = indexfillx + 1
 
-            if self.side == 0:
-                vecFluctuationSC = vecMeanSC[vecZPos >= 0] - vecRandomSC[vecZPos >= 0]
-                vecFluctuationDistR = vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
-                vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
-                vecFluctuationDistZ = vecMeanDistZ[vecZPos >= 0] - vecRandomDistZ[vecZPos >= 0]
-            elif self.side == 1:
-                vecFluctuationSC = vecMeanSC[vecZPos < 0] - vecRandomSC[vecZPos < 0]
-                vecFluctuationDistR = vecMeanDistR[vecZPos < 0] - vecRandomDistR[vecZPos < 0]
-                vecFluctuationDistRPhi = vecMeanDistRPhi[vecZPos < 0] - vecRandomDistRPhi[vecZPos < 0]
-                vecFluctuationDistZ = vecMeanDistZ[vecZPos < 0] - vecRandomDistZ[vecZPos < 0]
-            elif self.side == 2:
-                vecFluctuationSC = vecMeanSC - vecRandomSC
-                vecFluctuationDistR = vecMeanDistR - vecRandomDistR
-                vecFluctuationDistRPhi = vecMeanDistRPhi - vecRandomDistRPhi
-                vecFluctuationDistZ = vecMeanDistZ - vecRandomDistZ
-            if self.use_scaler > 0:
-                vecFluctuationSC_scaled = self.scalerSC.transform(vecFluctuationSC.reshape(1, -1))
-                vecFluctuationDistR_scaled = self.scalerDistR.transform(vecFluctuationDistR.reshape(1, -1))
-                vecFluctuationDistRPhi_scaled = self.scalerDistRPhi.transform(vecFluctuationDistRPhi.reshape(1, -1))
-                vecFluctuationDistZ_scaled = self.scalerDistZ.transform(vecFluctuationDistZ.reshape(1, -1))
-
-                X[i, :, :, :, 0] = vecFluctuationSC_scaled.reshape(self.phi_slice, self.r_row, self.z_col)
-                if self.distortion_type == 0:
-                    Y[i, :, :, :, 0] = vecFluctuationDistR_scaled.reshape(self.phi_slice, self.r_row, self.z_col)
-                elif self.distortion_type == 1:
-                    Y[i, :, :, :, 0] = vecFluctuationDistRPhi_scaled.reshape(self.phi_slice, self.r_row, self.z_col)
-                else:
-                    Y[i, :, :, :, 0] = vecFluctuationDistZ_scaled.reshape(self.phi_slice, self.r_row, self.z_col)
-            else:
-                X[i, :, :, :, 0] = vecFluctuationSC.reshape(self.phi_slice, self.r_row, self.z_col)
-                if self.distortion_type == 0:
-                    Y[i, :, :, :, 0] = vecFluctuationDistR.reshape(self.phi_slice, self.r_row, self.z_col)
-                elif self.distortion_type == 1:
-                    Y[i, :, :, :, 0] = vecFluctuationDistRPhi.reshape(self.phi_slice, self.r_row, self.z_col)
-                else:
-                    Y[i, :, :, :, 0] = vecFluctuationDistZ.reshape(self.phi_slice, self.r_row, self.z_col)
+            if sum(self.opt_predout) > 1:
+                print("MULTI-OUTPUT NOT IMPLEMENTED YET")
+                return 0
+            indexfilly = 0
+            if self.opt_predout[0] == 1:
+                Y[i, :, :, :, indexfilly] = vecFluctuationDistR.reshape(self.phi_slice, self.r_row, self.z_col)
+                indexfilly = indexfilly + 1
+            if self.opt_predout[1] == 1:
+                Y[i, :, :, :, indexfilly] = vecFluctuationDistRPhi.reshape(self.phi_slice, self.r_row, self.z_col)
+                indexfilly = indexfilly + 1
+            if self.opt_predout[2] == 1:
+                Y[i, :, :, :, indexfilly] = vecFluctuationDistZ.reshape(self.phi_slice, self.r_row, self.z_col)
+                indexfilly = indexfilly + 1
             return X, Y

@@ -5,17 +5,20 @@ DNN_fluctuations:
   grid_phi: 90
   grid_z: 17
   grid_r: 17
+  #prepare the datasets
+  selopt_input: 0 # this uses all input training data, no z-selection
+  selopt_output: 0 # 0 is use to predict distorsions only for positive z-values
+  opt_train: [0, 1] #first position = SCfluctuations, second = meanSC
+  opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
+  rangeevent_train: [0,800]
+  rangeevent_test: [801,970]
+  use_scaler: 0
+  #DNN configuration
   filters: 4
   pooling: 0
   batch_size: 8
-  n_channels: 1
   shuffle: false
   depth: 4
   batch_normalization: 0
-  side: 0
   dropout: 0.0
-  use_scaler: 0
-  distortion_type: 0 #0 is for checking R direction
   ephocs: 20
-  rangeevent_train: [0,800]
-  rangeevent_test: [801,970]

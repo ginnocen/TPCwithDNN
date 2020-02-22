@@ -1,0 +1,81 @@
+import numpy as np
+
+def loaddata(inputdata, indexev, selopt_input, selopt_output):
+
+    """ Here we define the functionalties to load the files from the input
+    directory which is set in the database. Here below the description of
+    the input files:
+        - 0-vecZPos.npy, 0-vecRPos.npy, 0-vecPhiPos.npy contains the
+        position of the FIXME. There is only one of these files for each
+        folder, therefore for each bunch of events
+        Input features for training:
+        - vecMeanSC.npy: average space charge in each bin of r, rphi and z.
+        - vecRandomSC.npy: fluctuation of the space charge.
+        Output from the numberical calculations:
+        - vecMeanDistR.npy average distorsion along the R axis in the same
+          grid. It represents the expected distorsion that an electron
+          passing by that region would have as a consequence of the IBF.
+        - vecRandomDistR.npy are the correponding fluctuations.
+        - All the distorsions along the other directions have a consistent
+          naming choice.
+
+    """
+
+    vecZPosFile = inputdata + str(0) + '-vecZPos.npy'
+    scMeanFile = inputdata + str(indexev) + '-vecMeanSC.npy'
+    scRandomFile = inputdata + str(indexev) + '-vecRandomSC.npy'
+    distRMeanFile = inputdata + str(indexev) + '-vecMeanDistR.npy'
+    distRRandomFile = inputdata + str(indexev) + '-vecRandomDistR.npy'
+    distRPhiMeanFile = inputdata + str(indexev) + '-vecMeanDistRPhi.npy'
+    distRPhiRandomFile = inputdata + str(indexev) + '-vecRandomDistRPhi.npy'
+    distZMeanFile = inputdata + str(indexev) + '-vecMeanDistZ.npy'
+    distZRandomFile = inputdata + str(indexev) + '-vecRandomDistZ.npy'
+    vecZPos = np.load(vecZPosFile)
+    vecMeanSC = np.load(scMeanFile)
+    vecRandomSC = np.load(scRandomFile)
+    vecMeanDistR = np.load(distRMeanFile)
+    vecRandomDistR = np.load(distRRandomFile)
+    vecMeanDistRPhi = np.load(distRPhiMeanFile)
+    vecRandomDistRPhi = np.load(distRPhiRandomFile)
+    vecMeanDistZ = np.load(distZMeanFile)
+    vecRandomDistZ = np.load(distZRandomFile)
+
+    """
+    Here below we define the preselections on the input data for the training.
+    Three options are currently implemented.
+    selopt_input == 0 selects only clusters with positive z position
+    selopt_input == 1 selects only clusters with negative z position
+    selopt_input == 2 uses all data with no selections
+
+    """
+    if selopt_input == 0:
+        vecMeanSC_ = vecMeanSC[vecZPos >= 0]
+        vecFluctuationSC_ = vecMeanSC[vecZPos >= 0] - vecRandomSC[vecZPos >= 0]
+    elif selopt_input == 1:
+        vecMeanSC_ = vecMeanSC[vecZPos < 0]
+        vecFluctuationSC_ = vecMeanSC[vecZPos < 0] - vecRandomSC[vecZPos < 0]
+    elif selopt_input == 2:
+        vecMeanSC_ = vecMeanSC
+        vecFluctuationSC_ = vecMeanSC  - vecRandomSC
+
+    """
+    selopt_output == 0 selects only clusters with positive z position
+    selopt_output == 1 selects only clusters with negative z position
+    selopt_output == 2 uses all data with no selections
+
+    """
+    if selopt_output == 0:
+        vecFluctuationDistR_ = vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
+        vecFluctuationDistRPhi_ = vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
+        vecFluctuationDistZ_ = vecMeanDistZ[vecZPos >= 0] - vecRandomDistZ[vecZPos >= 0]
+    elif selopt_output == 1:
+        vecFluctuationDistR_ = vecMeanDistR[vecZPos < 0] - vecRandomDistR[vecZPos < 0]
+        vecFluctuationDistRPhi_ = vecMeanDistRPhi[vecZPos < 0] - vecRandomDistRPhi[vecZPos < 0]
+        vecFluctuationDistZ_ = vecMeanDistZ[vecZPos < 0] - vecRandomDistZ[vecZPos < 0]
+    elif selopt_output == 2:
+        vecFluctuationDistR_ = vecMeanDistR - vecRandomDistR
+        vecFluctuationDistRPhi_ = vecMeanDistRPhi - vecRandomDistRPhi
+        vecFluctuationDistZ_ = vecMeanDistZ - vecRandomDistZ
+
+    return [vecMeanSC_, vecFluctuationSC_, vecFluctuationDistR_, vecFluctuationDistRPhi_, vecFluctuationDistZ_]
+
