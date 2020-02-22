@@ -1,10 +1,9 @@
-import os
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
-from ROOT import TH1F, TH2F, TFile, TCanvas # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
@@ -117,8 +116,8 @@ class DnnOptimiser:
         loaded_model = \
             model_from_json(loaded_model_json, {'symmetryPadding3d' : symmetryPadding3d})
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
-        os.chdir(self.dirval)
-        myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
+        #os.chdir(self.dirval)
+        myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
 
         h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
         h_deltasvsdistallevents = TH2F("h_deltasvsdistallevents" + self.suffix, "",
@@ -173,12 +172,23 @@ class DnnOptimiser:
 
     # pylint: disable=no-self-use
     def plot(self):
-        myfile = TFile.Open("output%s.root" % self.suffix, "open")
-        hprofileall = myfile.Get("profiledeltasvsdist" + self.suffix)
-        c = TCanvas("canvas", "canvas", 1500, 1500)
-        c.Divide(3,3)
+        myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "open")
+        c = TCanvas("canvas", "canvas", 1200, 500)
+        c.Divide(2, 1)
         c.cd(1)
+        hprofileall = myfile.Get("profiledeltasvsdist" + self.suffix)
+        hprofileall.SetMinimum(-0.2)
+        hprofileall.SetMaximum(0.2)
+        hprofileall.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        hprofileall.GetYaxis().SetTitle("Predicted - Numeric R (cm)")
+        hprofileall.GetYaxis().SetTitleOffset(1.2)
         hprofileall.Draw()
+        c.cd(2)
+        gPad.SetLogy()
+        h_deltasvsdistallevents = myfile.Get("h_deltasvsdistallevents" + self.suffix)
+        hdistall = h_deltasvsdistallevents.ProjectionX()
+        hdistall.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        hdistall.Draw()
         c.SaveAs("canvasResults%s.pdf" % self.suffix)
 
     # pylint: disable=no-self-use

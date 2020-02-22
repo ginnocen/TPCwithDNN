@@ -1,5 +1,5 @@
 case: DNN_fluctuations
 dotrain: false
-doapply: true
+doapply: false
 doplot: true
 dogrid: false

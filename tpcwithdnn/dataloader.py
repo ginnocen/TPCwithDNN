@@ -125,4 +125,7 @@ def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
         y_[:, :, :, indexfilly] = \
                 vecFluctuationDistZ.reshape(grid_rphi, grid_r, grid_z)
         indexfilly = indexfilly + 1
+    #print("DIMENSION INPUT TRAINING", x_.shape)
+    #print("DIMENSION OUTPUT TRAINING", y_.shape)
+
     return x_, y_
