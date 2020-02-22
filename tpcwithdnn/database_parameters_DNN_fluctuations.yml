@@ -8,7 +8,7 @@ DNN_fluctuations:
   #prepare the datasets
   selopt_input: 0 # this uses all input training data, no z-selection
   selopt_output: 0 # 0 is use to predict distorsions only for positive z-values
-  opt_train: [0, 1] #first position = SCfluctuations, second = meanSC
+  opt_train: [1, 1] #first position = SCfluctuations, second = meanSC
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   rangeevent_train: [0,800]
   rangeevent_test: [801,970]

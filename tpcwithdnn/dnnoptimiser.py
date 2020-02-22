@@ -9,7 +9,7 @@ from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
-from dataloader import loaddata, loadtrain_test 
+from dataloader import loaddata, loadtrain_test
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
 class DnnOptimiser:
@@ -115,6 +115,9 @@ class DnnOptimiser:
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
         os.chdir(self.dirval)
         myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
+        h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
+        h_deltasvsdistallevents = TH2F("h_deltasvsdistallevents" + self.suffix, "",
+                                       100, -3.0, 3.0, 100, -0.2, 0.2)
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
             x_, y_ = loadtrain_test(self.dirinput, indexev, self.selopt_input, self.selopt_output,
@@ -132,16 +135,30 @@ class DnnOptimiser:
             distortionNumeric_group = Y
             distortionNumeric_flatm = distortionNumeric_group.reshape(-1, 1)
             distortionNumeric_flata = distortionNumeric_group.flatten()
-
-            deltas = (distortionPredict_flata - distortionNumeric_flata)
+            deltas_flata = (distortionPredict_flata - distortionNumeric_flata)
+            deltas_flatm = (distortionPredict_flatm - distortionNumeric_flatm)
 
             h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "", 100, -3, 3, 100, -3, 3)
+            h_deltasvsdist = TH2F("h_deltasvsdist_Ev%d" % iexperiment +
+                                  self.suffix, "", 100, -3.0, 3.0, 100, -0.2, 0.2)
             h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
             fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
                                               distortionPredict_flatm), axis=1))
-            fill_hist(h_deltas, deltas)
+            fill_hist(h_deltas, deltas_flata)
+            fill_hist(h_deltasallevents, deltas_flata)
+            fill_hist(h_deltasvsdist, np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
+            fill_hist(h_deltasvsdistallevents, np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
+            prof = h_deltasvsdist.ProfileX()
+            prof.SetName("profiledeltasvsdist_Ev%d" % iexperiment + self.suffix)
             h_dist.Write()
             h_deltas.Write()
+            h_deltasvsdist.Write()
+            prof.Write()
+        h_deltasallevents.Write()
+        h_deltasvsdistallevents.Write()
+        profall = h_deltasvsdistallevents.ProfileX()
+        profall.SetName("profiledeltasvsdist"  + self.suffix)
+        profall.Write()
         myfile.Close()
         print("DONE APPLY")
 
