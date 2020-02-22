@@ -1,3 +1,4 @@
+# pylint: disable=fixme, pointless-string-statement
 import numpy as np
 
 def loaddata(inputdata, indexev, selopt_input, selopt_output):

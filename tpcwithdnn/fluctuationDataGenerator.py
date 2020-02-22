@@ -2,13 +2,12 @@
 # pylint: disable=fixme, pointless-string-statement, too-many-arguments
 import numpy as np
 import keras
-from sklearn.externals import joblib
-from dataloader import loaddata, loadtrain_test
+from dataloader import loadtrain_test
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 class fluctuationDataGenerator(keras.utils.Sequence):
 
-    def __init__(self, list_IDs,  phi_slice, r_row, z_col, batch_size, shuffle,
+    def __init__(self, list_IDs, phi_slice, r_row, z_col, batch_size, shuffle,
                  opt_train, opt_predout, selopt_input, selopt_output, data_dir,
                  use_scaler):
         self.list_IDs = list_IDs
