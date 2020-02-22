@@ -1,4 +1,4 @@
-# pylint: disable=line-too-long, invalid-name, too-many-instance-attributes,
+# pylint: disable=invalid-name, too-many-instance-attributes,
 # pylint: disable=fixme, pointless-string-statement, too-many-arguments
 import numpy as np
 import keras
