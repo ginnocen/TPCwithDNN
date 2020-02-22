@@ -48,8 +48,8 @@ class DnnOptimiser:
         self.dropout = self.data_param["dropout"]
         self.epochs = self.data_param["ephocs"]
 
-        self.dirinput = self.dirinput + "/%d-%d-%d/" % (self.grid_phi, self.grid_z,
-                                                        self.grid_r)
+        self.dirinput = self.dirinput + "/%d-%d-%d/" % \
+                (self.grid_phi, self.grid_z, self.grid_r)
         self.params = {'phi_slice': self.grid_phi,
                        'r_row' : self.grid_r,
                        'z_col' : self.grid_z,
@@ -65,9 +65,12 @@ class DnnOptimiser:
         self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pooling,
                  self.dropout, self.depth, self.batch_normalization, self.use_scaler)
+        self.suffix = "%s_useSCMean%d_useSCFluc%d" % \
+                (self.suffix, self.opt_train[0], self.opt_train[1])
+        self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
+                (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
 
     def train(self):
-        #FIXME: missing random extraction for training and testing events?
         print("I AM DOING TRAINING")
         partition = {'train': np.arange(self.rangeevent_train[1]),
                      'validation': np.arange(self.rangeevent_test[0], self.rangeevent_test[1])}
@@ -86,13 +89,14 @@ class DnnOptimiser:
                                   epochs=self.epochs, workers=1)
         plt.style.use("ggplot")
         plt.figure()
+        plt.yscale('log')
         plt.plot(np.arange(0, self.epochs), his.history["loss"], label="train_loss")
         plt.plot(np.arange(0, self.epochs), his.history["val_loss"], label="val_loss")
         plt.title("Training Loss and Accuracy on Dataset")
         plt.xlabel("Epoch #")
         plt.ylabel("Loss/Accuracy")
         plt.legend(loc="lower left")
-        plt.savefig("plot.png")
+        plt.savefig("plot_%s.png" % self.suffix)
 
         model_json = model.to_json()
         with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
