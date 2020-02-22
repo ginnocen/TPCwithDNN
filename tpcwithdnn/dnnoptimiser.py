@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
-from ROOT import TH1F, TH2F, TFile # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TFile, TCanvas # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
@@ -173,7 +173,14 @@ class DnnOptimiser:
 
     # pylint: disable=no-self-use
     def plot(self):
-        print("PLOT NOT YET IMPLEMENTED")
+        myfile = TFile.Open("output%s.root" % self.suffix, "open")
+        hprofileall = myfile.Get("profiledeltasvsdist" + self.suffix)
+        c = TCanvas("canvas", "canvas", 1500, 1500)
+        c.Divide(3,3)
+        c.cd(1)
+        hprofileall.Draw()
+        c.SaveAs("canvasResults%s.pdf" % self.suffix)
+
     # pylint: disable=no-self-use
     def gridsearch(self):
         print("GRID SEARCH NOT YET IMPLEMENTED")
