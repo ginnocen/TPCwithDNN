@@ -9,7 +9,7 @@ from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
-from dataloader import loaddata
+from dataloader import loaddata, loadtrain_test 
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
 class DnnOptimiser:
@@ -117,25 +117,21 @@ class DnnOptimiser:
         myfile = TFile.Open("output%s.root" % self.suffix, "recreate")
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
-            #[vecFluctSC, vecFluctDistR, vecFluctDistRPhi, vecFluctDistZ] = \
-            [vecMeanSC_flata, vecFluctSC_flata, vecFluctDistR_flata, _, _] = \
-                loaddata(self.dirinput, indexev, self.selopt_input, self.selopt_output)
+            x_, y_ = loadtrain_test(self.dirinput, indexev, self.selopt_input, self.selopt_output,
+                                    self.grid_r, self.grid_phi, self.grid_z,
+                                    self.opt_train, self.opt_predout)
             X = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input))
-            indexfillx = 0
-            if self.opt_train[0] == 1:
-                X[0,:, :, :, indexfillx] = vecMeanSC_flata.reshape(self.grid_phi, self.grid_r, self.grid_z)
-                indexfillx = indexfillx + 1
-            if self.opt_train[1] == 1:
-                X[0,:, :, :, indexfillx] = vecFluctSC_flata.reshape(self.grid_phi, self.grid_r, self.grid_z)
-                indexfillx = indexfillx + 1
+            Y = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_output))
+            X[0, :, :, :, :] = x_
+            Y[0, :, :, :, :] = y_
 
             distortionPredict_group = loaded_model.predict(X)
             distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
             distortionPredict_flata = distortionPredict_group.flatten()
 
-            #FIXME HARDCODED distorsions only along R are considered
-            distortionNumeric_flata = vecFluctDistR_flata
-            distortionNumeric_flatm = distortionNumeric_flata.reshape(-1, 1)
+            distortionNumeric_group = Y
+            distortionNumeric_flatm = distortionNumeric_group.reshape(-1, 1)
+            distortionNumeric_flata = distortionNumeric_group.flatten()
 
             deltas = (distortionPredict_flata - distortionNumeric_flata)
 

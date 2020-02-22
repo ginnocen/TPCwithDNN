@@ -3,7 +3,7 @@
 import numpy as np
 import keras
 from sklearn.externals import joblib
-from dataloader import loaddata
+from dataloader import loaddata, loadtrain_test
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 class fluctuationDataGenerator(keras.utils.Sequence):
@@ -56,28 +56,9 @@ class fluctuationDataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # Store
-            [vecMeanSC, vecFluctuationSC, vecFluctuationDistR,
-             vecFluctuationDistRPhi, vecFluctuationDistZ] = \
-                loaddata(self.data_dir, ID, self.selopt_input, self.selopt_output)
-            indexfillx = 0
-            if self.opt_train[0] == 1:
-                X[i, :, :, :, indexfillx] = vecMeanSC.reshape(self.phi_slice, self.r_row, self.z_col)
-                indexfillx = indexfillx + 1
-            if self.opt_train[1] == 1:
-                X[i, :, :, :, indexfillx] = vecFluctuationSC.reshape(self.phi_slice, self.r_row, self.z_col)
-                indexfillx = indexfillx + 1
-
-            if sum(self.opt_predout) > 1:
-                print("MULTI-OUTPUT NOT IMPLEMENTED YET")
-                return 0
-            indexfilly = 0
-            if self.opt_predout[0] == 1:
-                Y[i, :, :, :, indexfilly] = vecFluctuationDistR.reshape(self.phi_slice, self.r_row, self.z_col)
-                indexfilly = indexfilly + 1
-            if self.opt_predout[1] == 1:
-                Y[i, :, :, :, indexfilly] = vecFluctuationDistRPhi.reshape(self.phi_slice, self.r_row, self.z_col)
-                indexfilly = indexfilly + 1
-            if self.opt_predout[2] == 1:
-                Y[i, :, :, :, indexfilly] = vecFluctuationDistZ.reshape(self.phi_slice, self.r_row, self.z_col)
-                indexfilly = indexfilly + 1
-            return X, Y
+            x_, y_ = loadtrain_test(self.data_dir, ID, self.selopt_input, self.selopt_output,
+                                    self.r_row, self.phi_slice, self.z_col,
+                                    self.opt_train, self.opt_predout)
+            X[i, :, :, :, :] = x_
+            Y[i, :, :, :, :] = y_
+        return X, Y

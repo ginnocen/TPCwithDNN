@@ -65,17 +65,63 @@ def loaddata(inputdata, indexev, selopt_input, selopt_output):
 
     """
     if selopt_output == 0:
-        vecFluctuationDistR_ = vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
-        vecFluctuationDistRPhi_ = vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
-        vecFluctuationDistZ_ = vecMeanDistZ[vecZPos >= 0] - vecRandomDistZ[vecZPos >= 0]
+        vecFluctuationDistR_ = \
+                vecMeanDistR[vecZPos >= 0] - vecRandomDistR[vecZPos >= 0]
+        vecFluctuationDistRPhi_ = \
+                vecMeanDistRPhi[vecZPos >= 0] - vecRandomDistRPhi[vecZPos >= 0]
+        vecFluctuationDistZ_ = \
+                vecMeanDistZ[vecZPos >= 0] - vecRandomDistZ[vecZPos >= 0]
     elif selopt_output == 1:
-        vecFluctuationDistR_ = vecMeanDistR[vecZPos < 0] - vecRandomDistR[vecZPos < 0]
-        vecFluctuationDistRPhi_ = vecMeanDistRPhi[vecZPos < 0] - vecRandomDistRPhi[vecZPos < 0]
-        vecFluctuationDistZ_ = vecMeanDistZ[vecZPos < 0] - vecRandomDistZ[vecZPos < 0]
+        vecFluctuationDistR_ = \
+                vecMeanDistR[vecZPos < 0] - vecRandomDistR[vecZPos < 0]
+        vecFluctuationDistRPhi_ = \
+                vecMeanDistRPhi[vecZPos < 0] - vecRandomDistRPhi[vecZPos < 0]
+        vecFluctuationDistZ_ = \
+                vecMeanDistZ[vecZPos < 0] - vecRandomDistZ[vecZPos < 0]
     elif selopt_output == 2:
         vecFluctuationDistR_ = vecMeanDistR - vecRandomDistR
         vecFluctuationDistRPhi_ = vecMeanDistRPhi - vecRandomDistRPhi
         vecFluctuationDistZ_ = vecMeanDistZ - vecRandomDistZ
 
-    return [vecMeanSC_, vecFluctuationSC_, vecFluctuationDistR_, vecFluctuationDistRPhi_, vecFluctuationDistZ_]
+    return [vecMeanSC_, vecFluctuationSC_, vecFluctuationDistR_,
+            vecFluctuationDistRPhi_, vecFluctuationDistZ_]
 
+
+def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
+                   grid_r, grid_rphi, grid_z, opt_train, opt_pred):
+
+    [vecMeanSC, vecFluctuationSC, vecFluctuationDistR,
+     vecFluctuationDistRPhi, vecFluctuationDistZ] = \
+        loaddata(inputdata, indexev, selopt_input, selopt_output)
+    dim_input = sum(opt_train)
+    dim_output = sum(opt_pred)
+    x_ = np.empty((grid_rphi, grid_r, grid_z, dim_input))
+    y_ = np.empty((grid_rphi, grid_r, grid_z, dim_output))
+
+    indexfillx = 0
+    if opt_train[0] == 1:
+        x_[:, :, :, indexfillx] = \
+                vecMeanSC.reshape(grid_rphi, grid_r, grid_z)
+        indexfillx = indexfillx + 1
+    if opt_train[1] == 1:
+        x_[:, :, :, indexfillx] = \
+                vecFluctuationSC.reshape(grid_rphi, grid_r, grid_z)
+        indexfillx = indexfillx + 1
+
+    if sum(opt_pred) > 1:
+        print("MULTI-OUTPUT NOT IMPLEMENTED YET")
+        return 0
+    indexfilly = 0
+    if opt_pred[0] == 1:
+        y_[:, :, :, indexfilly] = \
+                vecFluctuationDistR.reshape(grid_rphi, grid_r, grid_z)
+        indexfilly = indexfilly + 1
+    if opt_pred[1] == 1:
+        y_[:, :, :, indexfilly] = \
+                vecFluctuationDistRPhi.reshape(grid_rphi, grid_r, grid_z)
+        indexfilly = indexfilly + 1
+    if opt_pred[2] == 1:
+        y_[:, :, :, indexfilly] = \
+                vecFluctuationDistZ.reshape(grid_rphi, grid_r, grid_z)
+        indexfilly = indexfilly + 1
+    return x_, y_
