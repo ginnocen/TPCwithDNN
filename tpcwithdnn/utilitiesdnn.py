@@ -57,3 +57,12 @@ def UNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", drop
     output_z = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_z)
     #o = concatenate([output_r, output_rphi, output_z])
     return Model(inputs=i, outputs=output_r)
+
+#pylint:disable=unused-argument
+def SimpleNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", dropout=0.2, bathnorm=False, pool_type=0, upconv=True, residual=False):
+    print("SimpleNet is just an attempt. Be patient :)")
+    myinput = Input(shape=input_shape)
+    print(input_shape)
+    conv1 = Conv3D(4, 3, activation="relu", padding="same", kernel_initializer="normal")(myinput)
+    conv1 = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(conv1)
+    return Model(inputs=myinput, outputs=conv1)
