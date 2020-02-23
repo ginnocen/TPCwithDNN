@@ -6,6 +6,7 @@ from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
@@ -85,6 +86,9 @@ class DnnOptimiser:
         self.logger.info("This is the list of inputs active for training")
         self.logger.info("(SCMean, SCFluctuations)=(%d, %d)"  % (self.opt_train[0],
                                                                  self.opt_train[1]))
+        gROOT.SetStyle("Plain")
+        gROOT.SetBatch()
+        #gStyle.SetOptStat(0)
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
@@ -133,11 +137,11 @@ class DnnOptimiser:
         loaded_model = \
             model_from_json(loaded_model_json, {'symmetryPadding3d' : symmetryPadding3d})
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
-        #os.chdir(self.dirval)
-        myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
 
+        myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
+        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 100, -3, 3, 100, -3, 3)
         h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
-        h_deltasvsdistallevents = TH2F("h_deltasvsdistallevents" + self.suffix, "",
+        h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
                                        100, -3.0, 3.0, 100, -0.2, 0.2)
 
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
@@ -160,11 +164,13 @@ class DnnOptimiser:
             deltas_flata = (distortionPredict_flata - distortionNumeric_flata)
             deltas_flatm = (distortionPredict_flatm - distortionNumeric_flatm)
 
-            h_dist = TH2F("hdist_Ev%d" % iexperiment + self.suffix, "",
+            h_dist = TH2F("hdistEv%d" % iexperiment + self.suffix, "",
                           100, -3, 3, 100, -3, 3)
-            h_deltasvsdist = TH2F("h_deltasvsdist_Ev%d" % iexperiment +
+            h_deltasvsdist = TH2F("hdeltasvsdistEv%d" % iexperiment +
                                   self.suffix, "", 100, -3.0, 3.0, 100, -0.2, 0.2)
-            h_deltas = TH1F("hdeltas_Ev%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
+            h_deltas = TH1F("hdeltasEv%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
+            fill_hist(h_distallevents, np.concatenate((distortionNumeric_flatm, \
+                                distortionPredict_flatm), axis=1))
             fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
                                               distortionPredict_flatm), axis=1))
             fill_hist(h_deltas, deltas_flata)
@@ -174,39 +180,66 @@ class DnnOptimiser:
             fill_hist(h_deltasvsdistallevents,
                       np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
             prof = h_deltasvsdist.ProfileX()
-            prof.SetName("profiledeltasvsdist_Ev%d" % iexperiment + self.suffix)
+            prof.SetName("profiledeltasvsdistEv%d" % iexperiment + self.suffix)
             h_dist.Write()
             h_deltas.Write()
             h_deltasvsdist.Write()
             prof.Write()
+
+        h_distallevents.Write()
         h_deltasallevents.Write()
         h_deltasvsdistallevents.Write()
-        profall = h_deltasvsdistallevents.ProfileX()
-        profall.SetName("profiledeltasvsdist"  + self.suffix)
-        profall.Write()
+        profallevents = h_deltasvsdistallevents.ProfileX()
+        profallevents.SetName("profiledeltasvsdistallevents" + self.suffix)
+        profallevents.Write()
         myfile.Close()
         print("DONE APPLY")
+    @staticmethod
+    def plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix):
+        cev = TCanvas("canvas" + suffix, "canvas" + suffix,
+                      1400, 1000)
+        cev.Divide(2, 2)
+        cev.cd(1)
+        h_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        h_dist.GetYaxis().SetTitle("Predicted distorsion (cm)")
+        h_dist.Draw("colz")
+        cev.cd(2)
+        gPad.SetLogy()
+        h_deltasvsdist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        h_deltasvsdist.GetYaxis().SetTitle("Entries")
+        h_deltasvsdist.ProjectionX().Draw()
+        cev.cd(3)
+        gPad.SetLogy()
+        h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
+        h_deltas.GetYaxis().SetTitle("Entries")
+        h_deltas.Draw()
+        cev.cd(4)
+        prof.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
+        prof.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        prof.Draw()
+        #cev.cd(5)
+        #h_deltasvsdist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        #h_deltasvsdist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
+        #h_deltasvsdist.Draw("colz")
+        cev.SaveAs("plots/canvas_%s.pdf" % (suffix))
 
     # pylint: disable=no-self-use
     def plot(self):
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "open")
-        c = TCanvas("canvas", "canvas", 1200, 500)
-        c.Divide(2, 1)
-        c.cd(1)
-        hprofileall = myfile.Get("profiledeltasvsdist" + self.suffix)
-        hprofileall.SetMinimum(-0.2)
-        hprofileall.SetMaximum(0.2)
-        hprofileall.GetXaxis().SetTitle("Numeric R distorsion (cm)")
-        hprofileall.GetYaxis().SetTitle("Predicted - Numeric R (cm)")
-        hprofileall.GetYaxis().SetTitleOffset(1.2)
-        hprofileall.Draw()
-        c.cd(2)
-        gPad.SetLogy()
-        h_deltasvsdistallevents = myfile.Get("h_deltasvsdistallevents" + self.suffix)
-        hdistall = h_deltasvsdistallevents.ProjectionX()
-        hdistall.GetXaxis().SetTitle("Numeric R distorsion (cm)")
-        hdistall.Draw()
-        c.SaveAs("plots/canvasResults%s.pdf" % self.suffix)
+        h_distallevents = myfile.Get("hdistallevents" + self.suffix)
+        hdeltasallevents = myfile.Get("hdeltasallevents" + self.suffix)
+        h_deltasvsdistallevents = myfile.Get("hdeltasvsdistallevents" + self.suffix)
+        profiledeltasvsdistallevents = myfile.Get("profiledeltasvsdistallevents" + self.suffix)
+        self.plot_distorsion(h_distallevents, hdeltasallevents,
+                             h_deltasvsdistallevents, profiledeltasvsdistallevents, self.suffix)
+
+        for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
+            suffix_ = "Ev%d%s" % (iexperiment, self.suffix)
+            h_dist = myfile.Get("hdist%s" % suffix_)
+            h_deltas = myfile.Get("hdeltas%s" % suffix_)
+            h_deltasvsdist = myfile.Get("hdeltasvsdist%s" % suffix_)
+            prof = myfile.Get("profiledeltasvsdist%s" % suffix_)
+            self.plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix_)
 
     # pylint: disable=no-self-use
     def gridsearch(self):
