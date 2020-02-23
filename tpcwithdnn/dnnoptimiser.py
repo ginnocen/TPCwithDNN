@@ -1,3 +1,4 @@
+import os
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
@@ -9,8 +10,11 @@ from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 from dataloader import loadtrain_test
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
+# pylint: disable=logging-not-lazy
 class DnnOptimiser:
     #Class Attribute
     species = "dnnoptimiser"
@@ -18,7 +22,7 @@ class DnnOptimiser:
     def __init__(self, data_param, case):
         print(case)
         self.logger = get_logger()
-        print("BUILDING OPTIMISATION")
+
 
         self.data_param = data_param
         self.dirmodel = self.data_param["dirmodel"]
@@ -47,6 +51,10 @@ class DnnOptimiser:
         self.dropout = self.data_param["dropout"]
         self.epochs = self.data_param["ephocs"]
 
+        self.lossfun = self.data_param["lossfun"]
+        self.metrics = self.data_param["metrics"]
+        self.adamlr = self.data_param["adamlr"]
+
         self.dirinput = self.dirinput + "/%d-%d-%d/" % \
                 (self.grid_phi, self.grid_z, self.grid_r)
         self.params = {'phi_slice': self.grid_phi,
@@ -69,18 +77,26 @@ class DnnOptimiser:
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
 
+        self.logger.info("DnnOptimizer::Init")
+        self.logger.info("I am processing the configuration %s", self.suffix)
+        if self.dim_output > 1:
+            self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORSION. The sum of opt_predout == 1")
+        self.logger.info("This is the list of inputs active for training")
+        self.logger.info("(SCMean, SCFluctuations)=(%d, %d)"  % (self.opt_train[0],
+                                                                 self.opt_train[1]))
+
     def train(self):
-        print("I AM DOING TRAINING")
+        self.logger.info("DnnOptimizer::train")
         partition = {'train': np.arange(self.rangeevent_train[1]),
                      'validation': np.arange(self.rangeevent_test[0], self.rangeevent_test[1])}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
         validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
-        print("DIMENSION INPUT", self.dim_input)
         model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
                      depth=self.depth, bathnorm=self.batch_normalization,
                      pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
-        model.compile(loss="mse", optimizer=Adam(lr=0.001000), metrics=["mse"]) # Mean squared error
-        model.summary()
+        model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
+                      metrics=[self.metrics]) # Mean squared error
+        #model.summary()
 
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,

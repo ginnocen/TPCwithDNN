@@ -18,8 +18,8 @@ class symmetryPadding3d(Layer):
         pad = [[0, 0]] + [i for i in self.padding] + [[0, 0]]
         if K.backend() == "tensorflow":
             paddings = tf.constant(pad)
-            print(inputs.shape)
-            print(paddings)
+            #print(inputs.shape)
+            #print(paddings)
             out = tf.pad(inputs, paddings, self.mode)
         else:
             raise Exception("Backend " + K.backend() + "not implemented")

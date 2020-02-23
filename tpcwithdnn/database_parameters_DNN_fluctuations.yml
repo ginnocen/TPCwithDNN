@@ -21,4 +21,7 @@ DNN_fluctuations:
   depth: 4
   batch_normalization: 0
   dropout: 0.0
-  ephocs: 20
+  ephocs: 2
+  lossfun: mse
+  metrics: mse
+  adamlr: 0.001000
