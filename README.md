@@ -7,7 +7,8 @@ This software is meant at providing a fast way for performing space-charge (SC) 
 
 
 ## How to install the software:
-- first git clone the following package https://github.com/ginnocen/MachineLearningHEP.git where you can find a set of existing tools useful for this analysis. 
+- first git clone the following package where you can find a set of existing tools useful for this analysis and a setup configuration for downloading all the needed packages:
+
 ```bash
 git clone https://github.com/ginnocen/MachineLearningHEP.git
 ```
