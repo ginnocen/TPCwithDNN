@@ -111,7 +111,7 @@ class DnnOptimiser:
         plt.xlabel("Epoch #")
         plt.ylabel("Loss/Accuracy")
         plt.legend(loc="lower left")
-        plt.savefig("plot_%s.png" % self.suffix)
+        plt.savefig("plots/plot_%s.png" % self.suffix)
 
         model_json = model.to_json()
         with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
@@ -205,7 +205,7 @@ class DnnOptimiser:
         hdistall = h_deltasvsdistallevents.ProjectionX()
         hdistall.GetXaxis().SetTitle("Numeric R distorsion (cm)")
         hdistall.Draw()
-        c.SaveAs("canvasResults%s.pdf" % self.suffix)
+        c.SaveAs("plots/canvasResults%s.pdf" % self.suffix)
 
     # pylint: disable=no-self-use
     def gridsearch(self):
