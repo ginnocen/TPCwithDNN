@@ -2,13 +2,17 @@
 
 ![TPC detector](figures/TPC.png)
 
-## Overview of the package:
-This software provides a flexible, modular and easy-to-use package to perform classification using Scikit, XGBoost and Keras algorithms. The first purpose of the package is to provide tools for high-energy physicists to perform optimisation of rare signals produced in ultra-relativistic proton-proton and heavy-ion collisions. 
+## Overview of the software:
+This software is meant at providing a fast way for performing space-charge (SC) distorsion corrections using deep networks. In particular, the current version uses UNet to train an input dataset made of SC densities and fluctuations and try to predict distorsions along the R, phi and z axis. 
 
-## The package (v0) provides tools to:
-- convert ROOT datasets into Pandas Dataframes
-- create training and testing dataset starting from samples of data and Monte-Carlo simulations
-- perform Principal-Component-Analysis
-- training and testing using Scikit, XGBoost and Keras algorithms
-- large set of validation tools with a user friendly interface
-- conversion of Pandas Dataframe to ROOT objects including algorithm decisions and probabilities
+
+## How to install the software:
+- first git clone the following package https://github.com/ginnocen/MachineLearningHEP.git where you can find a set of existing tools useful for this analysis. 
+```bash
+git clone https://github.com/ginnocen/MachineLearningHEP.git
+```
+
+```bash
+cd MachineLearningHEP
+pip3 install -e .
+```
