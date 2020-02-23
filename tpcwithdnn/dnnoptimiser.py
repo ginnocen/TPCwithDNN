@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
+from keras.utils.vis_utils import plot_model
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
@@ -97,7 +98,7 @@ class DnnOptimiser:
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
                       metrics=[self.metrics]) # Mean squared error
         #model.summary()
-
+        plot_model(model, to_file='plots/model_plot.png', show_shapes=True, show_layer_names=True)
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
                                   use_multiprocessing=True,
