@@ -38,6 +38,7 @@ class DnnOptimiser:
         self.selopt_output = self.data_param["selopt_output"]
         self.opt_train = self.data_param["opt_train"]
         self.opt_predout = self.data_param["opt_predout"]
+        self.nameopt_predout = self.data_param["nameopt_predout"]
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
         self.rangeevent_train = self.data_param["rangeevent_train"]
@@ -195,7 +196,7 @@ class DnnOptimiser:
         myfile.Close()
         print("DONE APPLY")
     @staticmethod
-    def plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix):
+    def plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix, namevar):
         cev = TCanvas("canvas" + suffix, "canvas" + suffix,
                       1400, 1000)
         cev.Divide(2, 2)
@@ -205,17 +206,18 @@ class DnnOptimiser:
         h_dist.Draw("colz")
         cev.cd(2)
         gPad.SetLogy()
-        h_deltasvsdist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        h_deltasvsdist.GetXaxis().SetTitle("Numeric %s distorsion (cm)" % namevar)
         h_deltasvsdist.GetYaxis().SetTitle("Entries")
         h_deltasvsdist.ProjectionX().Draw()
         cev.cd(3)
         gPad.SetLogy()
-        h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
+        h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) %s distorsion (cm)"
+                                     % namevar)
         h_deltas.GetYaxis().SetTitle("Entries")
         h_deltas.Draw()
         cev.cd(4)
-        prof.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
-        prof.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        prof.GetYaxis().SetTitle("(Predicted - Numeric) %s distorsion (cm)" % namevar)
+        prof.GetXaxis().SetTitle("Numeric %s distorsion (cm)" % namevar)
         prof.Draw()
         #cev.cd(5)
         #h_deltasvsdist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
@@ -225,13 +227,18 @@ class DnnOptimiser:
 
     # pylint: disable=no-self-use
     def plot(self):
+        namevariable = None
+        for iname in self.opt_predout:
+            if self.opt_predout[iname] == 1:
+                namevariable = self.nameopt_predout[iname]
+
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "open")
         h_distallevents = myfile.Get("hdistallevents" + self.suffix)
         hdeltasallevents = myfile.Get("hdeltasallevents" + self.suffix)
         h_deltasvsdistallevents = myfile.Get("hdeltasvsdistallevents" + self.suffix)
         profiledeltasvsdistallevents = myfile.Get("profiledeltasvsdistallevents" + self.suffix)
-        self.plot_distorsion(h_distallevents, hdeltasallevents,
-                             h_deltasvsdistallevents, profiledeltasvsdistallevents, self.suffix)
+        self.plot_distorsion(h_distallevents, hdeltasallevents, h_deltasvsdistallevents,
+                             profiledeltasvsdistallevents, self.suffix, namevariable)
 
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             suffix_ = "Ev%d%s" % (iexperiment, self.suffix)
@@ -239,7 +246,8 @@ class DnnOptimiser:
             h_deltas = myfile.Get("hdeltas%s" % suffix_)
             h_deltasvsdist = myfile.Get("hdeltasvsdist%s" % suffix_)
             prof = myfile.Get("profiledeltasvsdist%s" % suffix_)
-            self.plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix_)
+            self.plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof,
+                                 suffix_, namevariable)
 
     # pylint: disable=no-self-use
     def gridsearch(self):

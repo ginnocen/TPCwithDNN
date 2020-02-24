@@ -47,16 +47,16 @@ def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res):
 
 def UNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", dropout=0.2, bathnorm=False, pool_type=0, upconv=True, residual=False):
     i = Input(shape=input_shape)
-    output_r = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
-    output_r = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_r)
-
-    output_rphi = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
-    output_rphi = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_rphi)
-
-    output_z = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
-    output_z = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_z)
+    #output_r = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
+    #output_r = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_r)
+    #output_rphi = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
+    #output_rphi = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_rphi)
+    #output_z = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
+    #output_z = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_z)
     #o = concatenate([output_r, output_rphi, output_z])
-    return Model(inputs=i, outputs=output_r)
+    output = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
+    output = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output)
+    return Model(inputs=i, outputs=output)
 
 #pylint:disable=unused-argument
 def SimpleNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", dropout=0.2, bathnorm=False, pool_type=0, upconv=True, residual=False):
