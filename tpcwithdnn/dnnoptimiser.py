@@ -77,8 +77,8 @@ class DnnOptimiser:
                  self.dropout, self.depth, self.batch_normalization, self.use_scaler)
         self.suffix = "%s_useSCMean%d_useSCFluc%d" % \
                 (self.suffix, self.opt_train[0], self.opt_train[1])
-        self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
-                (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
+        self.suffix = "%s_pred_doR%d_dophi%d_doz%d_Nev%d" % \
+                (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2],self.rangeevent_train[1])
 
         self.logger.info("DnnOptimizer::Init")
         self.logger.info("I am processing the configuration %s", self.suffix)
@@ -140,10 +140,10 @@ class DnnOptimiser:
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
 
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
-        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 100, -3, 3, 100, -3, 3)
+        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 600, -3, 3, 600, -3, 3)
         h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
         h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
-                                       100, -3.0, 3.0, 100, -0.2, 0.2)
+                                       600, -3.0, 3.0, 200, -1.0, 1.0)
 
         for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
             indexev = iexperiment
@@ -166,9 +166,9 @@ class DnnOptimiser:
             deltas_flatm = (distortionPredict_flatm - distortionNumeric_flatm)
 
             h_dist = TH2F("hdistEv%d" % iexperiment + self.suffix, "",
-                          100, -3, 3, 100, -3, 3)
+                          600, -3, 3, 600, -3, 3)
             h_deltasvsdist = TH2F("hdeltasvsdistEv%d" % iexperiment +
-                                  self.suffix, "", 100, -3.0, 3.0, 100, -0.2, 0.2)
+                                  self.suffix, "", 600, -3.0, 3.0, 200, -1.0, 1.0)
             h_deltas = TH1F("hdeltasEv%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
             fill_hist(h_distallevents, np.concatenate((distortionNumeric_flatm, \
                                 distortionPredict_flatm), axis=1))

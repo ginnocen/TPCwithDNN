@@ -2,11 +2,12 @@
 main script for doing tpc calibration with dnn
 """
 
+import argparse
 import yaml
 from machine_learning_hep.logger import get_logger
 #from machine_learning_hep.utilities import checkdir, checkmakedir
 from dnnoptimiser import DnnOptimiser
-def do_entire_analysis():
+def do_entire_analysis(Nev = int(-1)):
 
     logger = get_logger()
     logger.info("Do analysis chain")
@@ -18,6 +19,10 @@ def do_entire_analysis():
     with open(df_parameters, 'r') as parameters_data:
         db_parameters = yaml.safe_load(parameters_data)
 
+    if Nev > 0:
+        db_parameters[case]['rangeevent_train'][1] = Nev;
+        print('set number of events for training to ',Nev);
+        #print('db_parameters[case][\'rangeevent_train\'][1] = ',db_parameters[case]['rangeevent_train'][1]);
 
     #dirmodel = db_parameters[case]["dirmodel"]
     #dirval = db_parameters[case]["dirval"]
@@ -52,4 +57,12 @@ def do_entire_analysis():
     if dogrid is True:
         myopt.gridsearch()
 
-do_entire_analysis()
+
+#____________________________________________________________________
+parser = argparse.ArgumentParser(description='test message')
+parser.add_argument('--Nev', type=int, default=-1)
+args = parser.parse_args();
+Nev = args.Nev;
+print('Nev = ', Nev);
+
+do_entire_analysis(Nev)
