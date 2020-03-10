@@ -11,9 +11,9 @@ DNN_fluctuations:
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, Rphi, z] #R, Rphi, z output distorsion predictions
-  maxrandomfiles: 1000 #this is the number of random events
-  range_mean_index: [0,26]
-  rangeevent_train: [0,4000]
+  maxrandomfiles: 1000 #this is the total number of random events generated
+  range_mean_index: [0,26] # min and max index of mean SC configurations 
+  rangeevent_train: [0,4000] #events for training (include a mix of SC config) 
   rangeevent_test: [4001,5000]
   rangeevent_apply: [5001,8000]
   use_scaler: 0

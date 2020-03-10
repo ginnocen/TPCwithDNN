@@ -1,4 +1,5 @@
 import os
+import sys
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
@@ -122,7 +123,6 @@ class DnnOptimiser:
                       metrics=[self.metrics]) # Mean squared error
         model.summary()
         plot_model(model, to_file='plots/model_plot.png', show_shapes=True, show_layer_names=True)
-        print(self.epochs)
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
                                   use_multiprocessing=True,
@@ -263,9 +263,7 @@ class DnnOptimiser:
 
         counter = 0
         for iexperiment in self.indexmatrix_ev_mean_apply:
-            print(iexperiment)
             suffix_ = "Ev%d_Mean%d%s" % (iexperiment[0], iexperiment[1], self.suffix)
-            print("hdist%s" % suffix_)
             h_dist = myfile.Get("hdist%s" % suffix_)
             h_deltas = myfile.Get("hdeltas%s" % suffix_)
             h_deltasvsdist = myfile.Get("hdeltasvsdist%s" % suffix_)
@@ -274,7 +272,7 @@ class DnnOptimiser:
                                  suffix_, namevariable)
             counter = counter + 1
             if counter > 100:
-                exit()
+                sys.exit()
     # pylint: disable=no-self-use
     def gridsearch(self):
         print("GRID SEARCH NOT YET IMPLEMENTED")
