@@ -127,23 +127,23 @@ class DnnOptimiser:
                                   validation_data=validation_generator,
                                   use_multiprocessing=True,
                                   epochs=self.epochs, workers=1)
-#        plt.style.use("ggplot")
-#        plt.figure()
-#        plt.yscale('log')
-#        plt.plot(np.arange(0, self.epochs), his.history["loss"], label="train_loss")
-#        plt.plot(np.arange(0, self.epochs), his.history["val_loss"], label="val_loss")
-#        plt.title("Training Loss and Accuracy on Dataset")
-#        plt.xlabel("Epoch #")
-#        plt.ylabel("Loss/Accuracy")
-#        plt.legend(loc="lower left")
-#        plt.savefig("plots/plot_%s.png" % self.suffix)
-#
-#        model_json = model.to_json()
-#        with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
-#            json_file.write(model_json)
-#        model.save_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
-#        print("Saved model to disk")
-#        # list all data in history
+        plt.style.use("ggplot")
+        plt.figure()
+        plt.yscale('log')
+        plt.plot(np.arange(0, self.epochs), his.history["loss"], label="train_loss")
+        plt.plot(np.arange(0, self.epochs), his.history["val_loss"], label="val_loss")
+        plt.title("Training Loss and Accuracy on Dataset")
+        plt.xlabel("Epoch #")
+        plt.ylabel("Loss/Accuracy")
+        plt.legend(loc="lower left")
+        plt.savefig("plots/plot_%s.png" % self.suffix)
+
+        model_json = model.to_json()
+        with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
+            json_file.write(model_json)
+        model.save_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
+        print("Saved model to disk")
+        # list all data in history
 
     def groupbyindices_input(self, arrayflat):
         return arrayflat.reshape(1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input)
@@ -159,10 +159,10 @@ class DnnOptimiser:
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
 
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
-        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 100, -3, 3, 100, -3, 3)
+        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 500, -5, 5, 500, -5, 5)
         h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
         h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
-                                       100, -3.0, 3.0, 100, -0.2, 0.2)
+                                       500, -5.0, 5.0, 100, -0.2, 0.2)
 
         for iexperiment in self.indexmatrix_ev_mean_apply:
             indexev = iexperiment
@@ -184,11 +184,12 @@ class DnnOptimiser:
             deltas_flata = (distortionPredict_flata - distortionNumeric_flata)
             deltas_flatm = (distortionPredict_flatm - distortionNumeric_flatm)
 
-            h_dist = TH2F("hdistEv%d" % iexperiment + self.suffix, "",
-                          100, -3, 3, 100, -3, 3)
-            h_deltasvsdist = TH2F("hdeltasvsdistEv%d" % iexperiment +
-                                  self.suffix, "", 100, -3.0, 3.0, 100, -0.2, 0.2)
-            h_deltas = TH1F("hdeltasEv%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
+            h_dist = TH2F("hdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + self.suffix, \
+                          "", 500, -5, 5, 500, -5, 5)
+            h_deltasvsdist = TH2F("hdeltasvsdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + \
+                                  self.suffix, "", 500, -5.0, 5.0, 100, -0.2, 0.2)
+            h_deltas = TH1F("hdeltasEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) \
+                            + self.suffix, "", 1000, -1., 1.)
             fill_hist(h_distallevents, np.concatenate((distortionNumeric_flatm, \
                                 distortionPredict_flatm), axis=1))
             fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
@@ -200,7 +201,8 @@ class DnnOptimiser:
             fill_hist(h_deltasvsdistallevents,
                       np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
             prof = h_deltasvsdist.ProfileX()
-            prof.SetName("profiledeltasvsdistEv%d" % iexperiment + self.suffix)
+            prof.SetName("profiledeltasvsdistEv%d_Mean%d" % \
+                (iexperiment[0], iexperiment[1]) + self.suffix)
             h_dist.Write()
             h_deltas.Write()
             h_deltasvsdist.Write()
@@ -259,15 +261,20 @@ class DnnOptimiser:
         self.plot_distorsion(h_distallevents, hdeltasallevents, h_deltasvsdistallevents,
                              profiledeltasvsdistallevents, self.suffix, namevariable)
 
-        for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
-            suffix_ = "Ev%d%s" % (iexperiment, self.suffix)
+        counter = 0
+        for iexperiment in self.indexmatrix_ev_mean_apply:
+            print(iexperiment)
+            suffix_ = "Ev%d_Mean%d%s" % (iexperiment[0], iexperiment[1], self.suffix)
+            print("hdist%s" % suffix_)
             h_dist = myfile.Get("hdist%s" % suffix_)
             h_deltas = myfile.Get("hdeltas%s" % suffix_)
             h_deltasvsdist = myfile.Get("hdeltasvsdist%s" % suffix_)
             prof = myfile.Get("profiledeltasvsdist%s" % suffix_)
             self.plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof,
                                  suffix_, namevariable)
-
+            counter = counter + 1
+            if counter > 100:
+                exit()
     # pylint: disable=no-self-use
     def gridsearch(self):
         print("GRID SEARCH NOT YET IMPLEMENTED")

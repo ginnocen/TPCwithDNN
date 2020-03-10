@@ -13,14 +13,14 @@ DNN_fluctuations:
   nameopt_predout: [R, Rphi, z] #R, Rphi, z output distorsion predictions
   maxrandomfiles: 1000 #this is the number of random events
   range_mean_index: [0,26]
-  rangeevent_train: [0,54]
-  rangeevent_test: [54,100]
-  rangeevent_apply: [1001,2000]
+  rangeevent_train: [0,4000]
+  rangeevent_test: [4001,5000]
+  rangeevent_apply: [5001,8000]
   use_scaler: 0
   #DNN configuration
   filters: 4
   pooling: 0
-  batch_size: 8
+  batch_size: 27
   shuffle: false
   depth: 4
   batch_normalization: 0
