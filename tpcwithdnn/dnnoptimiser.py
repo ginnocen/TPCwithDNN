@@ -41,8 +41,11 @@ class DnnOptimiser:
         self.nameopt_predout = self.data_param["nameopt_predout"]
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
+        self.maxrandomfiles = self.data_param["maxrandomfiles"]
         self.rangeevent_train = self.data_param["rangeevent_train"]
         self.rangeevent_test = self.data_param["rangeevent_test"]
+        self.rangeevent_apply = self.data_param["rangeevent_apply"]
+        self.range_mean_index = self.data_param["range_mean_index"]
         self.use_scaler = self.data_param["use_scaler"]
         # DNN config
         self.filters = self.data_param["filters"]
@@ -58,8 +61,10 @@ class DnnOptimiser:
         self.metrics = self.data_param["metrics"]
         self.adamlr = self.data_param["adamlr"]
 
-        self.dirinput = self.dirinput + "/%d-%d-%d/" % \
-                (self.grid_phi, self.grid_z, self.grid_r)
+
+
+        self.dirinput = self.dirinput + "/SC-%d-%d-%d/" % \
+                (self.grid_z, self.grid_r, self.grid_phi)
         self.params = {'phi_slice': self.grid_phi,
                        'r_row' : self.grid_r,
                        'z_col' : self.grid_z,
@@ -87,44 +92,59 @@ class DnnOptimiser:
         self.logger.info("This is the list of inputs active for training")
         self.logger.info("(SCMean, SCFluctuations)=(%d, %d)"  % (self.opt_train[0],
                                                                  self.opt_train[1]))
+
+        self.indexmatrix_ev_mean = []
+        for ievent in np.arange(self.maxrandomfiles):
+            for imean in np.arange(self.range_mean_index[0], self.range_mean_index[1] + 1):
+                self.indexmatrix_ev_mean.append([ievent, imean])
+
+        self.indexmatrix_ev_mean_train = [self.indexmatrix_ev_mean[index] \
+                for index in range(self.rangeevent_train[0], self.rangeevent_train[1])]
+        self.indexmatrix_ev_mean_test = [self.indexmatrix_ev_mean[index] \
+                for index in range(self.rangeevent_test[0], self.rangeevent_test[1])]
+        self.indexmatrix_ev_mean_apply = [self.indexmatrix_ev_mean[index] \
+                for index in range(self.rangeevent_apply[0], self.rangeevent_apply[1])]
+
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
-        #gStyle.SetOptStat(0)
+
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
-        partition = {'train': np.arange(self.rangeevent_train[1]),
-                     'validation': np.arange(self.rangeevent_test[0], self.rangeevent_test[1])}
+        partition = {'train': self.indexmatrix_ev_mean_train,
+                     'validation': self.indexmatrix_ev_mean_test}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
         validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
+        print("itemla")
+        print(training_generator)
         model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
                      depth=self.depth, bathnorm=self.batch_normalization,
                      pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
                       metrics=[self.metrics]) # Mean squared error
-        #model.summary()
+        model.summary()
         plot_model(model, to_file='plots/model_plot.png', show_shapes=True, show_layer_names=True)
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
                                   use_multiprocessing=True,
                                   epochs=self.epochs, workers=1)
-        plt.style.use("ggplot")
-        plt.figure()
-        plt.yscale('log')
-        plt.plot(np.arange(0, self.epochs), his.history["loss"], label="train_loss")
-        plt.plot(np.arange(0, self.epochs), his.history["val_loss"], label="val_loss")
-        plt.title("Training Loss and Accuracy on Dataset")
-        plt.xlabel("Epoch #")
-        plt.ylabel("Loss/Accuracy")
-        plt.legend(loc="lower left")
-        plt.savefig("plots/plot_%s.png" % self.suffix)
-
-        model_json = model.to_json()
-        with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
-            json_file.write(model_json)
-        model.save_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
-        print("Saved model to disk")
-        # list all data in history
+#        plt.style.use("ggplot")
+#        plt.figure()
+#        plt.yscale('log')
+#        plt.plot(np.arange(0, self.epochs), his.history["loss"], label="train_loss")
+#        plt.plot(np.arange(0, self.epochs), his.history["val_loss"], label="val_loss")
+#        plt.title("Training Loss and Accuracy on Dataset")
+#        plt.xlabel("Epoch #")
+#        plt.ylabel("Loss/Accuracy")
+#        plt.legend(loc="lower left")
+#        plt.savefig("plots/plot_%s.png" % self.suffix)
+#
+#        model_json = model.to_json()
+#        with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
+#            json_file.write(model_json)
+#        model.save_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
+#        print("Saved model to disk")
+#        # list all data in history
 
     def groupbyindices_input(self, arrayflat):
         return arrayflat.reshape(1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input)
@@ -145,7 +165,7 @@ class DnnOptimiser:
         h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
                                        100, -3.0, 3.0, 100, -0.2, 0.2)
 
-        for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
+        for iexperiment in self.indexmatrix_ev_mean_apply:
             indexev = iexperiment
             x_, y_ = loadtrain_test(self.dirinput, indexev, self.selopt_input, self.selopt_output,
                                     self.grid_r, self.grid_phi, self.grid_z,
