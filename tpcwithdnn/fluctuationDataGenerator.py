@@ -10,7 +10,6 @@ class fluctuationDataGenerator(keras.utils.Sequence):
     def __init__(self, list_IDs, phi_slice, r_row, z_col, batch_size, shuffle,
                  opt_train, opt_predout, selopt_input, selopt_output, data_dir,
                  use_scaler):
-        print(list_IDs)
         self.list_IDs = list_IDs
         self.phi_slice = phi_slice
         self.r_row = r_row
@@ -32,7 +31,6 @@ class fluctuationDataGenerator(keras.utils.Sequence):
         return int(np.floor(len(self.list_IDs) / self.batch_size))
 
     def __getitem__(self, index):
-        print("EXAMPLE")
         'Generate one batch of data'
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
@@ -44,15 +42,12 @@ class fluctuationDataGenerator(keras.utils.Sequence):
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        print("ADADADADAAD")
         self.indexes = np.arange(len(self.list_IDs))
-        print(self.indexes)
         if self.shuffle is True:
             np.random.shuffle(self.indexes)
 
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'
-        print("EXAMPLE")
         # Initialization
         X = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_input))
         Y = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_output))
@@ -64,5 +59,4 @@ class fluctuationDataGenerator(keras.utils.Sequence):
                                     self.opt_train, self.opt_predout)
             X[i, :, :, :, :] = x_
             Y[i, :, :, :, :] = y_
-        print(X)
         return X, Y

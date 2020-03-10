@@ -115,8 +115,6 @@ class DnnOptimiser:
                      'validation': self.indexmatrix_ev_mean_test}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
         validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
-        print("itemla")
-        print(training_generator)
         model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
                      depth=self.depth, bathnorm=self.batch_normalization,
                      pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
@@ -124,6 +122,7 @@ class DnnOptimiser:
                       metrics=[self.metrics]) # Mean squared error
         model.summary()
         plot_model(model, to_file='plots/model_plot.png', show_shapes=True, show_layer_names=True)
+        print(self.epochs)
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
                                   use_multiprocessing=True,

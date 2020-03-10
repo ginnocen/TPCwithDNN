@@ -22,16 +22,15 @@ def loaddata(inputdata, indexev, selopt_input, selopt_output):
 
     """
 
-
-    vecZPosFile = inputdata + "/data/Pos/" + str(0) + '-vecZPos.npy'
-    scMeanFile = inputdata + "/data/Mean/"+ str(indexev[1]) + '-vecMeanSC.npy'
-    scRandomFile = inputdata + "/data/Random/" + str(indexev[0]) + '-vecRandomSC.npy'
-    distRMeanFile = inputdata + "/data/Mean/" + str(indexev[1]) + '-vecMeanDistR.npy'
-    distRRandomFile = inputdata + "/data/Random/" + str(indexev[0]) + '-vecRandomDistR.npy'
-    distRPhiMeanFile = inputdata + "/data/Mean/" + str(indexev[1]) + '-vecMeanDistRPhi.npy'
-    distRPhiRandomFile = inputdata + "/data/Random/" + str(indexev[0]) + '-vecRandomDistRPhi.npy'
-    distZMeanFile = inputdata + "/data/Mean/" + str(indexev[1]) + '-vecMeanDistZ.npy'
-    distZRandomFile = inputdata + "/data/Random/" + str(indexev[0]) + '-vecRandomDistZ.npy'
+    vecZPosFile = inputdata + "data/Pos/" + str(0) + '-vecZPos.npy'
+    scMeanFile = inputdata + "data/Mean/"+ str(indexev[1]) + '-vecMeanSC.npy'
+    scRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomSC.npy'
+    distRMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistR.npy'
+    distRRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistR.npy'
+    distRPhiMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistRPhi.npy'
+    distRPhiRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistRPhi.npy'
+    distZMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistZ.npy'
+    distZRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistZ.npy'
     vecZPos = np.load(vecZPosFile)
     vecMeanSC = np.load(scMeanFile)
     vecRandomSC = np.load(scRandomFile)
