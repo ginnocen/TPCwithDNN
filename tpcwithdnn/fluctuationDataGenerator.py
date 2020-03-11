@@ -48,7 +48,6 @@ class fluctuationDataGenerator(keras.utils.Sequence):
 
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'
-
         # Initialization
         X = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_input))
         Y = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_output))

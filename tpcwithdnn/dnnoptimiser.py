@@ -1,4 +1,5 @@
 import os
+import sys
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
@@ -41,8 +42,11 @@ class DnnOptimiser:
         self.nameopt_predout = self.data_param["nameopt_predout"]
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
+        self.maxrandomfiles = self.data_param["maxrandomfiles"]
         self.rangeevent_train = self.data_param["rangeevent_train"]
         self.rangeevent_test = self.data_param["rangeevent_test"]
+        self.rangeevent_apply = self.data_param["rangeevent_apply"]
+        self.range_mean_index = self.data_param["range_mean_index"]
         self.use_scaler = self.data_param["use_scaler"]
         # DNN config
         self.filters = self.data_param["filters"]
@@ -58,8 +62,10 @@ class DnnOptimiser:
         self.metrics = self.data_param["metrics"]
         self.adamlr = self.data_param["adamlr"]
 
-        self.dirinput = self.dirinput + "/%d-%d-%d/" % \
-                (self.grid_phi, self.grid_z, self.grid_r)
+
+
+        self.dirinput = self.dirinput + "/SC-%d-%d-%d/" % \
+                (self.grid_z, self.grid_r, self.grid_phi)
         self.params = {'phi_slice': self.grid_phi,
                        'r_row' : self.grid_r,
                        'z_col' : self.grid_z,
@@ -87,14 +93,27 @@ class DnnOptimiser:
         self.logger.info("This is the list of inputs active for training")
         self.logger.info("(SCMean, SCFluctuations)=(%d, %d)"  % (self.opt_train[0],
                                                                  self.opt_train[1]))
+
+        self.indexmatrix_ev_mean = []
+        for ievent in np.arange(self.maxrandomfiles):
+            for imean in np.arange(self.range_mean_index[0], self.range_mean_index[1] + 1):
+                self.indexmatrix_ev_mean.append([ievent, imean])
+
+        self.indexmatrix_ev_mean_train = [self.indexmatrix_ev_mean[index] \
+                for index in range(self.rangeevent_train[0], self.rangeevent_train[1])]
+        self.indexmatrix_ev_mean_test = [self.indexmatrix_ev_mean[index] \
+                for index in range(self.rangeevent_test[0], self.rangeevent_test[1])]
+        self.indexmatrix_ev_mean_apply = [self.indexmatrix_ev_mean[index] \
+                for index in range(self.rangeevent_apply[0], self.rangeevent_apply[1])]
+
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
-        #gStyle.SetOptStat(0)
+
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
-        partition = {'train': np.arange(self.rangeevent_train[1]),
-                     'validation': np.arange(self.rangeevent_test[0], self.rangeevent_test[1])}
+        partition = {'train': self.indexmatrix_ev_mean_train,
+                     'validation': self.indexmatrix_ev_mean_test}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
         validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
         model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
@@ -102,7 +121,7 @@ class DnnOptimiser:
                      pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
                       metrics=[self.metrics]) # Mean squared error
-        #model.summary()
+        model.summary()
         plot_model(model, to_file='plots/model_plot.png', show_shapes=True, show_layer_names=True)
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
@@ -140,12 +159,12 @@ class DnnOptimiser:
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
 
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
-        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 600, -3, 3, 600, -3, 3)
+        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 500, -5, 5, 500, -5, 5)
         h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
         h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
-                                       600, -3.0, 3.0, 200, -1.0, 1.0)
+                                       500, -5.0, 5.0, 100, -0.2, 0.2)
 
-        for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
+        for iexperiment in self.indexmatrix_ev_mean_apply:
             indexev = iexperiment
             x_, y_ = loadtrain_test(self.dirinput, indexev, self.selopt_input, self.selopt_output,
                                     self.grid_r, self.grid_phi, self.grid_z,
@@ -165,11 +184,12 @@ class DnnOptimiser:
             deltas_flata = (distortionPredict_flata - distortionNumeric_flata)
             deltas_flatm = (distortionPredict_flatm - distortionNumeric_flatm)
 
-            h_dist = TH2F("hdistEv%d" % iexperiment + self.suffix, "",
-                          600, -3, 3, 600, -3, 3)
-            h_deltasvsdist = TH2F("hdeltasvsdistEv%d" % iexperiment +
-                                  self.suffix, "", 600, -3.0, 3.0, 200, -1.0, 1.0)
-            h_deltas = TH1F("hdeltasEv%d" % iexperiment + self.suffix, "", 1000, -1., 1.)
+            h_dist = TH2F("hdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + self.suffix, \
+                          "", 500, -5, 5, 500, -5, 5)
+            h_deltasvsdist = TH2F("hdeltasvsdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + \
+                                  self.suffix, "", 500, -5.0, 5.0, 100, -0.2, 0.2)
+            h_deltas = TH1F("hdeltasEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) \
+                            + self.suffix, "", 1000, -1., 1.)
             fill_hist(h_distallevents, np.concatenate((distortionNumeric_flatm, \
                                 distortionPredict_flatm), axis=1))
             fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
@@ -181,7 +201,8 @@ class DnnOptimiser:
             fill_hist(h_deltasvsdistallevents,
                       np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
             prof = h_deltasvsdist.ProfileX()
-            prof.SetName("profiledeltasvsdistEv%d" % iexperiment + self.suffix)
+            prof.SetName("profiledeltasvsdistEv%d_Mean%d" % \
+                (iexperiment[0], iexperiment[1]) + self.suffix)
             h_dist.Write()
             h_deltas.Write()
             h_deltasvsdist.Write()
@@ -240,15 +261,18 @@ class DnnOptimiser:
         self.plot_distorsion(h_distallevents, hdeltasallevents, h_deltasvsdistallevents,
                              profiledeltasvsdistallevents, self.suffix, namevariable)
 
-        for iexperiment in range(self.rangeevent_test[0], self.rangeevent_test[1]):
-            suffix_ = "Ev%d%s" % (iexperiment, self.suffix)
+        counter = 0
+        for iexperiment in self.indexmatrix_ev_mean_apply:
+            suffix_ = "Ev%d_Mean%d%s" % (iexperiment[0], iexperiment[1], self.suffix)
             h_dist = myfile.Get("hdist%s" % suffix_)
             h_deltas = myfile.Get("hdeltas%s" % suffix_)
             h_deltasvsdist = myfile.Get("hdeltasvsdist%s" % suffix_)
             prof = myfile.Get("profiledeltasvsdist%s" % suffix_)
             self.plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof,
                                  suffix_, namevariable)
-
+            counter = counter + 1
+            if counter > 100:
+                sys.exit()
     # pylint: disable=no-self-use
     def gridsearch(self):
         print("GRID SEARCH NOT YET IMPLEMENTED")

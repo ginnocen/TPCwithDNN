@@ -1,23 +1,26 @@
 DNN_fluctuations:
   dirmodel: model
   dirval: validation
-  dirinput:  /data/tpcml/data
-  grid_phi: 180
-  grid_z: 33
-  grid_r: 33
+  dirinput: /data/tpcml/datagm
+  grid_phi: 90
+  grid_z: 17
+  grid_r: 17
   #prepare the datasets
   selopt_input: 0 # this uses all input training data, no z-selection
   selopt_output: 0 # 0 is use to predict distorsions only for positive z-values
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, Rphi, z] #R, Rphi, z output distorsion predictions
-  rangeevent_train: [0,800]
-  rangeevent_test: [801,970]
+  maxrandomfiles: 1000 #this is the total number of random events generated
+  range_mean_index: [0,26] # min and max index of mean SC configurations 
+  rangeevent_train: [0,4000] #events for training (include a mix of SC config) 
+  rangeevent_test: [4001,5000]
+  rangeevent_apply: [5001,8000]
   use_scaler: 0
   #DNN configuration
   filters: 4
   pooling: 0
-  batch_size: 8
+  batch_size: 27
   shuffle: false
   depth: 4
   batch_normalization: 0
