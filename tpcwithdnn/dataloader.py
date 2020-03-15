@@ -1,6 +1,38 @@
 # pylint: disable=fixme, pointless-string-statement
 import numpy as np
 
+def loaddata_original(inputdata, indexev):
+
+    vecRPosFile = inputdata + "data/Pos/" + str(0) + '-vecRPos.npy'
+    vecPhiPosFile = inputdata + "data/Pos/" + str(0) + '-vecPhiPos.npy'
+    vecZPosFile = inputdata + "data/Pos/" + str(0) + '-vecZPos.npy'
+    scMeanFile = inputdata + "data/Mean/"+ str(indexev[1]) + '-vecMeanSC.npy'
+    scRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomSC.npy'
+    distRMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistR.npy'
+    distRRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistR.npy'
+    distRPhiMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistRPhi.npy'
+    distRPhiRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistRPhi.npy'
+    distZMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistZ.npy'
+    distZRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistZ.npy'
+
+    vecRPos = np.load(vecRPosFile)
+    vecPhiPos = np.load(vecPhiPosFile)
+    vecZPos = np.load(vecZPosFile)
+    vecMeanSC = np.load(scMeanFile)
+    vecRandomSC = np.load(scRandomFile)
+    vecMeanDistR = np.load(distRMeanFile)
+    vecRandomDistR = np.load(distRRandomFile)
+    vecMeanDistRPhi = np.load(distRPhiMeanFile)
+    vecRandomDistRPhi = np.load(distRPhiRandomFile)
+    vecMeanDistZ = np.load(distZMeanFile)
+    vecRandomDistZ = np.load(distZRandomFile)
+
+    return [vecRPos, vecPhiPos, vecZPos,
+            vecMeanSC, vecRandomSC,
+            vecMeanDistR, vecRandomDistR,
+            vecMeanDistRPhi, vecRandomDistRPhi,
+            vecMeanDistZ, vecRandomDistZ]
+
 def loaddata(inputdata, indexev, selopt_input, selopt_output):
 
     """ Here we define the functionalties to load the files from the input
@@ -22,25 +54,11 @@ def loaddata(inputdata, indexev, selopt_input, selopt_output):
 
     """
 
-    vecZPosFile = inputdata + "data/Pos/" + str(0) + '-vecZPos.npy'
-    scMeanFile = inputdata + "data/Mean/"+ str(indexev[1]) + '-vecMeanSC.npy'
-    scRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomSC.npy'
-    distRMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistR.npy'
-    distRRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistR.npy'
-    distRPhiMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistRPhi.npy'
-    distRPhiRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistRPhi.npy'
-    distZMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistZ.npy'
-    distZRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistZ.npy'
-    vecZPos = np.load(vecZPosFile)
-    vecMeanSC = np.load(scMeanFile)
-    vecRandomSC = np.load(scRandomFile)
-    vecMeanDistR = np.load(distRMeanFile)
-    vecRandomDistR = np.load(distRRandomFile)
-    vecMeanDistRPhi = np.load(distRPhiMeanFile)
-    vecRandomDistRPhi = np.load(distRPhiRandomFile)
-    vecMeanDistZ = np.load(distZMeanFile)
-    vecRandomDistZ = np.load(distZRandomFile)
-
+    [_, _, vecZPos,
+     vecMeanSC, vecRandomSC,
+     vecMeanDistR, vecRandomDistR,
+     vecMeanDistRPhi, vecRandomDistRPhi,
+     vecMeanDistZ, vecRandomDistZ] = loaddata_original(inputdata, indexev)
 
     """
     Here below we define the preselections on the input data for the training.

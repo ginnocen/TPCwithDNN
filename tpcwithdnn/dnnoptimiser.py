@@ -1,18 +1,19 @@
 import os
 import sys
+from array import array
 from root_numpy import fill_hist
 import numpy as np
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
-from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TH3F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
-from dataloader import loadtrain_test
+from dataloader import loadtrain_test, loaddata_original
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 
@@ -30,6 +31,7 @@ class DnnOptimiser:
         self.data_param = data_param
         self.dirmodel = self.data_param["dirmodel"]
         self.dirval = self.data_param["dirval"]
+        self.diroutflattree = self.data_param["diroutflattree"]
         self.dirinput = self.data_param["dirinput"]
         self.grid_phi = self.data_param["grid_phi"]
         self.grid_z = self.data_param["grid_z"]
@@ -85,6 +87,8 @@ class DnnOptimiser:
                 (self.suffix, self.opt_train[0], self.opt_train[1])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
+        self.suffix_ds = "phi%d_r%d_z%d" % \
+                (self.grid_phi, self.grid_r, self.grid_z)
 
         self.logger.info("DnnOptimizer::Init")
         self.logger.info("I am processing the configuration %s", self.suffix)
@@ -108,6 +112,65 @@ class DnnOptimiser:
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
+
+
+
+    def dumpflattree(self):
+        print("I AM DOING THE VALIDATION STEP")
+        namefileout = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
+        myfile = TFile.Open(namefileout, "recreate")
+
+        t = TTree( 'tvoxels', 'tree with histos')
+        posr = array( 'f', [0])
+        posphi = array( 'f', [0])
+        posz = array( 'f', [0])
+        evtid = array( 'i', [0])
+        meanid = array( 'i', [0])
+        randomid = array( 'i', [0])
+        distmeanr = array( 'f', [0])
+        distmeanrphi = array( 'f', [0])
+        distmeanz = array( 'f', [0])
+        distrndr = array( 'f', [0])
+        distrndrphi = array( 'f', [0])
+        distrndz = array( 'f', [0])
+        t.Branch( 'posr', posr, 'posr/F')
+        t.Branch( 'posphi', posphi, 'posphi/F')
+        t.Branch( 'posz', posz, 'posz/F')
+        t.Branch( 'distmeanr', distmeanr, 'distmeanr/F')
+        t.Branch( 'distmeanrphi', distmeanrphi, 'distmeanrphi/F')
+        t.Branch( 'distmeanz', distmeanz, 'distmeanz/F')
+        t.Branch( 'distrndr', distrndr, 'distrndr/F')
+        t.Branch( 'distrndrphi', distrndrphi, 'distrndrphi/F')
+        t.Branch( 'distrndz', distrndz, 'distrndz/F')
+        t.Branch( 'evtid', evtid, 'evtid/I')
+        t.Branch( 'meanid', meanid, 'meanid/I')
+        t.Branch( 'randomid', randomid, 'randomid/I')
+
+        for iexperiment in self.indexmatrix_ev_mean_test:
+            indexev = iexperiment
+            [vecRPos, vecPhiPos, vecZPos,
+             vecMeanSC, vecRandomSC,
+             vecMeanDistR, vecRandomDistR,
+             vecMeanDistRPhi, vecRandomDistRPhi,
+             vecMeanDistZ, vecRandomDistZ] = loaddata_original(self.dirinput, indexev)
+
+            for indexarr in range(len(vecZPos)):
+                posr[0]=vecRPos[indexarr]
+                posphi[0]=vecPhiPos[indexarr]
+                posz[0]=vecZPos[indexarr]
+                distmeanr[0]=vecMeanDistR[indexarr]
+                distmeanrphi[0]=vecMeanDistRPhi[indexarr]
+                distmeanz[0]=vecMeanDistZ[indexarr]
+                distrndr[0]=vecRandomDistR[indexarr]
+                distrndrphi[0]=vecRandomDistRPhi[indexarr]
+                distrndz[0]=vecRandomDistZ[indexarr]
+                evtid[0]=indexev[0]+ 10000*indexev[1]
+                meanid[0]=indexev[1]
+                randomid[0]=indexev[0]
+                t.Fill()
+        myfile.Write()
+        myfile.Close()
+        print("Tree written in %s" % namefileout)
 
 
     def train(self):
@@ -273,6 +336,9 @@ class DnnOptimiser:
             counter = counter + 1
             if counter > 100:
                 sys.exit()
+
+
+
     # pylint: disable=no-self-use
     def gridsearch(self):
         print("GRID SEARCH NOT YET IMPLEMENTED")
