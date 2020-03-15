@@ -23,6 +23,7 @@ def do_entire_analysis():
     #dirval = db_parameters[case]["dirval"]
     #dirinput = db_parameters[case]["dirinput"]
 
+    dodumpflattree = default["dumpflattree"]
     dotrain = default["dotrain"]
     doapply = default["doapply"]
     doplot = default["doplot"]
@@ -43,6 +44,8 @@ def do_entire_analysis():
     #if dotesting is True:
     #    checkmakedir(dirval)
 
+    if dodumpflattree is True:
+        myopt.dumpflattree()
     if dotrain is True:
         myopt.train()
     if doapply is True:

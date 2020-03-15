@@ -2,6 +2,7 @@ DNN_fluctuations:
   dirmodel: model
   dirval: validation
   dirinput: /data/tpcml/datagm
+  diroutflattree: /data/tpcml/datagm/flattree
   grid_phi: 90
   grid_z: 17
   grid_r: 17
