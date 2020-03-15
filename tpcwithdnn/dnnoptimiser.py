@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
-from ROOT import TH1F, TH2F, TH3F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
@@ -114,43 +114,43 @@ class DnnOptimiser:
         gROOT.SetBatch()
 
 
-
+    # pylint: disable=too-many-locals
     def dumpflattree(self):
         self.logger.warning("DO YOU REALLY WANT TO DO IT? IT TAKES TIME")
         namefileout = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
         myfile = TFile.Open(namefileout, "recreate")
 
-        t = TTree( 'tvoxels', 'tree with histos')
-        indexr = array( 'i', [0])
-        indexphi = array( 'i', [0])
-        indexz = array( 'i', [0])
-        posr = array( 'f', [0])
-        posphi = array( 'f', [0])
-        posz = array( 'f', [0])
-        evtid = array( 'i', [0])
-        meanid = array( 'i', [0])
-        randomid = array( 'i', [0])
-        distmeanr = array( 'f', [0])
-        distmeanrphi = array( 'f', [0])
-        distmeanz = array( 'f', [0])
-        distrndr = array( 'f', [0])
-        distrndrphi = array( 'f', [0])
-        distrndz = array( 'f', [0])
-        t.Branch( 'indexr', indexr, 'indexr/I')
-        t.Branch( 'indexphi', indexphi, 'indexphi/I')
-        t.Branch( 'indexz', indexz, 'indexz/I')
-        t.Branch( 'posr', posr, 'posr/F')
-        t.Branch( 'posphi', posphi, 'posphi/F')
-        t.Branch( 'posz', posz, 'posz/F')
-        t.Branch( 'distmeanr', distmeanr, 'distmeanr/F')
-        t.Branch( 'distmeanrphi', distmeanrphi, 'distmeanrphi/F')
-        t.Branch( 'distmeanz', distmeanz, 'distmeanz/F')
-        t.Branch( 'distrndr', distrndr, 'distrndr/F')
-        t.Branch( 'distrndrphi', distrndrphi, 'distrndrphi/F')
-        t.Branch( 'distrndz', distrndz, 'distrndz/F')
-        t.Branch( 'evtid', evtid, 'evtid/I')
-        t.Branch( 'meanid', meanid, 'meanid/I')
-        t.Branch( 'randomid', randomid, 'randomid/I')
+        t = TTree('tvoxels', 'tree with histos')
+        indexr = array('i', [0])
+        indexphi = array('i', [0])
+        indexz = array('i', [0])
+        posr = array('f', [0])
+        posphi = array('f', [0])
+        posz = array('f', [0])
+        evtid = array('i', [0])
+        meanid = array('i', [0])
+        randomid = array('i', [0])
+        distmeanr = array('f', [0])
+        distmeanrphi = array('f', [0])
+        distmeanz = array('f', [0])
+        distrndr = array('f', [0])
+        distrndrphi = array('f', [0])
+        distrndz = array('f', [0])
+        t.Branch('indexr', indexr, 'indexr/I')
+        t.Branch('indexphi', indexphi, 'indexphi/I')
+        t.Branch('indexz', indexz, 'indexz/I')
+        t.Branch('posr', posr, 'posr/F')
+        t.Branch('posphi', posphi, 'posphi/F')
+        t.Branch('posz', posz, 'posz/F')
+        t.Branch('distmeanr', distmeanr, 'distmeanr/F')
+        t.Branch('distmeanrphi', distmeanrphi, 'distmeanrphi/F')
+        t.Branch('distmeanz', distmeanz, 'distmeanz/F')
+        t.Branch('distrndr', distrndr, 'distrndr/F')
+        t.Branch('distrndrphi', distrndrphi, 'distrndrphi/F')
+        t.Branch('distrndz', distrndz, 'distrndz/F')
+        t.Branch('evtid', evtid, 'evtid/I')
+        t.Branch('meanid', meanid, 'meanid/I')
+        t.Branch('randomid', randomid, 'randomid/I')
 
         for iexperiment in self.indexmatrix_ev_mean:
             print("processing event", iexperiment)
@@ -158,7 +158,7 @@ class DnnOptimiser:
 
 
             [vecRPos, vecPhiPos, vecZPos,
-             vecMeanSC, vecRandomSC,
+             _, _,
              vecMeanDistR, vecRandomDistR,
              vecMeanDistRPhi, vecRandomDistRPhi,
              vecMeanDistZ, vecRandomDistZ] = loaddata_original(self.dirinput, indexev)
@@ -169,7 +169,8 @@ class DnnOptimiser:
             vecMeanDistR_ = vecMeanDistR.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
             vecRandomDistR_ = vecRandomDistR.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
             vecMeanDistRPhi_ = vecMeanDistRPhi.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecRandomDistRPhi_ = vecRandomDistRPhi.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecRandomDistRPhi_ = vecRandomDistRPhi.reshape(self.grid_phi, self.grid_r,
+                                                           self.grid_z*2)
             vecMeanDistZ_ = vecMeanDistZ.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
             vecRandomDistZ_ = vecRandomDistZ.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
 
