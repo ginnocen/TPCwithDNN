@@ -33,6 +33,7 @@ def loaddata_original(inputdata, indexev):
             vecMeanDistRPhi, vecRandomDistRPhi,
             vecMeanDistZ, vecRandomDistZ]
 
+
 def loaddata(inputdata, indexev, selopt_input, selopt_output):
 
     """ Here we define the functionalties to load the files from the input

@@ -116,11 +116,14 @@ class DnnOptimiser:
 
 
     def dumpflattree(self):
-        print("I AM DOING THE VALIDATION STEP")
+        self.logger.warning("DO YOU REALLY WANT TO DO IT? IT TAKES TIME")
         namefileout = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
         myfile = TFile.Open(namefileout, "recreate")
 
         t = TTree( 'tvoxels', 'tree with histos')
+        indexr = array( 'i', [0])
+        indexphi = array( 'i', [0])
+        indexz = array( 'i', [0])
         posr = array( 'f', [0])
         posphi = array( 'f', [0])
         posz = array( 'f', [0])
@@ -133,6 +136,9 @@ class DnnOptimiser:
         distrndr = array( 'f', [0])
         distrndrphi = array( 'f', [0])
         distrndz = array( 'f', [0])
+        t.Branch( 'indexr', indexr, 'indexr/I')
+        t.Branch( 'indexphi', indexphi, 'indexphi/I')
+        t.Branch( 'indexz', indexz, 'indexz/I')
         t.Branch( 'posr', posr, 'posr/F')
         t.Branch( 'posphi', posphi, 'posphi/F')
         t.Branch( 'posz', posz, 'posz/F')
@@ -146,28 +152,46 @@ class DnnOptimiser:
         t.Branch( 'meanid', meanid, 'meanid/I')
         t.Branch( 'randomid', randomid, 'randomid/I')
 
-        for iexperiment in self.indexmatrix_ev_mean_test:
+        for iexperiment in self.indexmatrix_ev_mean:
+            print("processing event", iexperiment)
             indexev = iexperiment
+
+
             [vecRPos, vecPhiPos, vecZPos,
              vecMeanSC, vecRandomSC,
              vecMeanDistR, vecRandomDistR,
              vecMeanDistRPhi, vecRandomDistRPhi,
              vecMeanDistZ, vecRandomDistZ] = loaddata_original(self.dirinput, indexev)
 
-            for indexarr in range(len(vecZPos)):
-                posr[0]=vecRPos[indexarr]
-                posphi[0]=vecPhiPos[indexarr]
-                posz[0]=vecZPos[indexarr]
-                distmeanr[0]=vecMeanDistR[indexarr]
-                distmeanrphi[0]=vecMeanDistRPhi[indexarr]
-                distmeanz[0]=vecMeanDistZ[indexarr]
-                distrndr[0]=vecRandomDistR[indexarr]
-                distrndrphi[0]=vecRandomDistRPhi[indexarr]
-                distrndz[0]=vecRandomDistZ[indexarr]
-                evtid[0]=indexev[0]+ 10000*indexev[1]
-                meanid[0]=indexev[1]
-                randomid[0]=indexev[0]
-                t.Fill()
+            vecRPos_ = vecRPos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecPhiPos_ = vecPhiPos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecZPos_ = vecZPos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecMeanDistR_ = vecMeanDistR.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecRandomDistR_ = vecRandomDistR.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecMeanDistRPhi_ = vecMeanDistRPhi.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecRandomDistRPhi_ = vecRandomDistRPhi.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecMeanDistZ_ = vecMeanDistZ.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vecRandomDistZ_ = vecRandomDistZ.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+
+            for indexphi_ in range(self.grid_phi):
+                for indexr_ in range(self.grid_r):
+                    for indexz_ in range(self.grid_z*2):
+                        indexphi[0] = indexphi_
+                        indexr[0] = indexr_
+                        indexz[0] = indexz_
+                        posr[0] = vecRPos_[indexphi_][indexr_][indexz_]
+                        posphi[0] = vecPhiPos_[indexphi_][indexr_][indexz_]
+                        posz[0] = vecZPos_[indexphi_][indexr_][indexz_]
+                        distmeanr[0] = vecMeanDistR_[indexphi_][indexr_][indexz_]
+                        distmeanrphi[0] = vecMeanDistRPhi_[indexphi_][indexr_][indexz_]
+                        distmeanz[0] = vecMeanDistZ_[indexphi_][indexr_][indexz_]
+                        distrndr[0] = vecRandomDistR_[indexphi_][indexr_][indexz_]
+                        distrndrphi[0] = vecRandomDistRPhi_[indexphi_][indexr_][indexz_]
+                        distrndz[0] = vecRandomDistZ_[indexphi_][indexr_][indexz_]
+                        evtid[0] = indexev[0]+ 10000*indexev[1]
+                        meanid[0] = indexev[1]
+                        randomid[0] = indexev[0]
+                        t.Fill()
         myfile.Write()
         myfile.Close()
         print("Tree written in %s" % namefileout)
