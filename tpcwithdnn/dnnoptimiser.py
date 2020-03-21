@@ -220,6 +220,10 @@ class DnnOptimiser:
         plt.yscale('log')
         plt.plot(np.arange(0, self.epochs), his.history["loss"], label="train_loss")
         plt.plot(np.arange(0, self.epochs), his.history["val_loss"], label="val_loss")
+        plt.plot(np.arange(0, self.epochs), his.history[self.metrics],
+                 label="train_" + self.metrics)
+        plt.plot(np.arange(0, self.epochs), his.history["val_" + self.metrics],
+                 label="val_" + self.metrics)
         plt.title("Training Loss and Accuracy on Dataset")
         plt.xlabel("Epoch #")
         plt.ylabel("Loss/Accuracy")
