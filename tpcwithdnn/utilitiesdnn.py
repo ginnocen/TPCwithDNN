@@ -65,68 +65,12 @@ def SimpleNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu",
     print("the input data size is", input_shape)
     myinput = Input(shape=input_shape)
     print(input_shape)
-    conv1 = Conv3D(4, (4,4,4), activation="relu", padding="same",
+    conv1 = Conv3D(4, (4, 4, 4), activation="relu", padding="same",
                    kernel_initializer="normal")(myinput)
-    conv2 = Conv3D(24, (4,4,4), activation="relu", padding="same",
+    conv2 = Conv3D(24, (4, 4, 4), activation="relu", padding="same",
                    kernel_initializer="normal")(conv1)
-    conv3 = Conv3D(12, (2,2,2), activation="relu", padding="same",
+    conv3 = Conv3D(12, (2, 2, 2), activation="relu", padding="same",
                    kernel_initializer="normal")(conv2)
     conv4 = Conv3D(1, 1, activation="linear", padding="same",
                    kernel_initializer="normal")(conv3)
     return Model(inputs=myinput, outputs=conv4)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
