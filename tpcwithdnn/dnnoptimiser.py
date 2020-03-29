@@ -300,12 +300,42 @@ class DnnOptimiser:
             h_deltasvsdist.Write()
             prof.Write()
 
+            h1tmp = h_dist.ProjectionX("h1tmp");
+            hStdDev = h1tmp.Clone("hStdDev_Ev%d_Mean%d" % (iexperiment[0], iexperiment[1]) + self.suffix);
+            hStdDev.Reset();
+            hStdDev.SetXTitle("Numerical distortion fluctuation (cm)");
+            hStdDev.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)");
+            Nf = int(hStdDev.GetNbinsX());
+            for ibin in range(0,Nf):
+                h1diff = h_dist.ProjectionY("h1diff",ibin+1,ibin+1,"");
+                stddev = h1diff.GetStdDev();
+                stddev_err = h1diff.GetStdDevError();
+                hStdDev.SetBinContent(ibin+1,stddev);
+                hStdDev.SetBinError(ibin+1,stddev_err);
+            hStdDev.Write();
+
+
         h_distallevents.Write()
         h_deltasallevents.Write()
         h_deltasvsdistallevents.Write()
         profallevents = h_deltasvsdistallevents.ProfileX()
         profallevents.SetName("profiledeltasvsdistallevents" + self.suffix)
         profallevents.Write()
+
+        h1tmp = h_deltasvsdistallevents.ProjectionX("h1tmp");
+        hStdDev_allevents = h1tmp.Clone("hStdDev_allevents" + self.suffix);
+        hStdDev_allevents.Reset();
+        hStdDev_allevents.SetXTitle("Numerical distortion fluctuation (cm)");
+        hStdDev_allevents.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)");
+        Nf = int(hStdDev_allevents.GetNbinsX());
+        for ibin in range(0,Nf):
+            h1diff = h_deltasvsdistallevents.ProjectionY("h1diff",ibin+1,ibin+1,"");
+            stddev = h1diff.GetStdDev();
+            stddev_err = h1diff.GetStdDevError();
+            hStdDev_allevents.SetBinContent(ibin+1,stddev);
+            hStdDev_allevents.SetBinError(ibin+1,stddev_err);
+        hStdDev_allevents.Write();
+
         myfile.Close()
         print("DONE APPLY")
     @staticmethod
@@ -314,23 +344,23 @@ class DnnOptimiser:
                       1400, 1000)
         cev.Divide(2, 2)
         cev.cd(1)
-        h_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
-        h_dist.GetYaxis().SetTitle("Predicted distorsion (cm)")
+        h_dist.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % namevar)
+        h_dist.GetYaxis().SetTitle("Predicted distortion fluctuation (cm)")
         h_dist.Draw("colz")
         cev.cd(2)
         gPad.SetLogy()
-        h_deltasvsdist.GetXaxis().SetTitle("Numeric %s distorsion (cm)" % namevar)
+        h_deltasvsdist.GetXaxis().SetTitle("Numeric %s distorsion fluctuation (cm)" % namevar)
         h_deltasvsdist.GetYaxis().SetTitle("Entries")
         h_deltasvsdist.ProjectionX().Draw()
         cev.cd(3)
         gPad.SetLogy()
-        h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) %s distorsion (cm)"
+        h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)"
                                      % namevar)
         h_deltas.GetYaxis().SetTitle("Entries")
         h_deltas.Draw()
         cev.cd(4)
-        prof.GetYaxis().SetTitle("(Predicted - Numeric) %s distorsion (cm)" % namevar)
-        prof.GetXaxis().SetTitle("Numeric %s distorsion (cm)" % namevar)
+        prof.GetYaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)" % namevar)
+        prof.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % namevar)
         prof.Draw()
         #cev.cd(5)
         #h_deltasvsdist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
