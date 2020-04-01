@@ -3,6 +3,8 @@ import sys
 from array import array
 from root_numpy import fill_hist
 import numpy as np
+import matplotlib
+matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
