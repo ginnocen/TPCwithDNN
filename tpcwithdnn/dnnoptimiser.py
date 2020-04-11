@@ -6,6 +6,7 @@ import numpy as np
 import matplotlib
 matplotlib.use("TkAgg")
 import matplotlib.pyplot as plt
+import matplotlib
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
@@ -17,6 +18,7 @@ from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 from dataloader import loadtrain_test, loaddata_original
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+matplotlib.use("TkAgg")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
@@ -256,7 +258,7 @@ class DnnOptimiser:
         h_distallevents = TH2F("hdistallevents" + self.suffix, "", 500, -5, 5, 500, -5, 5)
         h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
         h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
-                                       500, -5.0, 5.0, 100, -0.2, 0.2)
+                                       500, -5.0, 5.0, 100, -0.5, 0.5)
 
         for iexperiment in self.indexmatrix_ev_mean_apply:
             indexev = iexperiment
@@ -281,7 +283,7 @@ class DnnOptimiser:
             h_dist = TH2F("hdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + self.suffix, \
                           "", 500, -5, 5, 500, -5, 5)
             h_deltasvsdist = TH2F("hdeltasvsdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + \
-                                  self.suffix, "", 500, -5.0, 5.0, 100, -0.2, 0.2)
+                                  self.suffix, "", 500, -5.0, 5.0, 100, -0.5, 0.5)
             h_deltas = TH1F("hdeltasEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) \
                             + self.suffix, "", 1000, -1., 1.)
             fill_hist(h_distallevents, np.concatenate((distortionNumeric_flatm, \
@@ -302,19 +304,20 @@ class DnnOptimiser:
             h_deltasvsdist.Write()
             prof.Write()
 
-            h1tmp = h_dist.ProjectionX("h1tmp");
-            hStdDev = h1tmp.Clone("hStdDev_Ev%d_Mean%d" % (iexperiment[0], iexperiment[1]) + self.suffix);
-            hStdDev.Reset();
-            hStdDev.SetXTitle("Numerical distortion fluctuation (cm)");
-            hStdDev.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)");
-            Nf = int(hStdDev.GetNbinsX());
-            for ibin in range(0,Nf):
-                h1diff = h_dist.ProjectionY("h1diff",ibin+1,ibin+1,"");
-                stddev = h1diff.GetStdDev();
-                stddev_err = h1diff.GetStdDevError();
-                hStdDev.SetBinContent(ibin+1,stddev);
-                hStdDev.SetBinError(ibin+1,stddev_err);
-            hStdDev.Write();
+            h1tmp = h_deltasvsdist.ProjectionX("h1tmp")
+            hStdDev = h1tmp.Clone("hStdDev_Ev%d_Mean%d" % \
+                (iexperiment[0], iexperiment[1]) + self.suffix)
+            hStdDev.Reset()
+            hStdDev.SetXTitle("Numerical distortion fluctuation (cm)")
+            hStdDev.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
+            nbin = int(hStdDev.GetNbinsX())
+            for ibin in range(0, nbin):
+                h1diff = h_deltasvsdist.ProjectionY("h1diff", ibin+1, ibin+1, "")
+                stddev = h1diff.GetStdDev()
+                stddev_err = h1diff.GetStdDevError()
+                hStdDev.SetBinContent(ibin+1, stddev)
+                hStdDev.SetBinError(ibin+1, stddev_err)
+            hStdDev.Write()
 
 
         h_distallevents.Write()
@@ -324,19 +327,19 @@ class DnnOptimiser:
         profallevents.SetName("profiledeltasvsdistallevents" + self.suffix)
         profallevents.Write()
 
-        h1tmp = h_deltasvsdistallevents.ProjectionX("h1tmp");
-        hStdDev_allevents = h1tmp.Clone("hStdDev_allevents" + self.suffix);
-        hStdDev_allevents.Reset();
-        hStdDev_allevents.SetXTitle("Numerical distortion fluctuation (cm)");
-        hStdDev_allevents.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)");
-        Nf = int(hStdDev_allevents.GetNbinsX());
-        for ibin in range(0,Nf):
-            h1diff = h_deltasvsdistallevents.ProjectionY("h1diff",ibin+1,ibin+1,"");
-            stddev = h1diff.GetStdDev();
-            stddev_err = h1diff.GetStdDevError();
-            hStdDev_allevents.SetBinContent(ibin+1,stddev);
-            hStdDev_allevents.SetBinError(ibin+1,stddev_err);
-        hStdDev_allevents.Write();
+        h1tmp = h_deltasvsdistallevents.ProjectionX("h1tmp")
+        hStdDev_allevents = h1tmp.Clone("hStdDev_allevents" + self.suffix)
+        hStdDev_allevents.Reset()
+        hStdDev_allevents.SetXTitle("Numerical distortion fluctuation (cm)")
+        hStdDev_allevents.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
+        nbin = int(hStdDev_allevents.GetNbinsX())
+        for ibin in range(0, nbin):
+            h1diff = h_deltasvsdistallevents.ProjectionY("h1diff", ibin+1, ibin+1, "")
+            stddev = h1diff.GetStdDev()
+            stddev_err = h1diff.GetStdDevError()
+            hStdDev_allevents.SetBinContent(ibin+1, stddev)
+            hStdDev_allevents.SetBinError(ibin+1, stddev_err)
+        hStdDev_allevents.Write()
 
         myfile.Close()
         print("DONE APPLY")
