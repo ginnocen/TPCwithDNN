@@ -2,6 +2,7 @@ import sys
 from os.path import exists, join, split
 from os import makedirs
 from copy import deepcopy
+from yaml.representer import RepresenterError
 from keras.models import model_from_json
 from machine_learning_hep.io import parse_yaml, dump_yaml_from_dict
 from machine_learning_hep.logger import get_logger
@@ -48,18 +49,33 @@ def compile_model(model, model_config):
     model.compile(**model_config["compile"])
     model.summary()
 
-def construct_model(model_constructor, model_config):
+def construct_model(constructor, *args, **kwargs):
     """construct model from given configuration
 
     Args:
-        model_constructor: callable
+        constructor: callable
             returning a model digesting given configuration
-        model_config: dict
-            configuration to construct model from with fields "model_args" and "model_kwargs"
+        *args: arguments
+            arguments to be forwarded to constructor
+        **kwargs: keyword arguments
+            keyword arguments to be forwarded to constructor
 
     Returns: model
     """
-    model = model_constructor(*model_config["model_args"], **model_config["model_kwargs"])
+
+    model_config = None
+    if len(args) == 1 and not kwargs and isinstance(args[0], dict):
+        # Assume it's a model_config dictionary
+        get_logger().info("Construct model from config dictionary")
+        model_config = args[0]
+
+    model_args = args
+    model_kwargs = kwargs
+    if model_config:
+        model_args = model_config.get("model_args", model_args)
+        model_kwargs = model_config.get("model_kwargs", model_kwargs)
+
+    model = constructor(*model_args, **model_kwargs)
     compile_model(model, model_config)
     return model
 
@@ -145,7 +161,7 @@ def make_out_dir(out_dir, suffix=0):
         makedirs(out_dir)
         return out_dir
     dir_name, base_name = split(out_dir)
-    base_name = f"base_name_{suffix}"
+    base_name = f"{base_name}_{suffix}"
     suffix += 1
     return make_out_dir(join(dir_name, base_name), suffix)
 
@@ -171,8 +187,11 @@ def save_model(model, model_config, out_dir):
         json_file.write(model_json)
     save_path = join(out_dir, NAME_MODEL_WEIGHTS)
     model.save_weights(save_path)
-    save_path = join(out_dir, NAME_MODEL_CONFIG)
-    dump_yaml_from_dict(model_config, save_path)
+    try:
+        save_path = join(out_dir, NAME_MODEL_CONFIG)
+        dump_yaml_from_dict(model_config, save_path)
+    except RepresenterError:
+        print("Cannot save model configuration as YAML")
 
 
 def load_model(in_dir):
@@ -192,16 +211,20 @@ def load_model(in_dir):
     json_path = join(in_dir, NAME_MODEL_ARCH)
     weights_path = join(in_dir, NAME_MODEL_WEIGHTS)
     config_path = join(in_dir, NAME_MODEL_CONFIG)
-    if not exists(json_path) or not exists(weights_path) or not exists(config_path):
+    if not exists(json_path) or not exists(weights_path):
         get_logger().fatal("Make sure there is there are all files to load a model from: %s",
-                           str((json_path, weights_path, config_path)))
+                           str((json_path, weights_path)))
 
     model = None
     with open(json_path, "r") as json_file:
         model_arch = json_file.read()
         model = model_from_json(model_arch)
     model.load_weights(weights_path)
-    return model, parse_yaml(config_path)
+    model_config = None
+    if exists(config_path):
+        model_config = parse_yaml(config_path)
+
+    return model, model_config
 
 
 
@@ -214,15 +237,19 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
         super().__init__(model_config, space)
 
         # Set scores here explicitly
-        self.scoring = ["mse"]
+        # self.scoring not used, that's at the moment a dummy
+        self.scoring = {"mse": None}
         self.scoring_opt = "mse"
+
+        # Number of trials
+        self.n_trials = 4
 
         # In case a data generator is used
         self.train_gen = None
         self.val_gen = None
 
         # Model construction function
-        self.construct_model = None
+        self.construct_model_func = None
         self.model_constructor = None
 
 
@@ -234,18 +261,24 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
         """
 
         model_config = deepcopy(self.model_config)
-        modify_dictionary(model_config, space_drawn)
+        modify_dictionary(model_config, space_drawn, True)
         create_obj_from_args(model_config)
 
 
-        print(model_config)
+        model = self.construct_model_func(self.model_constructor, model_config)
+        history = fit_model(model, gen=self.train_gen, val_data=self.val_gen, **model_config["fit"])
 
-        model, params = self.construct_model(self.model_constructor, model_config)
-        sys.exit(0)
-        history = fit_model(model, gen=self.train_gen, val_data=self.val_gen, **params["fit"])
+        min_val = history.history[f"val_{self.scoring_opt}"][0]
+        corr_train = history.history[self.scoring_opt][0]
+        for train_sc, val_sc in zip(history.history[self.scoring_opt], history.history[f"val_{self.scoring_opt}"]):
+            if val_sc < min_val:
+                min_val = val_sc
+                corr_train = train_sc
 
-        res = {f"train_{self.scoring_opt}": [history.history[self.scoring_opt]],
-               f"test_{self.scoring_opt}": [history.history[f"val_{self.scoring_opt}"]]}
+        res = {f"train_{self.scoring_opt}": [corr_train],
+               f"test_{self.scoring_opt}": [min_val]}
+
+
         return res, model, model_config
 
 
@@ -254,4 +287,4 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
 
 
     def save_model_(self, model, out_dir):
-        save_model(model, self.model_config, out_dir)
+        save_model(model, self.model_config, join(out_dir, "model"))

@@ -23,7 +23,7 @@ from model.model import construct_model, KerasBayesianOpt, fit_model
 
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-#matplotlib.use("TkAgg")
+matplotlib.use("agg")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
@@ -216,7 +216,7 @@ class DnnOptimiser:
                 "compile": {"loss": self.lossfun,
                             "optimizer": Adam,
                             "optimizer_kwargs": {"lr": self.adamlr},
-                            "metrics": self.metrics},
+                            "metrics": [self.metrics]},
                 "fit": {"workers": 1,
                         "use_multiprocessing": True,
                         "epochs": self.epochs}}
@@ -233,10 +233,16 @@ class DnnOptimiser:
                                                        **self.params)
         bayes_opt.val_gen = fluctuationDataGenerator(self.indexmatrix_ev_mean_test,
                                                      **self.params)
-        bayes_opt.construct_model = construct_model
+        bayes_opt.construct_model_func = construct_model
         bayes_opt.model_constructor = UNet
 
         bayes_opt.optimise()
+
+        out_dir = "./optimisation_output"
+        if not os.path.exists(out_dir):
+            os.makedirs(out_dir)
+        bayes_opt.save(out_dir)
+        bayes_opt.plot(out_dir)
 
 
     def train(self):

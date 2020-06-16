@@ -1,6 +1,7 @@
 case: DNN_fluctuations
 dumpflattree: false
-dotrain: true
+dotrain: false
 doapply: false
 doplot: false
-dogrid: true
+dogrid: false
+dobayes: true

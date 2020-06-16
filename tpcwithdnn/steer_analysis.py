@@ -28,6 +28,7 @@ def do_entire_analysis():
     doapply = default["doapply"]
     doplot = default["doplot"]
     dogrid = default["dogrid"]
+    dobayes = default["dobayes"]
 
     #counter = 0
     #if dotraining is True:
@@ -53,6 +54,8 @@ def do_entire_analysis():
     if doplot is True:
         myopt.plot()
     if dogrid is True:
+        myopt.gridsearch()
+    if dobayes is True:
         myopt.optimise()
 
 do_entire_analysis()
