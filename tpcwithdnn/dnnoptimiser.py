@@ -8,6 +8,9 @@ import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
+
+from hyperopt import hp
+
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
@@ -15,8 +18,12 @@ from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 from dataloader import loadtrain_test, loaddata_original
+
+from model.model import construct_model, KerasBayesianOpt, fit_model
+
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-matplotlib.use("TkAgg")
+#matplotlib.use("TkAgg")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
@@ -199,6 +206,38 @@ class DnnOptimiser:
         myfile.Close()
         print("Tree written in %s" % namefileout)
 
+    def make_model_config(self):
+        return {"model_args": ((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),),
+                "model_kwargs": {"depth": self.depth,
+                                 "bathnorm": self.batch_normalization,
+                                 "pool_type": self.pooling,
+                                 "start_ch": self.filters,
+                                 "dropout": self.dropout},
+                "compile": {"loss": self.lossfun,
+                            "optimizer": Adam,
+                            "optimizer_kwargs": {"lr": self.adamlr},
+                            "metrics": self.metrics},
+                "fit": {"workers": 1,
+                        "use_multiprocessing": True,
+                        "epochs": self.epochs}}
+    @staticmethod
+    def make_opt_space():
+        return {"compile":
+                {"optimizer_kwargs": 
+                    {"lr": hp.uniform("m_learning_rate", 0.0005, 0.002)}}}
+
+
+    def optimise(self):
+        bayes_opt = KerasBayesianOpt(self.make_model_config(), self.make_opt_space())
+        bayes_opt.train_gen = fluctuationDataGenerator(self.indexmatrix_ev_mean_train,
+                                                       **self.params)
+        bayes_opt.val_gen = fluctuationDataGenerator(self.indexmatrix_ev_mean_test,
+                                                     **self.params)
+        bayes_opt.construct_model = construct_model
+        bayes_opt.model_constructor = UNet
+
+        bayes_opt.optimise()
+
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
@@ -206,17 +245,15 @@ class DnnOptimiser:
                      'validation': self.indexmatrix_ev_mean_test}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
         validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
-        model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
-                     depth=self.depth, bathnorm=self.batch_normalization,
-                     pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
-        model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
-                      metrics=[self.metrics]) # Mean squared error
-        model.summary()
+        
+        model_config = self.make_model_config()
+        model = construct_model(UNet, model_config)
+        sys.exit(1)
+
         plot_model(model, to_file='plots/model_plot.png', show_shapes=True, show_layer_names=True)
-        his = model.fit_generator(generator=training_generator,
-                                  validation_data=validation_generator,
-                                  use_multiprocessing=True,
-                                  epochs=self.epochs, workers=1)
+
+        his = fit_model(model, gen=training_generator, val_data=validation_generator,
+                        **model_config["fit"])
         plt.style.use("ggplot")
         plt.figure()
         plt.yscale('log')

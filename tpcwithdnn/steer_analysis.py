@@ -53,6 +53,6 @@ def do_entire_analysis():
     if doplot is True:
         myopt.plot()
     if dogrid is True:
-        myopt.gridsearch()
+        myopt.optimise()
 
 do_entire_analysis()
