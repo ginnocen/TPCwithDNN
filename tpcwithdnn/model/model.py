@@ -1,9 +1,10 @@
 import sys
 from os.path import exists, join, split
-from os import makedirs
+from os import makedirs, getpid
 from copy import deepcopy
 from yaml.representer import RepresenterError
 from keras.models import model_from_json
+from keras.callbacks import ModelCheckpoint
 from machine_learning_hep.io import parse_yaml, dump_yaml_from_dict
 from machine_learning_hep.logger import get_logger
 from machine_learning_hep.do_variations import modify_dictionary
@@ -31,9 +32,6 @@ def create_obj_from_args(some_dict):
         elif not args and not kwargs:
             continue
         else:
-            print(f"########## {k}")
-            print(args)
-            print(kwargs)
             some_dict[k] = some_dict[k](*args, **kwargs)
 
 
@@ -141,16 +139,18 @@ def fit_model(model, x=None, y=None, weights=None, gen=None, val_data=None, test
     return getattr(model, fit_method)(**fit_kwargs)
 
 
-def make_out_dir(out_dir, suffix=0):
+def make_out_dir(out_dir, overwrite=False, suffix=0):
     """make an output directory
 
     Try to make specified output directory. If it exists, add suffix "_i"
-    and increment "i" until a name is foudn which doesn't exist. The first
+    and increment "i" until a name is found which doesn't exist. The first
     directory possible is created.
 
     Args:
         out_dir: str
             desired output directory path
+        overwrite: bool
+            whether or not just overwrite/write into an existing directory
         suffix: int (optional)
             suffix to start incrementing from in case desired out_dir exists
     Returns:
@@ -160,13 +160,15 @@ def make_out_dir(out_dir, suffix=0):
     if not exists(out_dir):
         makedirs(out_dir)
         return out_dir
+    if overwrite:
+        return out_dir
     dir_name, base_name = split(out_dir)
     base_name = f"{base_name}_{suffix}"
     suffix += 1
     return make_out_dir(join(dir_name, base_name), suffix)
 
 
-def save_model(model, model_config, out_dir):
+def save_model(model, model_config, out_dir, overwrite=False):
     """save a model
 
     Save a model and the configuration used to create it. This creates a JSON file
@@ -179,7 +181,7 @@ def save_model(model, model_config, out_dir):
         model_config: dict
             model configuration the model was created from within this package
     """
-    out_dir = make_out_dir(out_dir)
+    out_dir = make_out_dir(out_dir, overwrite=True)
     get_logger().info("Save model config and weights at %s", out_dir)
     model_json = model.to_json()
     save_path = join(out_dir, NAME_MODEL_ARCH)
@@ -232,7 +234,6 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
     """custom Bayesian optimiser class
     """
 
-
     def __init__(self, model_config, space):
         super().__init__(model_config, space)
 
@@ -262,11 +263,26 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
 
         model_config = deepcopy(self.model_config)
         modify_dictionary(model_config, space_drawn, True)
+        model_config_tmp = deepcopy(model_config)
+        model_config_tmp = deepcopy(model_config["model_kwargs"])
+        model_config_tmp["optimizer_kwargs"] = model_config["compile"]["optimizer_kwargs"]
+
         create_obj_from_args(model_config)
 
 
         model = self.construct_model_func(self.model_constructor, model_config)
-        history = fit_model(model, gen=self.train_gen, val_data=self.val_gen, **model_config["fit"])
+
+
+        mode = "min" if self.low_is_better else "max"
+        checkpoint_weights_path = f"/tmp/BayesianOpt/{getpid()}"
+        if not exists(checkpoint_weights_path):
+            makesdirs(checkpoint_weights_path)
+        checkpoint = ModelCheckpoint(filepath=checkpoint_weights_path,
+                                     save_weights_only=True,
+                                     monitor=f"val_{self.scoring_opt}",
+                                     mode=mode,
+                                     save_best_only=True)
+        history = fit_model(model, gen=self.train_gen, val_data=self.val_gen, **model_config["fit"], callbacks=[checkpoint])
 
         min_val = history.history[f"val_{self.scoring_opt}"][0]
         corr_train = history.history[self.scoring_opt][0]
@@ -278,12 +294,13 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
         res = {f"train_{self.scoring_opt}": [corr_train],
                f"test_{self.scoring_opt}": [min_val]}
 
+        model.load_weights(checkpoint_weights_path)
 
-        return res, model, model_config
+        return res, model, model_config_tmp
 
 
     def finalise(self):
-        pass
+        print("Nothing to finalise...")
 
 
     def save_model_(self, model, out_dir):

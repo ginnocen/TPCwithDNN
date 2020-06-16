@@ -224,7 +224,10 @@ class DnnOptimiser:
     def make_opt_space():
         return {"compile":
                 {"optimizer_kwargs": 
-                    {"lr": hp.uniform("m_learning_rate", 0.0005, 0.002)}}}
+                    {"lr": hp.uniform("m_learning_rate", 0.0005, 0.002)}},
+                "model_kwargs": {"start_ch": hp.choice("m_start_ch", [2, 3, 4, 5, 6, 7, 8, 9, 10]),
+                                 "depth": hp.choice("m_depth", [2, 3, 4])}}
+
 
 
     def optimise(self):
@@ -236,12 +239,14 @@ class DnnOptimiser:
         bayes_opt.construct_model_func = construct_model
         bayes_opt.model_constructor = UNet
 
+        bayes_opt.n_trials = 3
+
         bayes_opt.optimise()
 
         out_dir = "./optimisation_output"
         if not os.path.exists(out_dir):
             os.makedirs(out_dir)
-        bayes_opt.save(out_dir)
+        bayes_opt.save(out_dir, best_only=False)
         bayes_opt.plot(out_dir)
 
 
