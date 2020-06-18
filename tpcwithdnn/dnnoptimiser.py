@@ -5,11 +5,8 @@ from root_numpy import fill_hist
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
-from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
-
-from hyperopt import hp
 
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
@@ -19,6 +16,7 @@ from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 from dataloader import loadtrain_test, loaddata_original
 
+from dnn_config import make_model_config, make_opt_space
 from model.model import construct_model, KerasBayesianOpt, fit_model
 
 
@@ -206,32 +204,15 @@ class DnnOptimiser:
         myfile.Close()
         print("Tree written in %s" % namefileout)
 
-    def make_model_config(self):
-        return {"model_args": ((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),),
-                "model_kwargs": {"depth": self.depth,
-                                 "bathnorm": self.batch_normalization,
-                                 "pool_type": self.pooling,
-                                 "start_ch": self.filters,
-                                 "dropout": self.dropout},
-                "compile": {"loss": self.lossfun,
-                            "optimizer": Adam,
-                            "optimizer_kwargs": {"lr": self.adamlr},
-                            "metrics": [self.metrics]},
-                "fit": {"workers": 1,
-                        "use_multiprocessing": True,
-                        "epochs": self.epochs}}
-    @staticmethod
-    def make_opt_space():
-        return {"compile":
-                {"optimizer_kwargs": 
-                    {"lr": hp.uniform("m_learning_rate", 0.0005, 0.002)}},
-                "model_kwargs": {"start_ch": hp.choice("m_start_ch", [2, 3, 4, 5, 6, 7, 8, 9, 10]),
-                                 "depth": hp.choice("m_depth", [2, 3, 4])}}
-
+    def model_config(self):
+        return make_model_config(self.grid_phi, self.grid_r, self.grid_z, self.dim_input,
+                                 self.depth, self.batch_normalization, self.pooling,
+                                 self.filters, self.dropout,
+                                 self.lossfun, self.adamlr, self.epochs)
 
 
     def optimise(self):
-        bayes_opt = KerasBayesianOpt(self.make_model_config(), self.make_opt_space())
+        bayes_opt = KerasBayesianOpt(self.model_config(), make_opt_space())
         bayes_opt.train_gen = fluctuationDataGenerator(self.indexmatrix_ev_mean_train,
                                                        **self.params)
         bayes_opt.val_gen = fluctuationDataGenerator(self.indexmatrix_ev_mean_test,
@@ -239,7 +220,13 @@ class DnnOptimiser:
         bayes_opt.construct_model_func = construct_model
         bayes_opt.model_constructor = UNet
 
-        bayes_opt.n_trials = 3
+        # Scorings are actually taken into acount via model_config["compile"]["metrics"]
+        # But just set it here so BayesianOpt has everything it needs (hence, this is just
+        # a dummy seeting)
+        bayes_opt.scoring = {self.lossfun: None}
+        # This one however is actually monitored
+        bayes_opt.scoring_opt = self.lossfun
+        bayes_opt.n_trials = 5
 
         bayes_opt.optimise()
 
@@ -257,7 +244,7 @@ class DnnOptimiser:
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
         validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
         
-        model_config = self.make_model_config()
+        model_config = self.model_config()
         model = construct_model(UNet, model_config)
         sys.exit(1)
 

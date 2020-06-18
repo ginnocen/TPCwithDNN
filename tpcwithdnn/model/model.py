@@ -4,7 +4,7 @@ from os import makedirs, getpid
 from copy import deepcopy
 from yaml.representer import RepresenterError
 from keras.models import model_from_json
-from keras.callbacks import ModelCheckpoint
+from keras.callbacks import ModelCheckpoint, EarlyStopping
 from machine_learning_hep.io import parse_yaml, dump_yaml_from_dict
 from machine_learning_hep.logger import get_logger
 from machine_learning_hep.do_variations import modify_dictionary
@@ -17,22 +17,21 @@ NAME_MODEL_WEIGHTS = "weights.h5"
 NAME_MODEL_CONFIG = "config.yaml"
 
 
-def create_obj_from_args(some_dict):
-    skip = []
-    for k in list(some_dict.keys()):
-        if k in skip: 
-            continue
-        args_name = f"{k}_args"
-        kwargs_name = f"{k}_kwargs"
-        skip.extend((args_name, kwargs_name))
-        args = some_dict.pop(args_name, [])
-        kwargs = some_dict.pop(kwargs_name, {})
-        if not args and not kwargs and isinstance(some_dict[k], dict):
-            create_obj_from_args(some_dict[k])
-        elif not args and not kwargs:
-            continue
-        else:
-            some_dict[k] = some_dict[k](*args, **kwargs)
+def digest_model_config(model_config):
+    """call callables with given args and kwargs and add inplace 
+
+    Args:
+        model_config: dict
+            model configuration to digest
+    """
+    for k in list(model_config.keys()):
+        curr = model_config[k]
+        if isinstance(curr, dict):
+            callable__ = curr.get("callable__", None)
+            if callable__:
+                model_config[k] = callable__(*curr.get("args", []), **curr.get("kwargs", {}))
+                continue
+            digest_model_config(model_config[k])
 
 
 def compile_model(model, model_config):
@@ -46,6 +45,7 @@ def compile_model(model, model_config):
     """
     model.compile(**model_config["compile"])
     model.summary()
+
 
 def construct_model(constructor, *args, **kwargs):
     """construct model from given configuration
@@ -107,8 +107,6 @@ def fit_model(model, x=None, y=None, weights=None, gen=None, val_data=None, test
     Notes:
         EITHER x and y (and optionally weights) are specified OR gen is given.
     """
-
-
     if test_data:
         print("Assume model has been trained already ==> predict on test data")
         return
@@ -229,7 +227,6 @@ def load_model(in_dir):
     return model, model_config
 
 
-
 class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attributes
     """custom Bayesian optimiser class
     """
@@ -237,10 +234,6 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
     def __init__(self, model_config, space):
         super().__init__(model_config, space)
 
-        # Set scores here explicitly
-        # self.scoring not used, that's at the moment a dummy
-        self.scoring = {"mse": None}
-        self.scoring_opt = "mse"
 
         # Number of trials
         self.n_trials = 4
@@ -260,29 +253,30 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
         This does one fit attempt (no CV at the moment) with the given parameters
 
         """
-
         model_config = deepcopy(self.model_config)
         modify_dictionary(model_config, space_drawn, True)
+        # This is the full configuration to be returned
         model_config_tmp = deepcopy(model_config)
-        model_config_tmp = deepcopy(model_config["model_kwargs"])
-        model_config_tmp["optimizer_kwargs"] = model_config["compile"]["optimizer_kwargs"]
+        digest_model_config(model_config)
 
-        create_obj_from_args(model_config)
-
+        # Check if scoring is in metrics list and add if not present
+        if self.scoring_opt not in model_config["compile"]["metrics"]:
+            model_config["compile"]["metrics"].append(self.scoring_opt)
 
         model = self.construct_model_func(self.model_constructor, model_config)
 
-
         mode = "min" if self.low_is_better else "max"
-        checkpoint_weights_path = f"/tmp/BayesianOpt/{getpid()}"
-        if not exists(checkpoint_weights_path):
-            makesdirs(checkpoint_weights_path)
+        checkpoint_weights_path = f"/tmp/BayesianOpt_fit_{self.trial_id}_{{epoch:02d}}-{{val_{self.scoring_opt}:.4f}}"
         checkpoint = ModelCheckpoint(filepath=checkpoint_weights_path,
                                      save_weights_only=True,
                                      monitor=f"val_{self.scoring_opt}",
                                      mode=mode,
                                      save_best_only=True)
-        history = fit_model(model, gen=self.train_gen, val_data=self.val_gen, **model_config["fit"], callbacks=[checkpoint])
+
+        early_stopping = EarlyStopping(monitor=f"val_{self.scoring_opt}",
+                                       patience=5,
+                                       mode=mode)
+        history = fit_model(model, gen=self.train_gen, val_data=self.val_gen, **model_config["fit"], callbacks=[checkpoint, early_stopping])
 
         min_val = history.history[f"val_{self.scoring_opt}"][0]
         corr_train = history.history[self.scoring_opt][0]
@@ -294,7 +288,7 @@ class KerasBayesianOpt(BayesianOpt): # pylint: disable=too-many-instance-attribu
         res = {f"train_{self.scoring_opt}": [corr_train],
                f"test_{self.scoring_opt}": [min_val]}
 
-        model.load_weights(checkpoint_weights_path)
+        #model.load_weights(checkpoint_weights_path)
 
         return res, model, model_config_tmp
 

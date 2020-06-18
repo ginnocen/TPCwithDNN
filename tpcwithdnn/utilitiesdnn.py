@@ -16,7 +16,7 @@ def conv_block(m, dim, acti, bn, res, do=0):
     n = BatchNormalization()(n) if bn else n
     return concatenate([m, n]) if res else n
 
-def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res):
+def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res, initializer):
     if depth > 0:
         n = conv_block(m, dim, acti, bn, res)
         if pool_type == 0:
@@ -26,7 +26,7 @@ def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res):
         else:
             Conv3D(dim, 3, strides=2, padding='same')(n)
 
-        m = level_block(m, int(inc*dim), depth-1, inc, acti, do, bn, pool_type, up, res)
+        m = level_block(m, int(inc*dim), depth-1, inc, acti, do, bn, pool_type, up, res, initializer)
 
         if up:
             m = UpSampling3D(size=(2, 2, 2))(m)
@@ -38,14 +38,14 @@ def level_block(m, dim, depth, inc, acti, do, bn, pool_type, up, res):
             elif (diff_r != 0 or diff_z != 0):
                 m = symmetryPadding3d(padding=((int(diff_phi), 0), (int(diff_r), 0), (int(diff_z), 0)), mode="CONSTANT")(m)
         else:
-            m = Conv3DTranspose(dim, 3, strides=2, activation=acti, padding='same')(m)
+            m = Conv3DTranspose(dim, 3, strides=2, activation=acti, padding='same', kernel_initializer=initializer)(m)
         n = concatenate([n, m])
         m = conv_block(n, dim, acti, bn, res)
     else:
         m = conv_block(m, dim, acti, bn, res, do)
     return m
 
-def UNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", dropout=0.2, bathnorm=False, pool_type=0, upconv=True, residual=False):
+def UNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", dropout=0.2, bathnorm=False, pool_type=0, upconv=True, residual=False, initializer=None):
     i = Input(shape=input_shape)
     #output_r = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
     #output_r = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_r)
@@ -54,7 +54,7 @@ def UNet(input_shape, start_ch=4, depth=4, inc_rate=2.0, activation="relu", drop
     #output_z = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
     #output_z = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output_z)
     #o = concatenate([output_r, output_rphi, output_z])
-    output = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual)
+    output = level_block(i, start_ch, depth, inc_rate, activation, dropout, bathnorm, pool_type, upconv, residual, initializer)
     output = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output)
     return Model(inputs=i, outputs=output)
 
