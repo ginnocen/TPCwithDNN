@@ -5,7 +5,7 @@ from copy import deepcopy
 from yaml.representer import RepresenterError
 from keras.models import model_from_json
 from keras.callbacks import ModelCheckpoint, EarlyStopping
-from machine_learning_hep.io import parse_yaml, dump_yaml_from_dict
+from machine_learning_hep.io import parse_yaml, dump_yaml_from_dict, dict_yamlable
 from machine_learning_hep.logger import get_logger
 from machine_learning_hep.do_variations import modify_dictionary
 from machine_learning_hep.optimisation.bayesian_opt import BayesianOpt
@@ -189,7 +189,7 @@ def save_model(model, model_config, out_dir, overwrite=False):
     model.save_weights(save_path)
     try:
         save_path = join(out_dir, NAME_MODEL_CONFIG)
-        dump_yaml_from_dict(model_config, save_path)
+        dump_yaml_from_dict(dict_yamlable(model_config), save_path)
     except RepresenterError:
         print("Cannot save model configuration as YAML")
 
