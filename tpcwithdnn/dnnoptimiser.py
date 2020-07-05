@@ -1,13 +1,13 @@
 import os
 import sys
 from array import array
-from root_numpy import fill_hist
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
+from root_numpy import fill_hist
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
 from symmetrypadding3d import symmetryPadding3d
@@ -16,7 +16,7 @@ from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 from dataloader import loadtrain_test, loaddata_original
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-matplotlib.use("TkAgg")
+matplotlib.use("Agg")
 
 
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
@@ -66,7 +66,14 @@ class DnnOptimiser:
         self.metrics = self.data_param["metrics"]
         self.adamlr = self.data_param["adamlr"]
 
+        if not os.path.isdir("plots"):
+            os.makedirs("plots")
 
+        if not os.path.isdir(self.dirmodel):
+            os.makedirs(self.dirmodel)
+
+        if not os.path.isdir(self.dirval):
+            os.makedirs(self.dirval)
 
         self.dirinput = self.dirinput + "/SC-%d-%d-%d/" % \
                 (self.grid_z, self.grid_r, self.grid_phi)
@@ -101,9 +108,10 @@ class DnnOptimiser:
                                                                  self.opt_train[1]))
 
         self.indexmatrix_ev_mean = []
-        for ievent in np.arange(self.maxrandomfiles):
-            for imean in np.arange(self.range_mean_index[0], self.range_mean_index[1] + 1):
-                self.indexmatrix_ev_mean.append([ievent, imean])
+        for imean in np.arange(self.range_mean_index[0], self.range_mean_index[1] + 1):
+            for ievent in np.arange(self.maxrandomfiles):
+                self.indexmatrix_ev_mean.append([ievent, \
+                    (ievent+imean)%(self.range_mean_index[1]+1)])
 
         self.indexmatrix_ev_mean_train = [self.indexmatrix_ev_mean[index] \
                 for index in range(self.rangeevent_train[0], self.rangeevent_train[1])]
@@ -202,6 +210,7 @@ class DnnOptimiser:
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
+
         partition = {'train': self.indexmatrix_ev_mean_train,
                      'validation': self.indexmatrix_ev_mean_test}
         training_generator = fluctuationDataGenerator(partition['train'], **self.params)
@@ -317,7 +326,6 @@ class DnnOptimiser:
                 hStdDev.SetBinError(ibin+1, stddev_err)
             hStdDev.Write()
 
-
         h_distallevents.Write()
         h_deltasallevents.Write()
         h_deltasvsdistallevents.Write()
@@ -341,6 +349,8 @@ class DnnOptimiser:
 
         myfile.Close()
         print("DONE APPLY")
+
+
     @staticmethod
     def plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix, namevar):
         cev = TCanvas("canvas" + suffix, "canvas" + suffix,
