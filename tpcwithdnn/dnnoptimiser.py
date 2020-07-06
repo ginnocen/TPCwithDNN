@@ -1,5 +1,6 @@
 import os
 import sys
+import random
 from array import array
 import numpy as np
 import matplotlib
@@ -107,11 +108,15 @@ class DnnOptimiser:
         self.logger.info("(SCMean, SCFluctuations)=(%d, %d)"  % (self.opt_train[0],
                                                                  self.opt_train[1]))
 
+        random.seed(1)
         self.indexmatrix_ev_mean = []
-        for imean in np.arange(self.range_mean_index[0], self.range_mean_index[1] + 1):
-            for ievent in np.arange(self.maxrandomfiles):
-                self.indexmatrix_ev_mean.append([ievent, \
-                    (ievent+imean)%(self.range_mean_index[1]+1)])
+        indexmatrix_ev_mean_dummy = []
+        for ievent in np.arange(self.maxrandomfiles):
+            for imean in np.arange(self.range_mean_index[0], self.range_mean_index[1] + 1):
+                indexmatrix_ev_mean_dummy.append([ievent, imean])
+
+        self.indexmatrix_ev_mean = random.sample(indexmatrix_ev_mean_dummy, \
+            self.maxrandomfiles * (self.range_mean_index[1] + 1 - self.range_mean_index[0]))
 
         self.indexmatrix_ev_mean_train = [self.indexmatrix_ev_mean[index] \
                 for index in range(self.rangeevent_train[0], self.rangeevent_train[1])]
