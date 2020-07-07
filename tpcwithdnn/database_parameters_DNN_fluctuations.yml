@@ -1,24 +1,28 @@
 DNN_fluctuations:
-  dirmodel: model
-  dirval: validation
-  dirinput: /data/tpcml/datagm
+  dirmodel: model_new_random
+  dirval: validation_new_random
+  #use this for training
+  dirinput: /data/tpcml/data_20200518/bias/
+  #use this for testing
+  #dirinput: /data/tpcml/data_20200518/nobias
   diroutflattree: /data/tpcml/datagm/flattree
   grid_phi: 90
   grid_z: 17
   grid_r: 17
-  #prepare the datasets
-  selopt_input: 0 # this uses all input training data, no z-selection
+  selopt_input: 0 # 0 is use to train distorsions only for positive z-values
   selopt_output: 0 # 0 is use to predict distorsions only for positive z-values
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, Rphi, z] #R, Rphi, z output distorsion predictions
-  maxrandomfiles: 1000 #this is the total number of random events generated
+  #use this for training
+  maxrandomfiles: 970 #this is the total number of random events generated 
+  #use this for testing
+  #maxrandomfiles: 760 #this is the total number of random events generated
   range_mean_index: [0,26] # min and max index of mean SC configurations 
-  rangeevent_train: [0,4000] #events for training (include a mix of SC config) 
+  rangeevent_train: [0,5000] #events for training (include a mix of SC config) 
   rangeevent_test: [4001,5000]
-  rangeevent_apply: [5001,8000]
+  rangeevent_apply: [5000,10000]
   use_scaler: 0
-  #DNN configuration
   filters: 4
   pooling: 0
   batch_size: 27
