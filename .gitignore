@@ -40,10 +40,10 @@ machine_learning_hep/D0kINT7HighMultwithJets
 machine_learning_hep/LckINT7HighMultwithJets
 
 dataframes_*
-plots_*
-output_*
-*.json
-*.h5
+tpcwithdnn/plots/plots_*
+tpcwithdnn/validation/output_*
+tpcwithdnn/model/*.json
+tpcwithdnn/model/*.h5
 
 # editor backups/cached
 *.swp
