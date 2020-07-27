@@ -16,6 +16,7 @@ from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
 from dataloader import loadtrain_test, loaddata_original
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
@@ -23,13 +24,13 @@ matplotlib.use("Agg")
 # pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
 # pylint: disable=logging-not-lazy
 class DnnOptimiser:
-    #Class Attribute
+    # Class Attribute
+    # TODO: What is this for?
     species = "dnnoptimiser"
 
     def __init__(self, data_param, case):
-        print(case)
+        print('Case: {}'.format(case))
         self.logger = get_logger()
-
 
         self.data_param = data_param
         self.dirmodel = self.data_param["dirmodel"]
@@ -39,6 +40,7 @@ class DnnOptimiser:
         self.grid_phi = self.data_param["grid_phi"]
         self.grid_z = self.data_param["grid_z"]
         self.grid_r = self.data_param["grid_r"]
+
         # prepare the dataset
         self.selopt_input = self.data_param["selopt_input"]
         self.selopt_output = self.data_param["selopt_output"]
@@ -53,6 +55,7 @@ class DnnOptimiser:
         self.rangeevent_apply = self.data_param["rangeevent_apply"]
         self.range_mean_index = self.data_param["range_mean_index"]
         self.use_scaler = self.data_param["use_scaler"]
+
         # DNN config
         self.filters = self.data_param["filters"]
         self.pooling = self.data_param["pooling"]
@@ -167,10 +170,8 @@ class DnnOptimiser:
         t.Branch('meanid', meanid, 'meanid/I')
         t.Branch('randomid', randomid, 'randomid/I')
 
-        for iexperiment in self.indexmatrix_ev_mean:
-            print("processing event", iexperiment)
-            indexev = iexperiment
-
+        for indexev in self.indexmatrix_ev_mean:
+            print("processing event", indexev)
 
             [vecRPos, vecPhiPos, vecZPos,
              _, _,
@@ -204,7 +205,7 @@ class DnnOptimiser:
                         distrndr[0] = vecRandomDistR_[indexphi_][indexr_][indexz_]
                         distrndrphi[0] = vecRandomDistRPhi_[indexphi_][indexr_][indexz_]
                         distrndz[0] = vecRandomDistZ_[indexphi_][indexr_][indexz_]
-                        evtid[0] = indexev[0]+ 10000*indexev[1]
+                        evtid[0] = indexev[0] + 10000*indexev[1]
                         meanid[0] = indexev[1]
                         randomid[0] = indexev[0]
                         t.Fill()
