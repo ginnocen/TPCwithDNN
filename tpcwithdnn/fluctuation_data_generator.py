@@ -1,16 +1,14 @@
-# pylint: disable=invalid-name, too-many-instance-attributes,
-# pylint: disable=fixme, pointless-string-statement, too-many-arguments
 import numpy as np
 import keras
-from dataloader import load_train_apply
+from data_loader import load_train_apply
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-class fluctuationDataGenerator(keras.utils.Sequence):
+class FluctuationDataGenerator(keras.utils.Sequence):
 
-    def __init__(self, list_IDs, phi_slice, r_row, z_col, batch_size, shuffle,
+    def __init__(self, list_ids, phi_slice, r_row, z_col, batch_size, shuffle,
                  opt_train, opt_predout, selopt_input, selopt_output, data_dir_train,
                  use_scaler):
-        self.list_IDs = list_IDs
+        self.list_ids = list_ids
         self.phi_slice = phi_slice
         self.r_row = r_row
         self.z_col = z_col
@@ -27,36 +25,38 @@ class fluctuationDataGenerator(keras.utils.Sequence):
         self.use_scaler = use_scaler
 
     def __len__(self):
-        'Denotes the number of batches per epoch'
-        return int(np.floor(len(self.list_IDs) / self.batch_size))
+        """ Number of batches per epoch """
+        return int(np.floor(len(self.list_ids) / self.batch_size))
 
     def __getitem__(self, index):
-        'Generate one batch of data'
+        """ Generate one batch of data """
         # Generate indexes of the batch
         indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
         # Find list of IDs
-        list_IDs_temp = [self.list_IDs[k] for k in indexes]
+        list_ids_temp = [self.list_ids[k] for k in indexes]
         # Generate data
-        X, Y = self.__data_generation(list_IDs_temp)
-        return X, Y
+        inputs, exp_outputs = self.__data_generation(list_ids_temp)
+        return inputs, exp_outputs
 
     def on_epoch_end(self):
-        'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.list_IDs))
+        """ Update indexes after each epoch"""
+        self.indexes = np.arange(len(self.list_ids))
         if self.shuffle is True:
             np.random.shuffle(self.indexes)
 
-    def __data_generation(self, list_IDs_temp):
+    def __data_generation(self, list_ids_temp):
         'Generates data containing batch_size samples'
         # Initialization
-        X = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_input))
-        Y = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_output))
+        inputs = np.empty((self.batch_size, self.phi_slice, self.r_row, self.z_col, self.dim_input))
+        exp_outputs = np.empty((self.batch_size, self.phi_slice, self.r_row,
+                                self.z_col, self.dim_output))
         # Generate data
-        for i, ID in enumerate(list_IDs_temp):
+        for i, id_num in enumerate(list_ids_temp):
             # Store
-            x_, y_ = load_train_apply(self.data_dir, ID, self.selopt_input, self.selopt_output,
-                                    self.r_row, self.phi_slice, self.z_col,
-                                    self.opt_train, self.opt_predout)
-            X[i, :, :, :, :] = x_
-            Y[i, :, :, :, :] = y_
-        return X, Y
+            inputs_i, exp_outputs_i = load_train_apply(self.data_dir, id_num,
+                                                       self.selopt_input, self.selopt_output,
+                                                       self.r_row, self.phi_slice, self.z_col,
+                                                       self.opt_train, self.opt_predout)
+            inputs[i, :, :, :, :] = inputs_i
+            exp_outputs[i, :, :, :, :] = exp_outputs_i
+        return inputs, exp_outputs

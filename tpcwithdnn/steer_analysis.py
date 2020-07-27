@@ -5,7 +5,7 @@ main script for doing tpc calibration with dnn
 import yaml
 from machine_learning_hep.logger import get_logger
 #from machine_learning_hep.utilities import checkdir, checkmakedir
-from dnnoptimiser import DnnOptimiser
+from dnn_optimiser import DnnOptimiser
 
 def main():
     logger = get_logger()

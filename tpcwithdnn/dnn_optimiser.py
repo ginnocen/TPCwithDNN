@@ -10,18 +10,17 @@ from keras.utils.vis_utils import plot_model
 from root_numpy import fill_hist
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
-from symmetrypadding3d import symmetryPadding3d
+from symmetry_padding_3d import SymmetryPadding3d
 from machine_learning_hep.logger import get_logger
-from fluctuationDataGenerator import fluctuationDataGenerator
-from utilitiesdnn import UNet
-from dataloader import load_train_apply, loaddata_original, get_event_mean_indices
+from fluctuation_data_generator import FluctuationDataGenerator
+from utilities_dnn import u_net
+from data_loader import load_train_apply, load_data_original, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
 
-# pylint: disable=too-many-instance-attributes, too-many-statements, fixme, pointless-string-statement
-# pylint: disable=logging-not-lazy
+# pylint: disable=too-many-instance-attributes, too-many-statements
 class DnnOptimiser:
     # Class Attribute
     # TODO: What is this for?
@@ -29,7 +28,7 @@ class DnnOptimiser:
 
     def __init__(self, data_param, case):
         self.logger = get_logger()
-        self.logger.info("DnnOptimizer::Init\nCase: %s" % case)
+        self.logger.info("DnnOptimizer::Init\nCase: %s", case)
 
         # Dataset config
         self.grid_phi = data_param["grid_phi"]
@@ -101,12 +100,13 @@ class DnnOptimiser:
         self.logger.info("I am processing the configuration %s", self.suffix)
         if self.dim_output > 1:
             self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORSION. The sum of opt_predout == 1")
-        self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)"
-          % (self.opt_train[0], self.opt_train[1]))
+        self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
+                         self.opt_train[0], self.opt_train[1])
 
         self.indices_events_means_train, self.partition = get_event_mean_indices(
-            data_param["maxrandomfiles_train"], data_param["maxrandomfiles_apply"], data_param['range_mean_index'],
-            data_param['rangeevent_train'], data_param['rangeevent_test'], data_param['rangeevent_apply'])
+            data_param["maxrandomfiles_train"], data_param["maxrandomfiles_apply"],
+            data_param['range_mean_index'], data_param['rangeevent_train'],
+            data_param['rangeevent_test'], data_param['rangeevent_apply'])
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
@@ -116,10 +116,10 @@ class DnnOptimiser:
     def dumpflattree(self):
         self.logger.info("DnnOptimizer::dumpflattree")
         self.logger.warning("DO YOU REALLY WANT TO DO IT? IT TAKES TIME")
-        namefileout = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
-        myfile = TFile.Open(namefileout, "recreate")
+        outfile_name = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
+        myfile = TFile.Open(outfile_name, "recreate")
 
-        t = TTree('tvoxels', 'tree with histos')
+        tree = TTree('tvoxels', 'tree with histos')
         indexr = array('i', [0])
         indexphi = array('i', [0])
         indexz = array('i', [0])
@@ -135,80 +135,82 @@ class DnnOptimiser:
         distrndr = array('f', [0])
         distrndrphi = array('f', [0])
         distrndz = array('f', [0])
-        t.Branch('indexr', indexr, 'indexr/I')
-        t.Branch('indexphi', indexphi, 'indexphi/I')
-        t.Branch('indexz', indexz, 'indexz/I')
-        t.Branch('posr', posr, 'posr/F')
-        t.Branch('posphi', posphi, 'posphi/F')
-        t.Branch('posz', posz, 'posz/F')
-        t.Branch('distmeanr', distmeanr, 'distmeanr/F')
-        t.Branch('distmeanrphi', distmeanrphi, 'distmeanrphi/F')
-        t.Branch('distmeanz', distmeanz, 'distmeanz/F')
-        t.Branch('distrndr', distrndr, 'distrndr/F')
-        t.Branch('distrndrphi', distrndrphi, 'distrndrphi/F')
-        t.Branch('distrndz', distrndz, 'distrndz/F')
-        t.Branch('evtid', evtid, 'evtid/I')
-        t.Branch('meanid', meanid, 'meanid/I')
-        t.Branch('randomid', randomid, 'randomid/I')
+        tree.Branch('indexr', indexr, 'indexr/I')
+        tree.Branch('indexphi', indexphi, 'indexphi/I')
+        tree.Branch('indexz', indexz, 'indexz/I')
+        tree.Branch('posr', posr, 'posr/F')
+        tree.Branch('posphi', posphi, 'posphi/F')
+        tree.Branch('posz', posz, 'posz/F')
+        tree.Branch('distmeanr', distmeanr, 'distmeanr/F')
+        tree.Branch('distmeanrphi', distmeanrphi, 'distmeanrphi/F')
+        tree.Branch('distmeanz', distmeanz, 'distmeanz/F')
+        tree.Branch('distrndr', distrndr, 'distrndr/F')
+        tree.Branch('distrndrphi', distrndrphi, 'distrndrphi/F')
+        tree.Branch('distrndz', distrndz, 'distrndz/F')
+        tree.Branch('evtid', evtid, 'evtid/I')
+        tree.Branch('meanid', meanid, 'meanid/I')
+        tree.Branch('randomid', randomid, 'randomid/I')
 
         for indexev in self.indices_events_means_train:
-            self.logger.info("processing event: %d" % indexev)
+            self.logger.info("processing event: %d", indexev)
 
             # TODO: Should it be for train or apply data?
-            [vecRPos, vecPhiPos, vecZPos,
+            [vec_r_pos, vec_phi_pos, vec_z_pos,
              _, _,
-             vecMeanDistR, vecRandomDistR,
-             vecMeanDistRPhi, vecRandomDistRPhi,
-             vecMeanDistZ, vecRandomDistZ] = loaddata_original(self.dirinput_train, indexev)
+             vec_mean_dist_r, vec_random_dist_r,
+             vec_mean_dist_rphi, vec_random_dist_rphi,
+             vec_mean_dist_z, vec_random_dist_z] = load_data_original(self.dirinput_train, indexev)
 
-            vecRPos_ = vecRPos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecPhiPos_ = vecPhiPos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecZPos_ = vecZPos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecMeanDistR_ = vecMeanDistR.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecRandomDistR_ = vecRandomDistR.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecMeanDistRPhi_ = vecMeanDistRPhi.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecRandomDistRPhi_ = vecRandomDistRPhi.reshape(self.grid_phi, self.grid_r,
-                                                           self.grid_z*2)
-            vecMeanDistZ_ = vecMeanDistZ.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vecRandomDistZ_ = vecRandomDistZ.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_r_pos = vec_r_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_phi_pos = vec_phi_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_z_pos = vec_z_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_mean_dist_r = vec_mean_dist_r.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_random_dist_r = vec_random_dist_r.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_mean_dist_rphi = vec_mean_dist_rphi.reshape(self.grid_phi, self.grid_r,
+                                                            self.grid_z*2)
+            vec_random_dist_rphi = vec_random_dist_rphi.reshape(self.grid_phi, self.grid_r,
+                                                                self.grid_z*2)
+            vec_mean_dist_z = vec_mean_dist_z.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
+            vec_random_dist_z = vec_random_dist_z.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
 
-            for indexphi_ in range(self.grid_phi):
-                for indexr_ in range(self.grid_r):
-                    for indexz_ in range(self.grid_z*2):
-                        indexphi[0] = indexphi_
-                        indexr[0] = indexr_
-                        indexz[0] = indexz_
-                        posr[0] = vecRPos_[indexphi_][indexr_][indexz_]
-                        posphi[0] = vecPhiPos_[indexphi_][indexr_][indexz_]
-                        posz[0] = vecZPos_[indexphi_][indexr_][indexz_]
-                        distmeanr[0] = vecMeanDistR_[indexphi_][indexr_][indexz_]
-                        distmeanrphi[0] = vecMeanDistRPhi_[indexphi_][indexr_][indexz_]
-                        distmeanz[0] = vecMeanDistZ_[indexphi_][indexr_][indexz_]
-                        distrndr[0] = vecRandomDistR_[indexphi_][indexr_][indexz_]
-                        distrndrphi[0] = vecRandomDistRPhi_[indexphi_][indexr_][indexz_]
-                        distrndz[0] = vecRandomDistZ_[indexphi_][indexr_][indexz_]
+            for indexphi in range(self.grid_phi):
+                for indexr in range(self.grid_r):
+                    for indexz in range(self.grid_z*2):
+                        indexphi[0] = indexphi
+                        indexr[0] = indexr
+                        indexz[0] = indexz
+                        posr[0] = vec_r_pos[indexphi][indexr][indexz]
+                        posphi[0] = vec_phi_pos[indexphi][indexr][indexz]
+                        posz[0] = vec_z_pos[indexphi][indexr][indexz]
+                        distmeanr[0] = vec_mean_dist_r[indexphi][indexr][indexz]
+                        distmeanrphi[0] = vec_mean_dist_rphi[indexphi][indexr][indexz]
+                        distmeanz[0] = vec_mean_dist_z[indexphi][indexr][indexz]
+                        distrndr[0] = vec_random_dist_r[indexphi][indexr][indexz]
+                        distrndrphi[0] = vec_random_dist_rphi[indexphi][indexr][indexz]
+                        distrndz[0] = vec_random_dist_z[indexphi][indexr][indexz]
                         evtid[0] = indexev[0] + 10000*indexev[1]
                         meanid[0] = indexev[1]
                         randomid[0] = indexev[0]
-                        t.Fill()
+                        tree.Fill()
         myfile.Write()
         myfile.Close()
-        self.logger.info("Tree written in %s" % namefileout)
+        self.logger.info("Tree written in %s", outfile_name)
 
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
 
-        training_generator = fluctuationDataGenerator(self.partition['train'], **self.params)
-        validation_generator = fluctuationDataGenerator(self.partition['validation'], **self.params)
-        model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
-                     depth=self.depth, bathnorm=self.batch_normalization,
-                     pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
+        training_generator = FluctuationDataGenerator(self.partition['train'], **self.params)
+        validation_generator = FluctuationDataGenerator(self.partition['validation'], **self.params)
+        model = u_net((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
+                      depth=self.depth, batchnorm=self.batch_normalization,
+                      pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout)
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
                       metrics=[self.metrics]) # Mean squared error
 
         model.summary()
-        plot_model(model, to_file='plots/model%s.png' % (self.suffix), show_shapes=True, show_layer_names=True)
+        plot_model(model, to_file='plots/model%s.png' % (self.suffix),
+                   show_shapes=True, show_layer_names=True)
 
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
@@ -240,161 +242,165 @@ class DnnOptimiser:
     def groupbyindices_input(self, arrayflat):
         return arrayflat.reshape(1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input)
 
-    # pylint: disable=fixme
+    # TODO: too many statements 72
     def apply(self):
-        self.logger.info("DnnOptimizer::apply, input size: %d" % self.dim_input)
+        self.logger.info("DnnOptimizer::apply, input size: %d", self.dim_input)
 
         json_file = open("%s/model%s.json" % (self.dirmodel, self.suffix), "r")
         loaded_model_json = json_file.read()
         json_file.close()
         loaded_model = \
-            model_from_json(loaded_model_json, {'symmetryPadding3d' : symmetryPadding3d})
+            model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
 
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
-        h_distallevents = TH2F("hdistallevents" + self.suffix, "", 500, -5, 5, 500, -5, 5)
-        h_deltasallevents = TH1F("hdeltasallevents" + self.suffix, "", 1000, -1., 1.)
-        h_deltasvsdistallevents = TH2F("hdeltasvsdistallevents" + self.suffix, "",
-                                       500, -5.0, 5.0, 100, -0.5, 0.5)
+        h_dist_all_events = TH2F("hdistall_events" + self.suffix, "", 500, -5, 5, 500, -5, 5)
+        h_deltas_all_events = TH1F("h_deltasall_events" + self.suffix, "", 1000, -1., 1.)
+        h_deltas_vs_dist_all_events = TH2F("hdeltasvsdistall_events" + self.suffix, "",
+                                           500, -5.0, 5.0, 100, -0.5, 0.5)
 
         for iexperiment in self.partition['apply']:
             indexev = iexperiment
-            x_, y_ = load_train_apply(self.dirinput_apply, indexev, self.selopt_input, self.selopt_output,
-                                    self.grid_r, self.grid_phi, self.grid_z,
-                                    self.opt_train, self.opt_predout)
-            x_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input))
-            y_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_output))
-            x_single[0, :, :, :, :] = x_
-            y_single[0, :, :, :, :] = y_
+            inputs_, exp_outputs_ = load_train_apply(self.dirinput_apply, indexev,
+                                                     self.selopt_input, self.selopt_output,
+                                                     self.grid_r, self.grid_phi, self.grid_z,
+                                                     self.opt_train, self.opt_predout)
+            inputs_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input))
+            exp_outputs_single = np.empty((1, self.grid_phi, self.grid_r,
+                                           self.grid_z, self.dim_output))
+            inputs_single[0, :, :, :, :] = inputs_
+            exp_outputs_single[0, :, :, :, :] = exp_outputs_
 
-            distortionPredict_group = loaded_model.predict(x_single)
-            distortionPredict_flatm = distortionPredict_group.reshape(-1, 1)
-            distortionPredict_flata = distortionPredict_group.flatten()
+            distortion_predict_group = loaded_model.predict(inputs_single)
+            distortion_predict_flat_m = distortion_predict_group.reshape(-1, 1)
+            distortion_predict_flat_a = distortion_predict_group.flatten()
 
-            distortionNumeric_group = y_single
-            distortionNumeric_flatm = distortionNumeric_group.reshape(-1, 1)
-            distortionNumeric_flata = distortionNumeric_group.flatten()
-            deltas_flata = (distortionPredict_flata - distortionNumeric_flata)
-            deltas_flatm = (distortionPredict_flatm - distortionNumeric_flatm)
+            distortion_numeric_group = exp_outputs_single
+            distortion_numeric_flat_m = distortion_numeric_group.reshape(-1, 1)
+            distortion_numeric_flat_a = distortion_numeric_group.flatten()
+            deltas_flat_a = (distortion_predict_flat_a - distortion_numeric_flat_a)
+            deltas_flat_m = (distortion_predict_flat_m - distortion_numeric_flat_m)
 
             h_dist = TH2F("hdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + self.suffix, \
                           "", 500, -5, 5, 500, -5, 5)
-            h_deltasvsdist = TH2F("hdeltasvsdistEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) + \
-                                  self.suffix, "", 500, -5.0, 5.0, 100, -0.5, 0.5)
+            h_deltas_vs_dist = TH2F("hdeltasvsdistEv%d_Mean%d" % \
+                                    (iexperiment[0], iexperiment[1]) + \
+                                    self.suffix, "", 500, -5.0, 5.0, 100, -0.5, 0.5)
             h_deltas = TH1F("hdeltasEv%d_Mean%d" % (iexperiment[0], iexperiment[1]) \
                             + self.suffix, "", 1000, -1., 1.)
-            fill_hist(h_distallevents, np.concatenate((distortionNumeric_flatm, \
-                                distortionPredict_flatm), axis=1))
-            fill_hist(h_dist, np.concatenate((distortionNumeric_flatm,
-                                              distortionPredict_flatm), axis=1))
-            fill_hist(h_deltas, deltas_flata)
-            fill_hist(h_deltasallevents, deltas_flata)
-            fill_hist(h_deltasvsdist,
-                      np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
-            fill_hist(h_deltasvsdistallevents,
-                      np.concatenate((distortionNumeric_flatm, deltas_flatm), axis=1))
-            prof = h_deltasvsdist.ProfileX()
+            fill_hist(h_dist_all_events, np.concatenate((distortion_numeric_flat_m, \
+                                distortion_predict_flat_m), axis=1))
+            fill_hist(h_dist, np.concatenate((distortion_numeric_flat_m,
+                                              distortion_predict_flat_m), axis=1))
+            fill_hist(h_deltas, deltas_flat_a)
+            fill_hist(h_deltas_all_events, deltas_flat_a)
+            fill_hist(h_deltas_vs_dist,
+                      np.concatenate((distortion_numeric_flat_m, deltas_flat_m), axis=1))
+            fill_hist(h_deltas_vs_dist_all_events,
+                      np.concatenate((distortion_numeric_flat_m, deltas_flat_m), axis=1))
+            prof = h_deltas_vs_dist.ProfileX()
             prof.SetName("profiledeltasvsdistEv%d_Mean%d" % \
                 (iexperiment[0], iexperiment[1]) + self.suffix)
             h_dist.Write()
             h_deltas.Write()
-            h_deltasvsdist.Write()
+            h_deltas_vs_dist.Write()
             prof.Write()
 
-            h1tmp = h_deltasvsdist.ProjectionX("h1tmp")
-            hStdDev = h1tmp.Clone("hStdDev_Ev%d_Mean%d" % \
+            h1tmp = h_deltas_vs_dist.ProjectionX("h1tmp")
+            h_std_dev = h1tmp.Clone("h_std_dev_Ev%d_Mean%d" % \
                 (iexperiment[0], iexperiment[1]) + self.suffix)
-            hStdDev.Reset()
-            hStdDev.SetXTitle("Numerical distortion fluctuation (cm)")
-            hStdDev.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
-            nbin = int(hStdDev.GetNbinsX())
+            h_std_dev.Reset()
+            h_std_dev.SetXTitle("Numerical distortion fluctuation (cm)")
+            h_std_dev.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
+            nbin = int(h_std_dev.GetNbinsX())
             for ibin in range(0, nbin):
-                h1diff = h_deltasvsdist.ProjectionY("h1diff", ibin+1, ibin+1, "")
+                h1diff = h_deltas_vs_dist.ProjectionY("h1diff", ibin+1, ibin+1, "")
                 stddev = h1diff.GetStdDev()
                 stddev_err = h1diff.GetStdDevError()
-                hStdDev.SetBinContent(ibin+1, stddev)
-                hStdDev.SetBinError(ibin+1, stddev_err)
-            hStdDev.Write()
+                h_std_dev.SetBinContent(ibin+1, stddev)
+                h_std_dev.SetBinError(ibin+1, stddev_err)
+            h_std_dev.Write()
 
-        h_distallevents.Write()
-        h_deltasallevents.Write()
-        h_deltasvsdistallevents.Write()
-        profallevents = h_deltasvsdistallevents.ProfileX()
-        profallevents.SetName("profiledeltasvsdistallevents" + self.suffix)
-        profallevents.Write()
+        h_dist_all_events.Write()
+        h_deltas_all_events.Write()
+        h_deltas_vs_dist_all_events.Write()
+        prof_all_events = h_deltas_vs_dist_all_events.ProfileX()
+        prof_all_events.SetName("profile_deltas_vs_dist_all_events" + self.suffix)
+        prof_all_events.Write()
 
-        h1tmp = h_deltasvsdistallevents.ProjectionX("h1tmp")
-        hStdDev_allevents = h1tmp.Clone("hStdDev_allevents" + self.suffix)
-        hStdDev_allevents.Reset()
-        hStdDev_allevents.SetXTitle("Numerical distortion fluctuation (cm)")
-        hStdDev_allevents.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
-        nbin = int(hStdDev_allevents.GetNbinsX())
+        h1tmp = h_deltas_vs_dist_all_events.ProjectionX("h1tmp")
+        h_std_dev_all_events = h1tmp.Clone("h_std_dev_all_events" + self.suffix)
+        h_std_dev_all_events.Reset()
+        h_std_dev_all_events.SetXTitle("Numerical distortion fluctuation (cm)")
+        h_std_dev_all_events.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
+        nbin = int(h_std_dev_all_events.GetNbinsX())
         for ibin in range(0, nbin):
-            h1diff = h_deltasvsdistallevents.ProjectionY("h1diff", ibin+1, ibin+1, "")
+            h1diff = h_deltas_vs_dist_all_events.ProjectionY("h1diff", ibin+1, ibin+1, "")
             stddev = h1diff.GetStdDev()
             stddev_err = h1diff.GetStdDevError()
-            hStdDev_allevents.SetBinContent(ibin+1, stddev)
-            hStdDev_allevents.SetBinError(ibin+1, stddev_err)
-        hStdDev_allevents.Write()
+            h_std_dev_all_events.SetBinContent(ibin+1, stddev)
+            h_std_dev_all_events.SetBinError(ibin+1, stddev_err)
+        h_std_dev_all_events.Write()
 
         myfile.Close()
         self.logger.info("Done apply")
 
 
     @staticmethod
-    def plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof, suffix, namevar):
-        cev = TCanvas("canvas_%s_%s" % (suffix, namevar), "canvas_%s_%s" % (suffix, namevar),
+    def plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name):
+        cev = TCanvas("canvas_%s_%s" % (suffix, opt_name), "canvas_%s_%s" % (suffix, opt_name),
                       1400, 1000)
         cev.Divide(2, 2)
         cev.cd(1)
-        h_dist.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % namevar)
+        h_dist.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % opt_name)
         h_dist.GetYaxis().SetTitle("Predicted distortion fluctuation (cm)")
         h_dist.Draw("colz")
         cev.cd(2)
         gPad.SetLogy()
-        h_deltasvsdist.GetXaxis().SetTitle("Numeric %s distorsion fluctuation (cm)" % namevar)
-        h_deltasvsdist.ProjectionX().Draw()
-        h_deltasvsdist.GetYaxis().SetTitle("Entries")
+        h_deltas_vs_dist.GetXaxis().SetTitle("Numeric %s distorsion fluctuation (cm)" % opt_name)
+        h_deltas_vs_dist.ProjectionX().Draw()
+        h_deltas_vs_dist.GetYaxis().SetTitle("Entries")
         cev.cd(3)
         gPad.SetLogy()
         h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)"
-                                     % namevar)
+                                     % opt_name)
         h_deltas.GetYaxis().SetTitle("Entries")
         h_deltas.Draw()
         cev.cd(4)
-        prof.GetYaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)" % namevar)
-        prof.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % namevar)
+        prof.GetYaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)" % opt_name)
+        prof.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % opt_name)
         prof.Draw()
         #cev.cd(5)
-        #h_deltasvsdist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
-        #h_deltasvsdist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
-        #h_deltasvsdist.Draw("colz")
+        #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
+        #h_deltas_vs_dist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
+        #h_deltas_vs_dist.Draw("colz")
         cev.SaveAs("plots/canvas_%s.pdf" % (suffix))
 
-    # pylint: disable=no-self-use
     def plot(self):
         self.logger.info("DnnOptimizer::plot")
         for iname, opt in enumerate(self.opt_predout):
             if opt == 1:
-                namevariable = self.nameopt_predout[iname]
+                opt_name = self.nameopt_predout[iname]
 
                 myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "open")
-                h_distallevents = myfile.Get("hdistallevents" + self.suffix)
-                hdeltasallevents = myfile.Get("hdeltasallevents" + self.suffix)
-                h_deltasvsdistallevents = myfile.Get("hdeltasvsdistallevents" + self.suffix)
-                profiledeltasvsdistallevents = myfile.Get("profiledeltasvsdistallevents" + self.suffix)
-                self.plot_distorsion(h_distallevents, hdeltasallevents, h_deltasvsdistallevents,
-                                     profiledeltasvsdistallevents, self.suffix, namevariable)
+                h_dist_all_events = myfile.Get("hdistall_events" + self.suffix)
+                h_deltas_all_events = myfile.Get("hdeltasall_events" + self.suffix)
+                h_deltas_vs_dist_all_events = myfile.Get("hdeltasvsdistall_events" + self.suffix)
+                profile_deltas_vs_dist_all_events = myfile.Get("profiledeltasvsdistall_events" + \
+                                                               self.suffix)
+                self.plot_distorsion(h_dist_all_events, h_deltas_all_events,
+                                     h_deltas_vs_dist_all_events, profile_deltas_vs_dist_all_events,
+                                     self.suffix, opt_name)
 
                 counter = 0
                 for iexperiment in self.partition['apply']:
-                    suffix_ = "Ev%d_Mean%d%s" % (iexperiment[0], iexperiment[1], self.suffix)
-                    h_dist = myfile.Get("hdist%s" % suffix_)
-                    h_deltas = myfile.Get("hdeltas%s" % suffix_)
-                    h_deltasvsdist = myfile.Get("hdeltasvsdist%s" % suffix_)
-                    prof = myfile.Get("profiledeltasvsdist%s" % suffix_)
-                    self.plot_distorsion(h_dist, h_deltas, h_deltasvsdist, prof,
-                                         suffix_, namevariable)
+                    h_suffix = "Ev%d_Mean%d%s" % (iexperiment[0], iexperiment[1], self.suffix)
+                    h_dist = myfile.Get("hdist%s" % h_suffix)
+                    h_deltas = myfile.Get("hdeltas%s" % h_suffix)
+                    h_deltas_vs_dist = myfile.Get("hdeltasvsdist%s" % h_suffix)
+                    profile = myfile.Get("profiledeltasvsdist%s" % h_suffix)
+                    self.plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, profile,
+                                         h_suffix, opt_name)
                     counter = counter + 1
                     if counter > 100:
                         sys.exit()

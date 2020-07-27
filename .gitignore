@@ -45,6 +45,12 @@ tpcwithdnn/validation/output_*
 tpcwithdnn/model/*.json
 tpcwithdnn/model/*.h5
 
+tpcwithdnn/model_new_random
+tpcwithdnn/validation_new_random
+
+# debugs
+tpcwithdnn/*.txt
+
 # editor backups/cached
 *.swp
 *~

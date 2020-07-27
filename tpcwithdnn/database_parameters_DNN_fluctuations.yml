@@ -1,7 +1,7 @@
 DNN_fluctuations:
   dirmodel: model_new_random
   dirval: validation_new_random
-  dirinput_train: /data/tpcml/data_20200518/bias/
+  dirinput_train: /data/tpcml/data_20200518/bias
   dirinput_apply: /data/tpcml/data_20200518/nobias
   diroutflattree: /data/tpcml/datagm/flattree
   grid_phi: 90
