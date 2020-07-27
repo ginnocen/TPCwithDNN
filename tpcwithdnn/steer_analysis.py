@@ -8,9 +8,8 @@ from machine_learning_hep.logger import get_logger
 from dnnoptimiser import DnnOptimiser
 
 def main():
-
     logger = get_logger()
-    logger.info("Do analysis chain")
+    logger.info("Starting TPC ML...")
 
     with open("default.yaml", 'r') as default_data:
         default = yaml.safe_load(default_data)
@@ -54,6 +53,8 @@ def main():
         myopt.plot()
     if dogrid is True:
         myopt.gridsearch()
+
+    logger.info("Program finished.")
 
 if __name__ == "__main__":
     main()

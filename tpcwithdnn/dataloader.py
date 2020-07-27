@@ -1,5 +1,6 @@
 # pylint: disable=fixme, pointless-string-statement
 import numpy as np
+import random
 
 def loaddata_original(inputdata, indexev):
 
@@ -108,7 +109,7 @@ def loaddata(inputdata, indexev, selopt_input, selopt_output):
             vecFluctuationDistRPhi_, vecFluctuationDistZ_]
 
 
-def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
+def load_train_apply(inputdata, indexev, selopt_input, selopt_output,
                    grid_r, grid_rphi, grid_z, opt_train, opt_pred):
 
     [vecMeanSC, vecFluctuationSC, vecFluctuationDistR,
@@ -119,7 +120,8 @@ def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
     x_ = np.empty((grid_rphi, grid_r, grid_z, dim_input))
     y_ = np.empty((grid_rphi, grid_r, grid_z, dim_output))
 
-    indexfillx = 0
+    indexfillx = 0 # TODO: Will it be used for something?
+    # FIXME: These settings get overwritten - intentionally?
     if opt_train[0] == 1:
         x_[:, :, :, indexfillx] = \
                 vecMeanSC.reshape(grid_rphi, grid_r, grid_z)
@@ -132,7 +134,7 @@ def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
     if sum(opt_pred) > 1:
         print("MULTI-OUTPUT NOT IMPLEMENTED YET")
         return 0
-    indexfilly = 0
+    indexfilly = 0 # TODO: Will it be used for something?
     if opt_pred[0] == 1:
         y_[:, :, :, indexfilly] = \
                 vecFluctuationDistR.reshape(grid_rphi, grid_r, grid_z)
@@ -149,3 +151,32 @@ def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
     #print("DIMENSION OUTPUT TRAINING", y_.shape)
 
     return x_, y_
+
+
+def get_event_mean_indices(maxrandomfiles_train, maxrandomfiles_apply, range_mean_index, rangeevent_train, rangeevent_test, rangeevent_apply):
+    all_indices_events_means_train = []
+    all_indices_events_means_apply = []
+    for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
+        for ievent in np.arange(maxrandomfiles_train):
+            all_indices_events_means_train.append([ievent, imean])
+        for ievent in np.arange(maxrandomfiles_apply):
+            all_indices_events_means_apply.append([ievent, imean])
+
+    random.seed(1)
+
+    sel_indices_events_means_train = random.sample(all_indices_events_means_train, \
+        maxrandomfiles_train * (range_mean_index[1] + 1 - range_mean_index[0]))
+    sel_indices_events_means_apply = random.sample(all_indices_events_means_apply, \
+        maxrandomfiles_apply * (range_mean_index[1] + 1 - range_mean_index[0]))
+
+    indices_events_means_train = [sel_indices_events_means_train[index] \
+        for index in range(rangeevent_train[0], rangeevent_train[1])]
+    indices_events_means_test = [sel_indices_events_means_train[index] \
+        for index in range(rangeevent_test[0], rangeevent_test[1])]
+    indices_events_means_apply = [sel_indices_events_means_apply[index] \
+        for index in range(rangeevent_apply[0], rangeevent_apply[1])]
+    partition = {'train': indices_events_means_train,
+                 'validation': indices_events_means_test,
+                 'apply': indices_events_means_apply}
+
+    return sel_indices_events_means_train, partition
