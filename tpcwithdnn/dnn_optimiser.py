@@ -11,11 +11,11 @@ from keras.utils.vis_utils import plot_model
 from root_numpy import fill_hist
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
-from symmetrypadding3d import symmetryPadding3d
+from symmetry_padding_3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
-from fluctuationDataGenerator import fluctuationDataGenerator
-from utilitiesdnn import UNet
-from dataloader import loadtrain_test, loaddata_original
+from fluctuation_data_generator import fluctuationDataGenerator
+from utilities_dnn import UNet
+from data_loader import loadtrain_test, loaddata_original
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 

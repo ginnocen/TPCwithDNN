@@ -2,7 +2,7 @@
 # pylint: disable=fixme, pointless-string-statement, too-many-arguments
 import numpy as np
 import keras
-from dataloader import loadtrain_test
+from data_loader import loadtrain_test
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
 class fluctuationDataGenerator(keras.utils.Sequence):

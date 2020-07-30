@@ -4,7 +4,7 @@ from keras.layers import AveragePooling3D, Conv3DTranspose
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import Conv3D, MaxPooling3D
-from symmetrypadding3d import symmetryPadding3d
+from symmetry_padding_3d import symmetryPadding3d
 
 #https://github.com/mimrtl/DeepRad-Tools/blob/master/Examples/Unet.py
 # pylint: disable=line-too-long, invalid-name

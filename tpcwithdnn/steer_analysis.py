@@ -5,13 +5,13 @@ main script for doing tpc calibration with dnn
 import yaml
 from machine_learning_hep.logger import get_logger
 #from machine_learning_hep.utilities import checkdir, checkmakedir
-from dnnoptimiser import DnnOptimiser
+from dnn_optimiser import DnnOptimiser
 def do_entire_analysis():
 
     logger = get_logger()
     logger.info("Do analysis chain")
 
-    with open("default.yaml", 'r') as default_data:
+    with open("default.yml", 'r') as default_data:
         default = yaml.safe_load(default_data)
     case = default["case"]
     df_parameters = "database_parameters_%s.yml" % case
