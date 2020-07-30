@@ -12,7 +12,7 @@ class SymmetryPadding3d(Layer):
         self.output_dim = None
 
     def call(self, inputs):
-        pad = [[0, 0]] + [i for i in self.padding] + [[0, 0]]
+        pad = [[0, 0]] + self.padding + [[0, 0]]
         if K.backend() == "tensorflow":
             paddings = tf.constant(pad)
             #print(inputs.shape)
