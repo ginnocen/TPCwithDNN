@@ -6,7 +6,7 @@ from data_loader import load_train_apply
 class FluctuationDataGenerator(keras.utils.Sequence):
 
     def __init__(self, list_ids, phi_slice, r_row, z_col, batch_size, shuffle,
-                 opt_train, opt_predout, selopt_input, selopt_output, data_dir_train,
+                 opt_train, opt_predout, selopt_input, selopt_output, data_dir,
                  use_scaler):
         self.list_ids = list_ids
         self.phi_slice = phi_slice
@@ -21,7 +21,7 @@ class FluctuationDataGenerator(keras.utils.Sequence):
         self.dim_output = sum(self.opt_predout)
         self.selopt_input = selopt_input
         self.selopt_output = selopt_output
-        self.data_dir = data_dir_train
+        self.data_dir = data_dir
         self.use_scaler = use_scaler
 
     def __len__(self):
