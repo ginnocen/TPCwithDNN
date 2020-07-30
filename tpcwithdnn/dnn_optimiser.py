@@ -62,7 +62,7 @@ class DnnOptimiser:
         self.depth = self.data_param["depth"]
         self.batch_normalization = self.data_param["batch_normalization"]
         self.dropout = self.data_param["dropout"]
-        self.epochs = self.data_param["ephocs"]
+        self.epochs = self.data_param["epochs"]
 
         self.lossfun = self.data_param["lossfun"]
         self.metrics = self.data_param["metrics"]
