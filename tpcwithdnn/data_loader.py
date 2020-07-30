@@ -108,8 +108,8 @@ def loaddata(inputdata, indexev, selopt_input, selopt_output):
             vecFluctuationDistRPhi_, vecFluctuationDistZ_]
 
 
-def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
-                   grid_r, grid_rphi, grid_z, opt_train, opt_pred):
+def load_train_apply(inputdata, indexev, selopt_input, selopt_output,
+                     grid_r, grid_rphi, grid_z, opt_train, opt_pred):
 
     [vecMeanSC, vecFluctuationSC, vecFluctuationDistR,
      vecFluctuationDistRPhi, vecFluctuationDistZ] = \

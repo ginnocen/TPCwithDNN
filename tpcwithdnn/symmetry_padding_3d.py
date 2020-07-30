@@ -2,17 +2,14 @@ import keras.backend as K
 from keras.layers import Layer
 import tensorflow as tf
 
-# pylint: disable=line-too-long, invalid-name
-class symmetryPadding3d(Layer):
-    def __init__(self, padding=[[0, 0], [1, 1], [1, 1], [1, 1], [0, 0]], mode='SYMMETRIC', data_format="channels_last", **kwargs):
+class SymmetryPadding3d(Layer):
+    def __init__(self, padding=None,
+                 mode='SYMMETRIC', data_format="channels_last", **kwargs):
         self.data_format = data_format
-        self.padding = padding
+        self.padding = [[0, 0], [1, 1], [1, 1], [1, 1], [0, 0]] if padding is None else padding
         self.mode = mode
-        super(symmetryPadding3d, self).__init__(**kwargs)
+        super(SymmetryPadding3d, self).__init__(**kwargs)
         self.output_dim = None
-
-    def build(self, input_shape):
-        super(symmetryPadding3d, self).build(input_shape)
 
     def call(self, inputs):
         pad = [[0, 0]] + [i for i in self.padding] + [[0, 0]]
@@ -27,9 +24,9 @@ class symmetryPadding3d(Layer):
         return out
 
     def compute_output_shape(self, input_shape):
-        return  self.output_dim
+        return self.output_dim
 
     def get_config(self):
         config = {'padding': self.padding, 'data_format': self.data_format, 'mode': self.mode}
-        base_config = super(symmetryPadding3d, self).get_config()
+        base_config = super(SymmetryPadding3d, self).get_config()
         return dict(list(base_config.items()) + list(config.items()))

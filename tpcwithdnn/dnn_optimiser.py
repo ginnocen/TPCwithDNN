@@ -11,11 +11,12 @@ from keras.utils.vis_utils import plot_model
 from root_numpy import fill_hist
 from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
-from symmetry_padding_3d import symmetryPadding3d
+from symmetry_padding_3d import SymmetryPadding3d
 from machine_learning_hep.logger import get_logger
-from fluctuation_data_generator import fluctuationDataGenerator
-from utilities_dnn import UNet
-from data_loader import loadtrain_test, loaddata_original
+from fluctuation_data_generator import FluctuationDataGenerator
+from utilities_dnn import u_net
+from data_loader import load_train_apply, loaddata_original
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
@@ -218,11 +219,11 @@ class DnnOptimiser:
 
         partition = {'train': self.indexmatrix_ev_mean_train,
                      'validation': self.indexmatrix_ev_mean_test}
-        training_generator = fluctuationDataGenerator(partition['train'], **self.params)
-        validation_generator = fluctuationDataGenerator(partition['validation'], **self.params)
-        model = UNet((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
-                     depth=self.depth, bathnorm=self.batch_normalization,
-                     pool_type=self.pooling, start_ch=self.filters, dropout=self.dropout)
+        training_generator = FluctuationDataGenerator(partition['train'], **self.params)
+        validation_generator = FluctuationDataGenerator(partition['validation'], **self.params)
+        model = u_net((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
+                     depth=self.depth, batchnorm=self.batch_normalization,
+                     pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout)
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
                       metrics=[self.metrics]) # Mean squared error
         model.summary()
@@ -263,7 +264,7 @@ class DnnOptimiser:
         loaded_model_json = json_file.read()
         json_file.close()
         loaded_model = \
-            model_from_json(loaded_model_json, {'symmetryPadding3d' : symmetryPadding3d})
+            model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
         loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
 
         myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
@@ -274,9 +275,9 @@ class DnnOptimiser:
 
         for iexperiment in self.indexmatrix_ev_mean_apply:
             indexev = iexperiment
-            x_, y_ = loadtrain_test(self.dirinput, indexev, self.selopt_input, self.selopt_output,
-                                    self.grid_r, self.grid_phi, self.grid_z,
-                                    self.opt_train, self.opt_predout)
+            x_, y_ = load_train_apply(self.dirinput, indexev, self.selopt_input, self.selopt_output,
+                                      self.grid_r, self.grid_phi, self.grid_z,
+                                      self.opt_train, self.opt_predout)
             x_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input))
             y_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_output))
             x_single[0, :, :, :, :] = x_

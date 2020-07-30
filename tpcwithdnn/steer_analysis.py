@@ -6,10 +6,10 @@ import yaml
 from machine_learning_hep.logger import get_logger
 #from machine_learning_hep.utilities import checkdir, checkmakedir
 from dnn_optimiser import DnnOptimiser
-def do_entire_analysis():
 
+def main():
     logger = get_logger()
-    logger.info("Do analysis chain")
+    logger.info("Starting TPC ML...")
 
     with open("default.yml", 'r') as default_data:
         default = yaml.safe_load(default_data)
@@ -17,7 +17,6 @@ def do_entire_analysis():
     df_parameters = "database_parameters_%s.yml" % case
     with open(df_parameters, 'r') as parameters_data:
         db_parameters = yaml.safe_load(parameters_data)
-
 
     #dirmodel = db_parameters[case]["dirmodel"]
     #dirval = db_parameters[case]["dirval"]
@@ -55,4 +54,7 @@ def do_entire_analysis():
     if dogrid is True:
         myopt.gridsearch()
 
-do_entire_analysis()
+    logger.info("Program finished.")
+
+if __name__ == "__main__":
+    main()
