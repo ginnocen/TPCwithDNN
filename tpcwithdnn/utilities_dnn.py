@@ -56,7 +56,7 @@ def u_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation="relu
     output = Conv3D(1, 1, activation="linear", padding="same", kernel_initializer="normal")(output)
     return Model(inputs=i, outputs=output)
 
-# TODO: unused arguments
+#pylint:disable=unused-argument
 def simple_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation="relu",
                dropout=0.2, batchnorm=False, pool_type=0, upconv=True, residual=False):
     print("SimpleNet is just an attempt. Be patient :)")
