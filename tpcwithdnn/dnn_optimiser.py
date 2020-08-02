@@ -1,5 +1,6 @@
+# pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
+# pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 import os
-import sys
 from array import array
 import matplotlib
 import matplotlib.pyplot as plt
@@ -19,8 +20,6 @@ from data_loader import load_train_apply, load_data_original, get_event_mean_ind
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
-
-# pylint: disable=too-many-instance-attributes, too-many-statements
 class DnnOptimiser:
     # Class Attribute
     # TODO: What is this for?
@@ -413,7 +412,6 @@ class DnnOptimiser:
                     counter = counter + 1
                     if counter > 100:
                         return
-                        #sys.exit()
 
 
     # pylint: disable=no-self-use

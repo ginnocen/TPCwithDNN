@@ -1,3 +1,5 @@
+# pylint: disable=too-many-arguments, invalid-name
+# pylint: disable=missing-module-docstring, missing-function-docstring
 from keras.models import Model
 from keras.layers import Input, concatenate, UpSampling3D
 from keras.layers import AveragePooling3D, Conv3DTranspose

@@ -1,3 +1,4 @@
+# pylint: disable=missing-module-docstring, missing-class-docstring
 import keras.backend as K
 from keras.layers import Layer
 import tensorflow as tf
@@ -11,6 +12,7 @@ class SymmetryPadding3d(Layer):
         super(SymmetryPadding3d, self).__init__(**kwargs)
         self.output_dim = None
 
+    # pylint: disable=arguments-differ
     def call(self, inputs):
         pad = [[0, 0]] + self.padding + [[0, 0]]
         if K.backend() == "tensorflow":

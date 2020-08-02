@@ -1,3 +1,5 @@
+# pylint: disable=missing-module-docstring, missing-function-docstring
+# pylint: disable=too-many-locals, too-many-arguments, fixme
 import random
 import numpy as np
 
@@ -135,10 +137,10 @@ def get_event_mean_indices(maxrandomfiles_train, maxrandomfiles_apply, range_mea
     all_indices_events_means_train = []
     all_indices_events_means_apply = []
     for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
-      for ievent in np.arange(maxrandomfiles_train):
-        all_indices_events_means_train.append([ievent, imean])
-      for ievent in np.arange(maxrandomfiles_apply):
-        all_indices_events_means_apply.append([ievent, imean])
+        for ievent in np.arange(maxrandomfiles_train):
+            all_indices_events_means_train.append([ievent, imean])
+        for ievent in np.arange(maxrandomfiles_apply):
+            all_indices_events_means_apply.append([ievent, imean])
 
     sel_indices_events_means_train = random.sample(all_indices_events_means_train, \
         maxrandomfiles_train * (range_mean_index[1] + 1 - range_mean_index[0]))

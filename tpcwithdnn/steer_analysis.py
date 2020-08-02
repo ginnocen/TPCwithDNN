@@ -8,6 +8,7 @@ from machine_learning_hep.logger import get_logger
 from dnn_optimiser import DnnOptimiser
 
 def main():
+    """ The global main function """
     logger = get_logger()
     logger.info("Starting TPC ML...")
 

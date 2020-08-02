@@ -1,3 +1,5 @@
+# pylint: disable=too-many-instance-attributes, too-many-arguments
+# pylint: disable=missing-module-docstring, missing-class-docstring
 import numpy as np
 import keras
 from data_loader import load_train_apply
