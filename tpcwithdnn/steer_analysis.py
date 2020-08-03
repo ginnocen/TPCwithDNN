@@ -15,19 +15,12 @@ def main():
     with open("default.yml", 'r') as default_data:
         default = yaml.safe_load(default_data)
     case = default["case"]
-    df_parameters = "database_parameters_%s.yml" % case
-    with open(df_parameters, 'r') as parameters_data:
+    with open("database_parameters_%s.yml" % case, 'r') as parameters_data:
         db_parameters = yaml.safe_load(parameters_data)
 
     #dirmodel = db_parameters[case]["dirmodel"]
     #dirval = db_parameters[case]["dirval"]
     #dirinput = db_parameters[case]["dirinput"]
-
-    dodumpflattree = default["dumpflattree"]
-    dotrain = default["dotrain"]
-    doapply = default["doapply"]
-    doplot = default["doplot"]
-    dogrid = default["dogrid"]
 
     #counter = 0
     #if dotraining is True:
@@ -44,16 +37,43 @@ def main():
     #if dotesting is True:
     #    checkmakedir(dirval)
 
-    if dodumpflattree is True:
-        myopt.dumpflattree()
-    if dotrain is True:
-        myopt.train()
-    if doapply is True:
-        myopt.apply()
-    if doplot is True:
-        myopt.plot()
-    if dogrid is True:
-        myopt.gridsearch()
+    if len(db_parameters[case]["train_events"]) != len(db_parameters[case]["test_events"]) or \
+       len(db_parameters[case]["train_events"]) != len(db_parameters[case]["apply_events"]):
+        raise ValueError("Different number of ranges specified for train/test/apply")
+    events_counts = zip(db_parameters[case]["train_events"],
+                        db_parameters[case]["test_events"],
+                        db_parameters[case]["apply_events"])
+    max_available_events = db_parameters[case]["max_events"]
+
+    all_events_counts = []
+
+    for (train_events, test_events, apply_events) in events_counts:
+        total_events = train_events + test_events + apply_events
+        if total_events > max_available_events:
+            print("Too big number of events requested: %d available: %d" % \
+                  (total_events, max_available_events))
+            continue
+
+        all_events_counts.append((train_events, test_events, apply_events, total_events))
+
+        ranges = {"train": [0, train_events],
+                  "test": [train_events, train_events + test_events],
+                  "apply": [train_events + test_events, total_events]}
+        myopt.set_ranges(ranges, total_events)
+
+        if default["dodumpflattree"] is True:
+            myopt.dumpflattree()
+        if default["dotrain"] is True:
+            myopt.train()
+        if default["doapply"] is True:
+            myopt.apply()
+        if default["doplot"] is True:
+            myopt.plot()
+        if default["dogrid"] is True:
+            myopt.gridsearch()
+
+    if default["doprofile"] is True:
+        myopt.draw_profile(all_events_counts)
 
     logger.info("Program finished.")
 

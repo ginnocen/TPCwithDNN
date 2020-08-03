@@ -132,7 +132,7 @@ def load_train_apply(input_data, event_index, selopt_input, selopt_output,
     return inputs, exp_outputs
 
 
-def get_event_mean_indices(maxrandomfiles, range_mean_index, train_range, test_range, apply_range):
+def get_event_mean_indices(maxrandomfiles, range_mean_index, ranges):
     all_indices_events_means = []
     for ievent in np.arange(maxrandomfiles):
         for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
@@ -141,12 +141,11 @@ def get_event_mean_indices(maxrandomfiles, range_mean_index, train_range, test_r
         maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
 
     indices_train = [sel_indices_events_means[index] \
-        for index in range(train_range[0], test_range[1])]
+        for index in range(ranges["train"][0], ranges["train"][1])]
     indices_test = [sel_indices_events_means[index] \
-        for index in range(test_range[0], test_range[1])]
+        for index in range(ranges["test"][0], ranges["test"][1])]
     indices_apply = [sel_indices_events_means[index] \
-        for index in range(apply_range[0], apply_range[1])]
-
+        for index in range(ranges["apply"][0], ranges["apply"][1])]
     partition = {"train": indices_train,
                  "validation": indices_test,
                  "apply": indices_apply}

@@ -9,7 +9,8 @@ from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
 from root_numpy import fill_hist
-from ROOT import TH1F, TH2F, TFile, TCanvas, gPad # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
+from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
 from symmetry_padding_3d import SymmetryPadding3d
 from machine_learning_hep.logger import get_logger
@@ -115,10 +116,11 @@ class DnnOptimiser:
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
 
-        self.indices_events_means_train, self.partition = get_event_mean_indices(
-            data_param["maxrandomfiles"],
-            data_param['range_mean_index'], data_param['rangeevent_train'],
-            data_param['rangeevent_test'], data_param['rangeevent_apply'])
+        self.maxrandomfiles = data_param["maxrandomfiles"]
+        self.range_mean_index = data_param["range_mean_index"]
+        self.indices_events_means_train = None
+        self.partition = None
+        self.total_events = 0
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
@@ -223,7 +225,7 @@ class DnnOptimiser:
                       metrics=[self.metrics]) # Mean squared error
 
         model.summary()
-        plot_model(model, to_file='plots/model%s.png' % (self.suffix),
+        plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),
                    show_shapes=True, show_layer_names=True)
 
         his = model.fit_generator(generator=training_generator,
@@ -244,12 +246,13 @@ class DnnOptimiser:
         plt.xlabel("Epoch #")
         plt.ylabel("Loss/Accuracy")
         plt.legend(loc="lower left")
-        plt.savefig("plots/plot_%s.png" % self.suffix)
+        plt.savefig("plots/plot_%s_nEv%d.png" % (self.suffix, self.total_events))
 
         model_json = model.to_json()
-        with open("%s/model%s.json" % (self.dirmodel, self.suffix), "w") as json_file: \
+        with open("%s/model_%s_nEv%d.json" % (self.dirmodel, self.suffix, self.total_events), "w") \
+            as json_file:
             json_file.write(model_json)
-        model.save_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
+        model.save_weights("%s/model_%s_nEv%d.h5" % (self.dirmodel, self.suffix, self.total_events))
         self.logger.info("Saved trained model to disk")
 
     # TODO: What is it for? To remove?
@@ -259,21 +262,24 @@ class DnnOptimiser:
     def apply(self):
         self.logger.info("DnnOptimizer::apply, input size: %d", self.dim_input)
 
-        json_file = open("%s/model%s.json" % (self.dirmodel, self.suffix), "r")
+        json_file = open("%s/model_%s_nEv%d.json" % \
+                         (self.dirmodel, self.suffix, self.total_events), "r")
         loaded_model_json = json_file.read()
         json_file.close()
         loaded_model = \
             model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
-        loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
+        loaded_model.load_weights("%s/model_%s_nEv%d.h5" % \
+                                  (self.dirmodel, self.suffix, self.total_events))
 
-        myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "recreate")
-        h_dist_all_events = TH2F("%s_all_events_%s" % (self.h_dist_name, self.suffix), "",
-                                 500, -5, 5, 500, -5, 5)
-        h_deltas_all_events = TH1F("%s_all_events_%s" % (self.h_deltas_name, self.suffix), "",
-                                   1000, -1., 1.)
+        myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
+                            (self.dirval, self.suffix, self.total_events), "recreate")
+        h_dist_all_events = TH2F("%s_all_events_%s" % (self.h_dist_name, self.suffix),
+                                 "", 500, -5, 5, 500, -5, 5)
+        h_deltas_all_events = TH1F("%s_all_events_%s" % (self.h_deltas_name, self.suffix),
+                                   "", 1000, -1., 1.)
         h_deltas_vs_dist_all_events = TH2F("%s_all_events_%s" % \
-                                           (self.h_deltas_vs_dist_name, self.suffix), "",
-                                           500, -5.0, 5.0, 100, -0.5, 0.5)
+                                           (self.h_deltas_vs_dist_name, self.suffix),
+                                           "", 500, -5.0, 5.0, 100, -0.5, 0.5)
 
         for iexperiment in self.partition['apply']:
             indexev = iexperiment
@@ -362,8 +368,9 @@ class DnnOptimiser:
 
 
     @staticmethod
-    def plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name):
-        cev = TCanvas("canvas_%s_%s" % (suffix, opt_name), "canvas_%s_%s" % (suffix, opt_name),
+    def plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name, total_events):
+        cev = TCanvas("canvas_%s_nEv%d_%s" % (suffix, total_events, opt_name),
+                      "canvas_%s_nEv%d_%s" % (suffix, total_events, opt_name),
                       1400, 1000)
         cev.Divide(2, 2)
         cev.cd(1)
@@ -389,7 +396,7 @@ class DnnOptimiser:
         #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
         #h_deltas_vs_dist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
         #h_deltas_vs_dist.Draw("colz")
-        cev.SaveAs("plots/canvas_%s.pdf" % (suffix))
+        cev.SaveAs("plots/canvas_%s_nEv%d.pdf" % (suffix, total_events))
 
     def plot(self):
         self.logger.info("DnnOptimizer::plot")
@@ -397,7 +404,8 @@ class DnnOptimiser:
             if opt == 1:
                 opt_name = self.nameopt_predout[iname]
 
-                myfile = TFile.Open("%s/output%s.root" % (self.dirval, self.suffix), "open")
+                myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
+                                    (self.dirval, self.suffix, self.total_events), "open")
                 h_dist_all_events = myfile.Get("%s_all_events_%s" % (self.h_dist_name, self.suffix))
                 h_deltas_all_events = myfile.Get("%s_all_events_%s" % \
                                                  (self.h_deltas_name, self.suffix))
@@ -407,7 +415,7 @@ class DnnOptimiser:
                     myfile.Get("%s_all_events_%s" % (self.profile_name, self.suffix))
                 self.plot_distorsion(h_dist_all_events, h_deltas_all_events,
                                      h_deltas_vs_dist_all_events, profile_deltas_vs_dist_all_events,
-                                     self.suffix, opt_name)
+                                     self.suffix, opt_name, self.total_events)
 
                 counter = 0
                 for iexperiment in self.partition['apply']:
@@ -417,7 +425,7 @@ class DnnOptimiser:
                     h_deltas_vs_dist = myfile.Get("%s_%s" % (self.h_deltas_vs_dist_name, h_suffix))
                     profile = myfile.Get("%s_%s" % (self.profile_name, h_suffix))
                     self.plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, profile,
-                                         h_suffix, opt_name)
+                                         h_suffix, opt_name, self.total_events)
                     counter = counter + 1
                     if counter > 100:
                         return
@@ -426,3 +434,111 @@ class DnnOptimiser:
     # pylint: disable=no-self-use
     def gridsearch(self):
         self.logger.warning("Grid search not yet implemented")
+
+
+    def setup_canvas(self, hist_name, opt_name, x_label, y_label):
+        full_name = "%s_canvas_%s_%s" % (hist_name, self.suffix, opt_name)
+        canvas = TCanvas(full_name, full_name, 0, 0, 800, 800)
+        canvas.SetMargin(0.12, 0.05, 0.12, 0.05)
+        canvas.SetTicks(1, 1)
+
+        frame = canvas.DrawFrame(-5, -0.5, +5, +0.5)
+        frame.GetXaxis().SetTitle(x_label)
+        frame.GetYaxis().SetTitle(y_label)
+        frame.GetXaxis().SetTitleOffset(1.5)
+        frame.GetYaxis().SetTitleOffset(1.5)
+        frame.GetXaxis().CenterTitle(True)
+        frame.GetYaxis().CenterTitle(True)
+        frame.GetXaxis().SetTitleSize(0.035)
+        frame.GetYaxis().SetTitleSize(0.035)
+        frame.GetXaxis().SetLabelSize(0.035)
+        frame.GetYaxis().SetLabelSize(0.035)
+
+        leg = TLegend(0.3, 0.65, 0.65, 0.8)
+        leg.SetBorderSize(0)
+        leg.SetTextSize(0.03)
+
+        return canvas, frame, leg
+
+
+    def save_canvas(self, canvas, frame, prefix, func_name, file_formats):
+        file_name = "%s_wide_%s_%s" % (prefix, func_name, self.suffix)
+        for file_format in file_formats:
+            canvas.SaveAs("%s.%s" % (file_name, file_format))
+        frame.GetYaxis().SetRangeUser(-0.05, +0.05)
+        file_name = "%s_zoom_%s_%s" % (prefix, func_name, self.suffix)
+        for file_format in file_formats:
+            canvas.SaveAs("%s.%s" % (file_name, file_format))
+
+
+    def add_desc_to_canvas(self):
+        txt1 = TPaveText(0.15, 0.8, 0.4, 0.92, "NDC")
+        txt1.SetFillColor(kWhite)
+        txt1.SetFillStyle(0)
+        txt1.SetBorderSize(0)
+        txt1.SetTextAlign(12) # middle,left
+        txt1.SetTextFont(42) # helvetica
+        txt1.SetTextSize(0.04)
+        txt1.AddText("#varphi slice = %d, r slice = %d, z slice = %d" % \
+                     (self.grid_phi, self.grid_r, self.grid_z))
+        if self.opt_train[0] == 1 and self.opt_train[1] == 1:
+            txt1.AddText("inputs: #rho_{SC} - <#rho_{SC}>, <#rho_{SC}>")
+        elif self.opt_train[1] == 1:
+            txt1.AddText("inputs: #rho_{SC} - <#rho_{SC}>")
+        txt1.Draw()
+
+
+    def draw_multievent_hist(self, events_counts, func_label, hist_name, source_hist):
+        gStyle.SetOptStat(0)
+        gStyle.SetOptTitle(0)
+
+        file_formats = ["pdf"]
+        # file_formats = ["png", "eps", "pdf"]
+        var_labels = ["dr", "rd#varphi", "dz"]
+        colors = [kBlue+1, kGreen+2, kRed+1, kCyan+2, kOrange+7, kMagenta+2]
+
+        for iname, opt in enumerate(self.opt_predout):
+            if opt == 1:
+                opt_name = self.nameopt_predout[iname]
+                var_label = var_labels[iname]
+
+                x_label = "numerical fluctuation (cm), %s" % var_label
+                y_label = "%s of (pred. - num.) in %d apply events (cm), %s" % \
+                          (func_label, events_counts[0][2], var_label)
+                canvas, frame, leg = self.setup_canvas(hist_name, opt_name, x_label, y_label)
+
+                for i, (train_events, _, _, total_events) in enumerate(events_counts):
+                    filename = "%s/output_%s_nEv%d.root" % (self.dirval, self.suffix, total_events)
+                    self.logger.info("Reading %s...", filename)
+
+                    root_file = TFile.Open(filename, "read")
+                    hist = root_file.Get("%s_all_events_%s" % (source_hist, self.suffix))
+                    hist.SetDirectory(0)
+                    hist.Draw("same")
+                    hist.SetMarkerStyle(20)
+                    hist.SetMarkerColor(colors[i])
+                    hist.SetLineColor(colors[i])
+
+                    # train_events_k = train_events / 1000
+                    leg.AddEntry(hist, "N_{ev}^{training} = %d" % train_events, "LP")
+                    root_file.Close()
+
+                leg.Draw()
+                self.add_desc_to_canvas()
+                self.save_canvas(canvas, frame, "20200803", hist_name, file_formats)
+
+
+    def draw_profile(self, events_counts):
+        self.draw_multievent_hist(events_counts, "mean", "profile", self.profile_name)
+
+
+    def draw_std_dev(self, events_counts):
+        self.draw_multievent_hist(events_counts, "std dev", "std_dev", self.h_std_dev_name)
+
+
+    def set_ranges(self, ranges, total_events):
+        self.total_events = total_events
+
+        self.indices_events_means_train, self.partition = get_event_mean_indices(
+            self.maxrandomfiles, self.range_mean_index, ranges)
+        self.logger.info("Processing %d events", self.total_events)
