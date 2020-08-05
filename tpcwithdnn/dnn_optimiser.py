@@ -53,10 +53,18 @@ class DnnOptimiser:
         self.dirmodel = data_param["dirmodel"]
         self.dirval = data_param["dirval"]
         self.diroutflattree = data_param["diroutflattree"]
-        self.dirinput_train = data_param["dirinput_train"] + "/SC-%d-%d-%d/" % \
-                (self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_apply = data_param["dirinput_apply"] + "/SC-%d-%d-%d/" % \
-                (self.grid_z, self.grid_r, self.grid_phi)
+        train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
+                    else data_param["dirinput_nobias"]
+        test_dir = data_param["dirinput_bias"] if data_param["test_bias"] \
+                    else data_param["dirinput_nobias"]
+        apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
+                    else data_param["dirinput_nobias"]
+        self.dirinput_train = "%s/SC-%d-%d-%d/" % \
+                              (train_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_test = "%s/SC-%d-%d-%d/" % \
+                             (test_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
+                              (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
 
         # DNN config
         self.filters = data_param["filters"]
@@ -80,7 +88,6 @@ class DnnOptimiser:
                        'opt_predout' : self.opt_predout,
                        'selopt_input' : self.selopt_input,
                        'selopt_output' : self.selopt_output,
-                       'data_dir': self.dirinput_train,
                        'use_scaler': self.use_scaler}
 
         self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
@@ -109,7 +116,8 @@ class DnnOptimiser:
                          self.opt_train[0], self.opt_train[1])
 
         self.indices_events_means_train, self.partition = get_event_mean_indices(
-            data_param["maxrandomfiles_train"], data_param["maxrandomfiles_apply"],
+            data_param["maxrandomfiles_train"], data_param["maxrandomfiles_test"],
+            data_param["maxrandomfiles_apply"],
             data_param['range_mean_index'], data_param['rangeevent_train'],
             data_param['rangeevent_test'], data_param['rangeevent_apply'])
 
@@ -205,8 +213,10 @@ class DnnOptimiser:
     def train(self):
         self.logger.info("DnnOptimizer::train")
 
-        training_generator = FluctuationDataGenerator(self.partition['train'], **self.params)
-        validation_generator = FluctuationDataGenerator(self.partition['validation'], **self.params)
+        training_generator = FluctuationDataGenerator(self.partition['train'],
+                                                      data_dir=self.dirinput_train, **self.params)
+        validation_generator = FluctuationDataGenerator(self.partition['validation'],
+                                                        data_dir=self.dirinput_test, **self.params)
         model = u_net((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
                       depth=self.depth, batchnorm=self.batch_normalization,
                       pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout)

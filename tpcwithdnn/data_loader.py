@@ -132,30 +132,25 @@ def load_train_apply(input_data, event_index, selopt_input, selopt_output,
     return inputs, exp_outputs
 
 
-def get_event_mean_indices(maxrandomfiles_train, maxrandomfiles_apply, range_mean_index,
-                           range_event_train, range_event_test, range_event_apply):
-    all_indices_events_means_train = []
-    all_indices_events_means_apply = []
-    for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
-        for ievent in np.arange(maxrandomfiles_train):
-            all_indices_events_means_train.append([ievent, imean])
-        for ievent in np.arange(maxrandomfiles_apply):
-            all_indices_events_means_apply.append([ievent, imean])
+def get_event_mean_indices(maxrandomfiles_train, maxrandomfiles_test, maxrandomfiles_apply,
+                           range_mean_index, train_range, test_range, apply_range):
+    def get_indices(maxrandomfiles, range_mean_index, event_range):
+        all_indices_events_means = []
+        for ievent in np.arange(maxrandomfiles):
+            for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
+                all_indices_events_means.append([ievent, imean])
+        sel_indices_events_means = random.sample(all_indices_events_means, \
+            maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
+        indices_events_means = [sel_indices_events_means[index] \
+            for index in range(event_range[0], event_range[1])]
+        return sel_indices_events_means, indices_events_means
 
-    sel_indices_events_means_train = random.sample(all_indices_events_means_train, \
-        maxrandomfiles_train * (range_mean_index[1] + 1 - range_mean_index[0]))
-    sel_indices_events_means_apply = random.sample(all_indices_events_means_apply, \
-        maxrandomfiles_apply * (range_mean_index[1] + 1 - range_mean_index[0]))
+    sel_indices_train, indices_train = get_indices(maxrandomfiles_train, range_mean_index,
+                                                   train_range)
+    _, indices_test = get_indices(maxrandomfiles_test, range_mean_index, test_range)
+    _, indices_apply = get_indices(maxrandomfiles_apply, range_mean_index, apply_range)
+    partition = {"train": indices_train,
+                 "validation": indices_test,
+                 "apply": indices_apply}
 
-    indices_events_means_train = [sel_indices_events_means_train[index] \
-        for index in range(range_event_train[0], range_event_train[1])]
-    indices_events_means_test = [sel_indices_events_means_train[index] \
-        for index in range(range_event_test[0], range_event_test[1])]
-    indices_events_means_apply = [sel_indices_events_means_apply[index] \
-        for index in range(range_event_apply[0], range_event_apply[1])]
-
-    partition = {'train': indices_events_means_train,
-                 'validation': indices_events_means_test,
-                 'apply': indices_events_means_apply}
-
-    return sel_indices_events_means_train, partition
+    return sel_indices_train, partition
