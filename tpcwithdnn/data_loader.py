@@ -132,25 +132,23 @@ def load_train_apply(input_data, event_index, selopt_input, selopt_output,
     return inputs, exp_outputs
 
 
-def get_event_mean_indices(maxrandomfiles_train, maxrandomfiles_test, maxrandomfiles_apply,
-                           range_mean_index, train_range, test_range, apply_range):
-    def get_indices(maxrandomfiles, range_mean_index, event_range):
-        all_indices_events_means = []
-        for ievent in np.arange(maxrandomfiles):
-            for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
-                all_indices_events_means.append([ievent, imean])
-        sel_indices_events_means = random.sample(all_indices_events_means, \
-            maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
-        indices_events_means = [sel_indices_events_means[index] \
-            for index in range(event_range[0], event_range[1])]
-        return sel_indices_events_means, indices_events_means
+def get_event_mean_indices(maxrandomfiles, range_mean_index, train_range, test_range, apply_range):
+    all_indices_events_means = []
+    for ievent in np.arange(maxrandomfiles):
+        for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
+            all_indices_events_means.append([ievent, imean])
+    sel_indices_events_means = random.sample(all_indices_events_means, \
+        maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
 
-    sel_indices_train, indices_train = get_indices(maxrandomfiles_train, range_mean_index,
-                                                   train_range)
-    _, indices_test = get_indices(maxrandomfiles_test, range_mean_index, test_range)
-    _, indices_apply = get_indices(maxrandomfiles_apply, range_mean_index, apply_range)
+    indices_train = [sel_indices_events_means[index] \
+        for index in range(train_range[0], test_range[1])]
+    indices_test = [sel_indices_events_means[index] \
+        for index in range(test_range[0], test_range[1])]
+    indices_apply = [sel_indices_events_means[index] \
+        for index in range(apply_range[0], apply_range[1])]
+
     partition = {"train": indices_train,
                  "validation": indices_test,
                  "apply": indices_apply}
 
-    return sel_indices_train, partition
+    return sel_indices_events_means, partition

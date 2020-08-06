@@ -116,8 +116,7 @@ class DnnOptimiser:
                          self.opt_train[0], self.opt_train[1])
 
         self.indices_events_means_train, self.partition = get_event_mean_indices(
-            data_param["maxrandomfiles_train"], data_param["maxrandomfiles_test"],
-            data_param["maxrandomfiles_apply"],
+            data_param["maxrandomfiles"],
             data_param['range_mean_index'], data_param['rangeevent_train'],
             data_param['rangeevent_test'], data_param['rangeevent_apply'])
 
