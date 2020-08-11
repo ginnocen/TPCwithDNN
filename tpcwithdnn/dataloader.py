@@ -34,6 +34,55 @@ def loaddata_original(inputdata, indexev):
             vecMeanDistZ, vecRandomDistZ]
 
 
+def loaddata_derivativesRefMean(inputdata, selopt, opt_pred):
+    """
+    Here below we define the preselections on the input data for the training.
+    Three options are currently implemented.
+    selopt == 0 selects only points with positive z position
+    selopt == 1 selects only points with negative z position
+    selopt == 2 uses all data with no selections
+
+    Selection of distortion variable to be returned (multi-dimensional output not yet implemented:
+    opt_pred[0] == 1: dr
+    opt_pred[1] == 1: drphi
+    opt_pred[2] == 1: dz
+
+    """
+    zPosFile = inputdata + "data/Pos/" + str(0) + '-vecZPos.npy'
+    refMeanSCPlusFile = inputdata + "data/Mean/" + str(9) + '-vecMeanSC.npy'
+    refMeanSCMinusFile = inputdata + "data/Mean/" + str(18) + '-vecMeanSC.npy'
+
+    if selopt == 0:
+        arrSelectionZ = np.load(zPosFile) > 0
+    elif selopt == 1:
+        arrSelectionZ = np.load(zPosFile) < 0
+    elif selopt == 2:
+        arrSelectionZ = np.load(zPosFile) == np.load(zPosFile)
+
+    arrDerRefMeanSC = np.load(refMeanSCPlusFile)[arrSelectionZ] - np.load(refMeanSCMinusFile)[arrSelectionZ]
+
+    dim_distortions = sum(opt_pred)
+    arraysize = arrDerRefMeanSC.size
+    matDerRefMeanDist = np.empty((dim_distortions, arraysize))
+    indexfillDist = 0
+    if opt_pred[0] == 1:
+        refMeanDistRPlusFile = inputdata + "data/Mean/" + str(9) + '-vecMeanDistR.npy'
+        refMeanDistRMinusFile = inputdata + "data/Mean/" + str(18) + '-vecMeanDistR.npy'
+        matDerRefMeanDist[indexfillDist, :] = np.load(refMeanDistRPlusFile)[arrSelectionZ] - np.load(refMeanDistRMinusFile)[arrSelectionZ]
+        indexfillDist = indexfillDist + 1
+    if opt_pred[1] == 1:
+        refMeanDistRPhiPlusFile = inputdata + "data/Mean/" + str(9) + '-vecMeanDistRPhi.npy'
+        refMeanDistRPhiMinusFile = inputdata + "data/Mean/" + str(18) + '-vecMeanDistRPhi.npy'
+        matDerRefMeanDist[indexfillDist, :] = np.load(refMeanDistRPhiPlusFile)[arrSelectionZ] - np.load(refMeanDistRPhiMinusFile)[arrSelectionZ]
+        indexfillDist = indexfillDist + 1
+    if opt_pred[2] == 1:
+        refMeanDistZPlusFile = inputdata + "data/Mean/" + str(9) + '-vecMeanDistZ.npy'
+        refMeanDistZMinusFile = inputdata + "data/Mean/" + str(18) + '-vecMeanDistZ.npy'
+        matDerRefMeanDist[indexfillDist, :] = np.load(refMeanDistZPlusFile)[arrSelectionZ] - np.load(refMeanDistZMinusFile)[arrSelectionZ]
+
+    return arrDerRefMeanSC, matDerRefMeanDist
+
+
 def loaddata(inputdata, indexev, selopt_input, selopt_output):
 
     """ Here we define the functionalties to load the files from the input
@@ -149,3 +198,67 @@ def loadtrain_test(inputdata, indexev, selopt_input, selopt_output,
     #print("DIMENSION OUTPUT TRAINING", y_.shape)
 
     return x_, y_
+
+
+def loaddata_applyND(inputdata, indexev, selopt, opt_pred):
+
+    """
+    Here below we define the preselections on the input data for the training.
+    Three options are currently implemented.
+    selopt == 0 selects only points with positive z position
+    selopt == 1 selects only points with negative z position
+    selopt == 2 uses all data with no selections
+
+    Selection of distortion variable to be returned (multi-dimensional output not yet implemented:
+    opt_pred[0] == 1: dr
+    opt_pred[1] == 1: drphi
+    opt_pred[2] == 1: dz
+
+    """
+    arrRPosFile = inputdata + "data/Pos/" + str(0) + '-vecRPos.npy'
+    arrPhiPosFile = inputdata + "data/Pos/" + str(0) + '-vecPhiPos.npy'
+    arrZPosFile = inputdata + "data/Pos/" + str(0) + '-vecZPos.npy'
+    scMeanFile = inputdata + "data/Mean/"+ str(indexev[1]) + '-vecMeanSC.npy'
+    scRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomSC.npy'
+
+    if selopt == 0:
+        arrSelectionZ = np.load(arrZPosFile) > 0
+    elif selopt == 1:
+        arrSelectionZ = np.load(arrZPosFile) < 0
+    elif selopt == 2:
+        arrSelectionZ = np.load(arrZPosFile) == np.load(arrZPosFile)
+
+    arrRPos = np.load(arrRPosFile)[arrSelectionZ]
+    arrPhiPos = np.load(arrPhiPosFile)[arrSelectionZ]
+    arrZPos = np.load(arrZPosFile)[arrSelectionZ]
+
+    arrMeanSC = np.load(scMeanFile)[arrSelectionZ]
+    arrFluctuationSC = arrMeanSC - np.load(scRandomFile)[arrSelectionZ]
+
+    dim_distortions = sum(opt_pred)
+    arraysize = arrMeanSC.size
+    matMeanDist = np.empty((dim_distortions, arraysize))
+    matFluctuationDist = np.empty((dim_distortions, arraysize))
+    indexfillDist = 0
+    if opt_pred[0] == 1:
+        distRMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistR.npy'
+        distRRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistR.npy'
+        matMeanDist[indexfillDist, :] = np.load(distRMeanFile)[arrSelectionZ]
+        matFluctuationDist[indexfillDist, :] = matMeanDist[indexfillDist, :] - np.load(distRRandomFile)[arrSelectionZ]
+        indexfillDist = indexfillDist + 1
+    if opt_pred[1] == 1:
+        distRPhiMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistRPhi.npy'
+        distRPhiRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistRPhi.npy'
+        matMeanDist[indexfillDist, :] = np.load(distRPhiMeanFile)[arrSelectionZ]
+        matFluctuationDist[indexfillDist, :] = matMeanDist[indexfillDist, :] - np.load(distRPhiRandomFile)[arrSelectionZ]
+        indexfillDist = indexfillDist + 1
+    if opt_pred[2] == 1:
+        distZMeanFile = inputdata + "data/Mean/" + str(indexev[1]) + '-vecMeanDistZ.npy'
+        distZRandomFile = inputdata + "data/Random/" + str(indexev[0]) + '-vecRandomDistZ.npy'
+        matMeanDist[indexfillDist, :] = np.load(distZMeanFile)[arrSelectionZ]
+        matFluctuationDist[indexfillDist, :] = matMeanDist[indexfillDist, :] - np.load(distZRandomFile)[arrSelectionZ]
+
+
+    return  arrRPos, arrPhiPos, arrZPos, \
+            arrMeanSC, arrFluctuationSC, \
+            matMeanDist, matFluctuationDist
