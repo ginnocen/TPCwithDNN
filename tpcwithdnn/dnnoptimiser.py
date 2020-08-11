@@ -1,10 +1,15 @@
 import os
 import sys
 import random
+import math
 from array import array
 import numpy as np
 import matplotlib
 import matplotlib.pyplot as plt
+import pandas as pd
+import gzip
+import pickle
+import subprocess
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
@@ -15,7 +20,10 @@ from symmetrypadding3d import symmetryPadding3d
 from machine_learning_hep.logger import get_logger
 from fluctuationDataGenerator import fluctuationDataGenerator
 from utilitiesdnn import UNet
-from dataloader import loadtrain_test, loaddata_original
+from dataloader import loadtrain_test, loaddata_original, loaddata_applyND, loaddata_derivativesRefMean
+from root_pandas import to_root, read_root
+from RootInteractive.Tools.histoNDTools import makeHistogram
+from createPDFMaps import makePDFMapFromFile, mergePDFMaps
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
@@ -49,6 +57,7 @@ class DnnOptimiser:
         self.dim_output = sum(self.opt_predout)
         self.maxrandomfiles = self.data_param["maxrandomfiles"]
         self.rangeevent_train = self.data_param["rangeevent_train"]
+        self.nevents_train = self.rangeevent_train[1] - self.rangeevent_train[0]
         self.rangeevent_test = self.data_param["rangeevent_test"]
         self.rangeevent_apply = self.data_param["rangeevent_apply"]
         self.range_mean_index = self.data_param["range_mean_index"]
@@ -97,6 +106,7 @@ class DnnOptimiser:
                 (self.suffix, self.opt_train[0], self.opt_train[1])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
+        self.suffix = "%s_Nev%d" % (self.suffix, self.nevents_train)
         self.suffix_ds = "phi%d_r%d_z%d" % \
                 (self.grid_phi, self.grid_r, self.grid_z)
 
@@ -414,6 +424,136 @@ class DnnOptimiser:
             if counter > 100:
                 sys.exit()
 
+
+    def createNDHistograms(self, dataSource):
+        """
+        Create histograms and store them in separate files
+        :param dataSource: input data frame or string to root file with validation tree
+        """
+        if type(dataSource) is str:
+            dataSource = read_root(dataSource, key = 'validation')
+        factor = 1 + 0.1 * (dataSource['indexMean'][0]!=0) * (1 - 2 * (dataSource['indexMean'][0]==18))
+        if (dataSource['indexMean'][0] != 0 and dataSource['indexMean'][0] != 9 and dataSource['indexMean'][0]!=18):
+            factor = 0
+
+        dist_names = np.array(self.nameopt_predout)[np.array([self.opt_predout[0], self.opt_predout[1], self.opt_predout[2]]) > 0]
+
+        varStringList = ['flucSC', 'meanSC', 'derRefMeanSC']
+        for distName in dist_names:
+            varStringList.append('flucDist' + distName + 'Pred')
+            varStringList.append('flucDist' + distName)
+            varStringList.append('flucDist' + distName + 'Diff')
+            varStringList.append('meanDist' + distName)
+            varStringList.append('derRefMeanDist' + distName)
+
+            dataSource['flucDist' + distName + 'Diff'] = dataSource['flucDist' + distName + 'Pred'] - dataSource['flucDist' + distName]
+
+        for varString in varStringList:
+            histoString = str(varString) + \
+                          ":phi:r:z:deltaSC" + \
+                          ":#r>0" + \
+                          ">>" + varString + "(" + \
+                          str("{:d},{:.4f},{:.4f},".format(200, dataSource[varString].min(), dataSource[varString].max())) + \
+                          "180,0.0,6.283," + \
+                          "33,83.5,254.5," + \
+                          "40,0,250," + \
+                          str("{:d},{:.4f},{:.4f})".format(10, dataSource['deltaSC'].min(), dataSource['deltaSC'].max()))
+            print("Create and write 1+4D histogram: " + histoString)
+            with gzip.open(self.dirval + "/" + self.suffix + "/outputNDHistos_mean" + str(factor) + "_" + varString + ".gzip", 'wb') as outputFile:
+                pickle.dump(makeHistogram(dataSource, histoString), outputFile)
+            outputFile.close()
+
+
+    def createNDvalidationData(self):
+        print("Create data for multi-dimensional analysis, input size", self.dim_input)
+        json_file = open("%s/model%s.json" % (self.dirmodel, self.suffix), "r")
+        loaded_model_json = json_file.read()
+        json_file.close()
+        loaded_model = \
+            model_from_json(loaded_model_json, {'symmetryPadding3d' : symmetryPadding3d})
+        loaded_model.load_weights("%s/model%s.h5" % (self.dirmodel, self.suffix))
+
+        dist_names = np.array(self.nameopt_predout)[np.array([self.opt_predout[0], self.opt_predout[1], self.opt_predout[2]]) > 0]
+        column_names = np.array(['phi', 'r', 'z',
+                        'flucSC', 'meanSC', 'deltaSC', 'derRefMeanSC'])
+        for distName in dist_names:
+            column_names = np.append(column_names, ['flucDist' + distName,
+                                                    'meanDist' + distName,
+                                                    'derRefMeanDist' + distName,
+                                                    'flucDist' + distName + 'Pred'])
+
+        arrDerRefMeanSC, matDerRefMeanDist = \
+            loaddata_derivativesRefMean(self.dirinput, self.selopt_input, self.opt_predout)
+
+        if not os.path.isdir(self.dirval + "/" + self.suffix):
+            os.makedirs(self.dirval + "/" + self.suffix)
+
+        for imean, factor in zip([0, 9, 18], [1.0, 1.1, 0.9]):
+            if os.path.isfile(self.dirval + "/" + self.suffix + "/outputValidation_mean" + str(factor) + ".root"):
+                os.remove(self.dirval + "/" + self.suffix + "/outputValidation_mean" + str(factor) + ".root")
+
+            for irnd in np.arange(self.maxrandomfiles):
+                imap = [irnd, imean]
+                arrRPos, arrPhiPos, arrZPos, \
+                arrMeanSC, arrFluctuationSC, \
+                matMeanDist, matFluctuationDist = \
+                    loaddata_applyND(self.dirinput, imap, self.selopt_input, self.opt_predout)
+                arrIndexRnd = np.empty(arrZPos.size)
+                arrIndexRnd[:] = imap[0]
+                arrIndexMean = np.empty(arrZPos.size)
+                arrIndexMean[:] = imap[1]
+                arrDeltaSC = np.empty(arrZPos.size)
+                arrDeltaSC[:] = sum(arrFluctuationSC) / sum(arrMeanSC)
+
+                dfsinglemap = pd.DataFrame({'indexRnd' : arrIndexRnd,
+                                       'indexMean' : arrIndexMean,
+                                       column_names[0] : arrPhiPos,
+                                       column_names[1] : arrRPos,
+                                       column_names[2] : arrZPos,
+                                       column_names[3] : arrFluctuationSC,
+                                       column_names[4] : arrMeanSC,
+                                       column_names[5] : arrDeltaSC,
+                                       column_names[6] : arrDerRefMeanSC})
+
+                input_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input))
+                indexfillInput = 0
+                if self.opt_train[0] == 1:
+                    input_single[0, :, :, :, indexfillInput] = arrMeanSC.reshape(self.grid_phi, self.grid_r, self.grid_z)
+                    indexfillInput = indexfillInput + 1
+                if self.opt_train[1] == 1:
+                    input_single[0, :, :, :, indexfillInput] = arrFluctuationSC.reshape(self.grid_phi, self.grid_r, self.grid_z)
+                    indexfillInput = indexfillInput + 1
+
+                matFluctuationDistPredict_group = loaded_model.predict(input_single)
+                matFluctuationDistPredict = np.empty((self.dim_output, matFluctuationDist[0, :].size))
+                for indexDist in range(self.dim_output):
+                    matFluctuationDistPredict[indexDist, :] = matFluctuationDistPredict_group[0, :, :, :, indexDist].flatten()
+                    dfsinglemap[column_names[7 + indexDist * 4]] = matFluctuationDist[indexDist, :]
+                    dfsinglemap[column_names[8 + indexDist * 4]] = matMeanDist[indexDist, :]
+                    dfsinglemap[column_names[9 + indexDist * 4]] = matDerRefMeanDist[indexDist, :]
+                    dfsinglemap[column_names[10 + indexDist * 4]] = matFluctuationDistPredict[indexDist, :]
+
+                dfsinglemap.to_root(self.dirval + "/" + self.suffix + "/outputValidation_mean" + str(factor) + ".root", key='validation', mode='a', store_index=False)
+
+        print("DONE createNDvalidationData")
+
+
+    def createNDHistosFromTree(self):
+        for factor in [1.0, 1.1, 0.9]:
+            dataFileStr = self.dirval + "/" + self.suffix + "/outputValidation_mean" + str(factor) + ".root"
+            print("Create ND histograms for mean = " + str(factor) + " from stored ND validation data: " + dataFileStr)
+            self.createNDHistograms(dataFileStr)
+
+        print("DONE createNDHistosFromTree")
+
+
+    def createPDFMaps(self):
+        print("Create pdf maps, input size", self.dim_input)
+        fileList = subprocess.run("ls " + self.dirval + "/" + self.suffix + "/outputNDHistos_mean*.gzip", stdout=subprocess.PIPE, shell=True).stdout.decode("utf-8").split()
+        for file in fileList:
+            makePDFMapFromFile(file)
+        mergePDFMaps(self.dirval + "/" + self.suffix)
+        print("DONE createPDFMaps")
 
 
     # pylint: disable=no-self-use

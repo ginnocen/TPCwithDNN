@@ -6,6 +6,17 @@ import yaml
 from machine_learning_hep.logger import get_logger
 #from machine_learning_hep.utilities import checkdir, checkmakedir
 from dnnoptimiser import DnnOptimiser
+
+## optionally limit GPU memory usage
+# import tensorflow as tf
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+#   try:
+#     for gpu in gpus:
+#       tf.config.experimental.set_memory_growth(gpu, True)
+#   except RuntimeError as e:
+#     print(e)
+
 def do_entire_analysis():
 
     logger = get_logger()
@@ -27,6 +38,9 @@ def do_entire_analysis():
     dotrain = default["dotrain"]
     doapply = default["doapply"]
     doplot = default["doplot"]
+    doNDvalidation = default["doNDvalidation"]
+    doCreateNDHistogramsFromTree = default["doCreateNDHistogramsFromTree"]
+    doCreatePDFMaps = default["doCreatePDFMaps"]
     dogrid = default["dogrid"]
 
     #counter = 0
@@ -52,6 +66,12 @@ def do_entire_analysis():
         myopt.apply()
     if doplot is True:
         myopt.plot()
+    if doNDvalidation is True:
+        myopt.createNDvalidationData()
+    if doCreateNDHistogramsFromTree is True:
+        myopt.createNDHistosFromTree()
+    if doCreatePDFMaps is True:
+        myopt.createPDFMaps()
     if dogrid is True:
         myopt.gridsearch()
 

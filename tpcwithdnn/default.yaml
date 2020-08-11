@@ -3,4 +3,7 @@ dumpflattree: false
 dotrain: true
 doapply: false
 doplot: false
+doNDvalidation: false
+doCreateNDHistogramsFromTree: false
+doCreatePDFMaps: false
 dogrid: false
