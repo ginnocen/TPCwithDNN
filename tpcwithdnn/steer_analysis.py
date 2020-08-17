@@ -31,6 +31,7 @@ def main():
     #    sys.exit()
 
     myopt = DnnOptimiser(db_parameters[case], case)
+    mydataval = DataValidation(db_parameters[case], case)
 
     #if dotraining is True:
     #    checkmakedir(dirmodel)
@@ -74,6 +75,9 @@ def main():
 
     if default["doprofile"] is True:
         myopt.draw_profile(all_events_counts)
+
+    if default["docreatevaldata"] is True:
+        mydataval.create_data(all_events_counts)
 
     logger.info("Program finished.")
 
