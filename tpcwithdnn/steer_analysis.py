@@ -6,7 +6,9 @@ import yaml
 from machine_learning_hep.logger import get_logger
 #from machine_learning_hep.utilities import checkdir, checkmakedir
 from dnn_optimiser import DnnOptimiser
+from data_validator import DataValidator
 
+# pylint: disable=too-many-locals
 def main():
     """ The global main function """
     logger = get_logger()
@@ -31,7 +33,7 @@ def main():
     #    sys.exit()
 
     myopt = DnnOptimiser(db_parameters[case], case)
-    mydataval = DataValidation(db_parameters[case], case)
+    mydataval = DataValidator(db_parameters[case], case)
 
     #if dotraining is True:
     #    checkmakedir(dirmodel)
@@ -61,6 +63,7 @@ def main():
                   "test": [train_events, train_events + test_events],
                   "apply": [train_events + test_events, total_events]}
         myopt.set_ranges(ranges, total_events)
+        mydataval.set_ranges(ranges, total_events)
 
         if default["dodumpflattree"] is True:
             myopt.dumpflattree()
@@ -77,7 +80,7 @@ def main():
         myopt.draw_profile(all_events_counts)
 
     if default["docreatevaldata"] is True:
-        mydataval.create_data(all_events_counts)
+        mydataval.create_data()
 
     logger.info("Program finished.")
 

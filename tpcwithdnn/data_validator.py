@@ -1,57 +1,64 @@
-# pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+# pylint: disable=fixme, too-many-statements, too-many-instance-attributes
 import os
 from array import array
 import matplotlib
-import matplotlib.pyplot as plt
-import numpy as np
-from keras.optimizers import Adam
-from keras.models import model_from_json
-from keras.utils.vis_utils import plot_model
-from root_numpy import fill_hist
-from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
-from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
-from symmetry_padding_3d import SymmetryPadding3d
+from ROOT import TFile, TTree  # pylint: disable=import-error, no-name-in-module
 from machine_learning_hep.logger import get_logger
-from fluctuation_data_generator import FluctuationDataGenerator
-from utilities_dnn import u_net
-from data_loader import load_train_apply, load_data_original, get_event_mean_indices
+from data_loader import load_data_original, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
-class DataValidation:
+class DataValidator:
     # Class Attribute
     # TODO: What is this for?
-    species = "datavalidation"
+    species = "data validator"
     # FIXME: here I just copied something from the dnn_analyzer. It is likely
     # more information (e.g. the model name). You can just copy what you need
     # from the dnn_optimiser and delete what you dont need.
 
     def __init__(self, data_param, case):
         self.logger = get_logger()
-        self.logger.info("DataValidation::Init\nCase: %s", case)
+        self.logger.info("DataValidator::Init\nCase: %s", case)
 
         # Dataset config
         self.grid_phi = data_param["grid_phi"]
         self.grid_z = data_param["grid_z"]
         self.grid_r = data_param["grid_r"]
 
-        self.selopt_input = data_param["selopt_input"]
-        self.selopt_output = data_param["selopt_output"]
-        self.opt_train = data_param["opt_train"]
-        self.opt_predout = data_param["opt_predout"]
-        self.nameopt_predout = data_param["nameopt_predout"]
-        self.dim_input = sum(self.opt_train)
-        self.dim_output = sum(self.opt_predout)
-        self.use_scaler = data_param["use_scaler"]
-
         # Directories
-        self.dirmodel = data_param["dirmodel"]
-        self.dirval = data_param["dirval"]
+        train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
+                    else data_param["dirinput_nobias"]
+        test_dir = data_param["dirinput_bias"] if data_param["test_bias"] \
+                    else data_param["dirinput_nobias"]
+        apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
+                    else data_param["dirinput_nobias"]
+        self.dirinput_train = "%s/SC-%d-%d-%d/" % \
+                              (train_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_test = "%s/SC-%d-%d-%d/" % \
+                             (test_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
+                              (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
         self.diroutflattree = data_param["diroutflattree"]
+        self.suffix_ds = "phi%d_r%d_z%d" % \
+                (self.grid_phi, self.grid_r, self.grid_z)
 
+        # Parameters for getting input indices
+        self.maxrandomfiles = data_param["maxrandomfiles"]
+        self.range_mean_index = data_param["range_mean_index"]
+        self.indices_events_means = None
+        self.total_events = 0
+
+
+    def set_ranges(self, ranges, total_events):
+        self.total_events = total_events
+
+        self.indices_events_means, _ = get_event_mean_indices(
+            self.maxrandomfiles, self.range_mean_index, ranges)
+
+
+    # pylint: disable=too-many-locals
     def create_data(self):
         # FIXME : as you can imagine this is a complete duplication of what we
         # have in the dnn optimiser. But once this class is finished, we will
@@ -59,7 +66,7 @@ class DataValidation:
         # plotting code will be moved here. For the moment lets just keep the
         # code duplication.
 
-        self.logger.info("DataValidation::dumpflattree")
+        self.logger.info("DataValidator::create_data")
         self.logger.warning("DO YOU REALLY WANT TO DO IT? IT TAKES TIME")
         outfile_name = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
         myfile = TFile.Open(outfile_name, "recreate")
@@ -96,7 +103,7 @@ class DataValidation:
         tree.Branch('meanid', meanid, 'meanid/I')
         tree.Branch('randomid', randomid, 'randomid/I')
 
-        for counter, indexev in enumerate(self.indices_events_means_train):
+        for counter, indexev in enumerate(self.indices_events_means):
             self.logger.info("processing event: %d [%d, %d]", counter, indexev[0], indexev[1])
 
             # TODO: Should it be for train or apply data?
@@ -104,7 +111,7 @@ class DataValidation:
              _, _,
              vec_mean_dist_r, vec_random_dist_r,
              vec_mean_dist_rphi, vec_random_dist_rphi,
-             vec_mean_dist_z, vec_random_dist_z] = load_data_original(self.dirinput_train, indexev)
+             vec_mean_dist_z, vec_random_dist_z] = load_data_original(self.dirinput_apply, indexev)
 
             vec_r_pos = vec_r_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
             vec_phi_pos = vec_phi_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
@@ -150,4 +157,3 @@ class DataValidation:
        # FIXME: HERE YOU WOULD NEED TO LOAD THE MODEL, APPLY THE MODEL TO THE DATA AND
        # FILL NEW COLUMNS THAT CONTAIN e.g. THE PREDICTED DISTORTION
        # FLUCTUATIONS. HERE IS WHERE THE CODE OF ERNST SHOULD BE INSERTED.
-

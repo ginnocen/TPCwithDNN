@@ -140,12 +140,10 @@ def get_event_mean_indices(maxrandomfiles, range_mean_index, ranges):
     sel_indices_events_means = random.sample(all_indices_events_means, \
         maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
 
-    indices_train = [sel_indices_events_means[index] \
-        for index in range(ranges["train"][0], ranges["train"][1])]
-    indices_test = [sel_indices_events_means[index] \
-        for index in range(ranges["test"][0], ranges["test"][1])]
-    indices_apply = [sel_indices_events_means[index] \
-        for index in range(ranges["apply"][0], ranges["apply"][1])]
+    indices_train = sel_indices_events_means[ranges["train"][0]:ranges["train"][1]]
+    indices_test = sel_indices_events_means[ranges["test"][0]:ranges["test"][1]]
+    indices_apply = sel_indices_events_means[ranges["apply"][0]:ranges["apply"][1]]
+
     partition = {"train": indices_train,
                  "validation": indices_test,
                  "apply": indices_apply}
