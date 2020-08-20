@@ -1,10 +1,13 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+# pylint: disable=protected-access
 import os
 from array import array
+import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
@@ -228,10 +231,14 @@ class DnnOptimiser:
         plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),
                    show_shapes=True, show_layer_names=True)
 
+        log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
+
+        model._get_distribution_strategy = lambda: None
         his = model.fit_generator(generator=training_generator,
                                   validation_data=validation_generator,
                                   use_multiprocessing=True,
-                                  epochs=self.epochs, workers=1)
+                                  epochs=self.epochs, workers=1, callbacks=[tensorboard_callback])
 
         plt.style.use("ggplot")
         plt.figure()
