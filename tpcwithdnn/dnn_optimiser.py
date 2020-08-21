@@ -231,7 +231,7 @@ class DnnOptimiser:
         plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),
                    show_shapes=True, show_layer_names=True)
 
-        log_dir = "logs/" + datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        log_dir = "logs/" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         model._get_distribution_strategy = lambda: None
