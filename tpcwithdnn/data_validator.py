@@ -49,6 +49,7 @@ class DataValidator:
         self.range_mean_index = data_param["range_mean_index"]
         self.indices_events_means = None
         self.total_events = 0
+        self.tree_events = data_param["tree_events"]
 
 
     def set_ranges(self, ranges, total_events):
@@ -145,8 +146,7 @@ class DataValidator:
                         randomid[0] = indexev[0]
                         tree.Fill()
 
-            # Set as you want
-            if counter == 10:
+            if counter + 1 == self.tree_events:
                 break
 
         myfile.Write()
