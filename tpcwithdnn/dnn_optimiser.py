@@ -4,22 +4,28 @@
 import os
 from array import array
 import datetime
+
 import matplotlib
 import matplotlib.pyplot as plt
+
 import numpy as np
+
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
+
 from root_numpy import fill_hist
+
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
-from symmetry_padding_3d import SymmetryPadding3d
-from machine_learning_hep.logger import get_logger
-from fluctuation_data_generator import FluctuationDataGenerator
-from utilities_dnn import u_net
-from data_loader import load_train_apply, load_data_original, get_event_mean_indices
+
+from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
+from tpcwithdnn.logger import get_logger
+from tpcwithdnn.fluctuation_data_generator import FluctuationDataGenerator
+from tpcwithdnn.utilities_dnn import u_net
+from tpcwithdnn.data_loader import load_train_apply, load_data_original, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")

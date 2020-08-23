@@ -3,10 +3,10 @@ main script for doing tpc calibration with dnn
 """
 
 import yaml
-from machine_learning_hep.logger import get_logger
-#from machine_learning_hep.utilities import checkdir, checkmakedir
-from dnn_optimiser import DnnOptimiser
-from data_validator import DataValidator
+
+from tpcwithdnn.logger import get_logger
+from tpcwithdnn.dnn_optimiser import DnnOptimiser
+from tpcwithdnn.data_validator import DataValidator
 
 # pylint: disable=too-many-locals
 def main():
@@ -23,6 +23,12 @@ def main():
     #dirmodel = db_parameters[case]["dirmodel"]
     #dirval = db_parameters[case]["dirval"]
     #dirinput = db_parameters[case]["dirinput"]
+
+    # NOTE
+    # checkdir and checkmakedir not yet implemented. Was previously used from
+    # machine_learning_hep package but is now the only thing required from there.
+    # Easy to adapt an implementation like that to avoid heavy dependency
+    # on machine_learning_hep
 
     #counter = 0
     #if dotraining is True:

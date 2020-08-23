@@ -1,0 +1,8 @@
+numpy
+pandas
+matplotlib
+scipy==1.4.1
+keras
+tensorflow==2.1.0
+PyYaml
+pylint

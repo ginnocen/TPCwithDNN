@@ -2,10 +2,13 @@
 # pylint: disable=fixme, too-many-statements, too-many-instance-attributes
 import os
 from array import array
+
 import matplotlib
+
 from ROOT import TFile, TTree  # pylint: disable=import-error, no-name-in-module
-from machine_learning_hep.logger import get_logger
-from data_loader import load_data_original, get_event_mean_indices
+
+from tpcwithdnn.logger import get_logger
+from tpcwithdnn.data_loader import load_data_original, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
