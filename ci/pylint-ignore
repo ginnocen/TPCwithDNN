@@ -1,0 +1,5 @@
+# Legacy code
+symmetry_padding_3d.py
+
+# Don't pylint setup
+setup.py

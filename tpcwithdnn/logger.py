@@ -88,7 +88,7 @@ def configure_logger(debug, logfile=None):
         logger.setLevel(logging.INFO)
 
     sh = logging.StreamHandler()
-    formatter = LoggerFormatter(color=lambda : getattr(sh.stream, 'isatty', None)) # pylint: disable=C0326
+    formatter = LoggerFormatter(color=lambda : getattr(sh.stream, 'isatty', None)) # pylint: disable=bad-option-value
 
     sh.setFormatter(formatter)
     logger.addHandler(sh)
