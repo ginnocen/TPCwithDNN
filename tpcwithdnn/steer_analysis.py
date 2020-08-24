@@ -9,7 +9,17 @@ from tpcwithdnn.logger import get_logger
 from tpcwithdnn.dnn_optimiser import DnnOptimiser
 from tpcwithdnn.data_validator import DataValidator
 
-# pylint: disable=too-many-locals
+## optionally limit GPU memory usage
+# import tensorflow as tf
+# gpus = tf.config.experimental.list_physical_devices('GPU')
+# if gpus:
+#   try:
+#     for gpu in gpus:
+#       tf.config.experimental.set_memory_growth(gpu, True)
+#   except RuntimeError as e:
+#     print(e)
+
+# pylint: disable=too-many-locals, too-many-branches
 def main():
     """ The global main function """
     logger = get_logger()
@@ -70,7 +80,7 @@ def main():
                   "test": [train_events, train_events + test_events],
                   "apply": [train_events + test_events, total_events]}
         myopt.set_ranges(ranges, total_events)
-        mydataval.set_ranges(ranges, total_events)
+        mydataval.set_ranges(ranges, train_events, total_events)
 
         if default["dotrain"] is True:
             myopt.train()
@@ -86,6 +96,11 @@ def main():
 
     if default["docreatevaldata"] is True:
         mydataval.create_data()
+    if default["doaddapplyvaldata"] is True:
+        mydataval.apply()
+
+    if default["do_nd_validation"] is True:
+        mydataval.create_nd_validation_data()
 
     logger.info("Program finished.")
 

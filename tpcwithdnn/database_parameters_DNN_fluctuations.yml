@@ -8,6 +8,7 @@ DNN_fluctuations:
   apply_bias: false
   diroutflattree: /data/tpcml/datagm/flattree
   tree_events: 20 # Number of events to save in a tree
+  validate_model: true
   grid_phi: 90
   grid_z: 17
   grid_r: 17
