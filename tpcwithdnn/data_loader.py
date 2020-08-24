@@ -203,7 +203,7 @@ def load_data_apply_nd(inputdata, indexev, selopt, opt_pred):
 
     """
     arr_r_pos_file = "%sdata/Pos/0-vecRPos.npy" % inputdata
-    arr_rphi_pos_file = "%sdata/Pos/0-vecRPhiPos.npy" % inputdata
+    arr_phi_pos_file = "%sdata/Pos/0-vecPhiPos.npy" % inputdata
     arr_z_pos_file = "%sdata/Pos/0-vecZPos.npy" % inputdata
     sc_mean_file = "%sdata/Mean/%d-vecMeanSC.npy" % (inputdata, indexev[1])
     sc_random_file = "%sdata/Random/%d-vecRandomSC.npy" % (inputdata, indexev[0])
@@ -216,7 +216,7 @@ def load_data_apply_nd(inputdata, indexev, selopt, opt_pred):
         arr_sel_z = np.load(arr_z_pos_file) == np.load(arr_z_pos_file)
 
     arr_r_pos = np.load(arr_r_pos_file)[arr_sel_z]
-    arr_rphi_pos = np.load(arr_rphi_pos_file)[arr_sel_z]
+    arr_phi_pos = np.load(arr_phi_pos_file)[arr_sel_z]
     arr_z_pos = np.load(arr_z_pos_file)[arr_sel_z]
 
     arr_mean_sc = np.load(sc_mean_file)[arr_sel_z]
@@ -249,7 +249,7 @@ def load_data_apply_nd(inputdata, indexev, selopt, opt_pred):
                                             np.load(dist_z_random_file)[arr_sel_z]
 
 
-    return  arr_r_pos, arr_rphi_pos, arr_z_pos, \
+    return  arr_r_pos, arr_phi_pos, arr_z_pos, \
             arr_mean_sc, arr_fluc_sc, \
             mat_mean_dist, mat_fluc_dist
 

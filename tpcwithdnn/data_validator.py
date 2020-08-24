@@ -249,7 +249,7 @@ class DataValidator:
             for irnd in np.arange(self.maxrandomfiles):
                 imap = [irnd, imean]
                 # TODO: Should it be dirinput_train, test, apply?
-                (arr_r_pos, arr_rphi_pos, arr_z_pos, arr_mean_sc, arr_fluc_sc,
+                (arr_r_pos, arr_phi_pos, arr_z_pos, arr_mean_sc, arr_fluc_sc,
                  mat_mean_dist, mat_fluc_dist) = \
                     load_data_apply_nd(self.dirinput_apply, imap, self.selopt_input,
                                        self.opt_predout)
@@ -262,7 +262,7 @@ class DataValidator:
 
                 df_single_map = pd.DataFrame({"indexRnd" : arr_index_random,
                                               "indexMean" : arr_index_mean,
-                                              column_names[0] : arr_rphi_pos,
+                                              column_names[0] : arr_phi_pos,
                                               column_names[1] : arr_r_pos,
                                               column_names[2] : arr_z_pos,
                                               column_names[3] : arr_fluc_sc,
