@@ -8,7 +8,7 @@
 ###############################################################################
 
 
-VIRTUALENV_PATH="~/.virtualenvs/tpcwithdnn"
+VIRTUALENV_PATH=~/.virtualenvs/tpcwithdnn
 
 create-virtualenv ()
 {
@@ -85,11 +85,10 @@ then
         then
             echo "Creating virtual environment"
             create-virtualenv --force
-        else
-            export LD_LIBRARY_PATH=/home/dsekihat/local/cuda/lib64/:$LD_LIBRARY_PATH;
-            export FLUCTUATIONDIR="/data/tpcml/";
-            activate-virtualenv
-            ml-activate-root
         fi
+        export LD_LIBRARY_PATH=/home/dsekihat/local/cuda/lib64/:$LD_LIBRARY_PATH;
+        export FLUCTUATIONDIR="/data/tpcml/";
+        activate-virtualenv
+        ml-activate-root
     fi
 fi
