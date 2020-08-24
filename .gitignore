@@ -47,6 +47,7 @@ tpcwithdnn/model/*.h5
 
 tpcwithdnn/model_new_random
 tpcwithdnn/validation_new_random
+tpcwithdnn/logs
 
 # debugs
 tpcwithdnn/*.txt
