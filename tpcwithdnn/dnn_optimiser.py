@@ -3,7 +3,7 @@
 # pylint: disable=protected-access
 import os
 from array import array
-import datetime
+#import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -236,7 +236,8 @@ class DnnOptimiser:
         plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),
                    show_shapes=True, show_layer_names=True)
 
-        log_dir = "logs/" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
+        #log_dir = "logs/" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
+        log_dir = 'logs/' + '%s_nEv%d' % (self.suffix, self.total_events)
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         model._get_distribution_strategy = lambda: None
