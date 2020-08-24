@@ -71,8 +71,6 @@ def main():
         myopt.set_ranges(ranges, total_events)
         mydataval.set_ranges(ranges, total_events)
 
-        if default["dodumpflattree"] is True:
-            myopt.dumpflattree()
         if default["dotrain"] is True:
             myopt.train()
         if default["doapply"] is True:

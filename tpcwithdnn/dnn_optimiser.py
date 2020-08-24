@@ -1,8 +1,7 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-locals
 import os
-from array import array
 import datetime
 
 import matplotlib
@@ -19,13 +18,13 @@ from root_numpy import fill_hist
 
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
 
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.fluctuation_data_generator import FluctuationDataGenerator
 from tpcwithdnn.utilities_dnn import u_net
-from tpcwithdnn.data_loader import load_train_apply, load_data_original, get_event_mean_indices
+from tpcwithdnn.data_loader import load_train_apply, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
