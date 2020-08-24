@@ -4,7 +4,9 @@
 # This is a specific script which works with a specific python istallation at #
 # /usr/bin/python3.6                                                          #
 # Furthermore, virtualenv must be installed on the system                     #
+# With exported paths works only on AILCEML machine                           #
 ###############################################################################
+
 
 VIRTUALENV_PATH="~/.virtualenvs/tpcwithdnn"
 
@@ -59,6 +61,7 @@ deactivate-virtualenv()
     local deact=$(typeset -F | cut -d " " -f 3 | grep "deactivate$")
     if [[ "$deact" != "" ]]
     then
+        echo "Deactivate virtualenv, goodbye :)"
         deactivate > /dev/null 2>&1
     fi
 }
@@ -67,16 +70,26 @@ deactivate-virtualenv()
 #############
 # Main part #
 #############
-reinstall=$1
+option=$1
 
-if [[ "$(check-active)" != "" ]]
+# Must be sourced
+if [[ $_ != $0 ]]
 then
-    deactivate-virtualenv
-else
-    if [[ "$reinstall" == "--reinstall" || ! -d $VIRTUALENV_PATH ]]
-    then
-        create-virtualenv --force
-    fi
 
-    activate-virtualenv
+    if [[ "$(check-active)" ]]
+    then
+        [[ "$option" != "" ]] && echo "Options are not available in active virtualenv."
+        deactivate-virtualenv
+    else
+        if [[ "$option" == "--recreate" || ! -d $VIRTUALENV_PATH ]]
+        then
+            echo "Creating virtual environment"
+            create-virtualenv --force
+        else
+            export LD_LIBRARY_PATH=/home/dsekihat/local/cuda/lib64/:$LD_LIBRARY_PATH;
+            export FLUCTUATIONDIR="/data/tpcml/";
+            activate-virtualenv
+            ml-activate-root
+        fi
+    fi
 fi
