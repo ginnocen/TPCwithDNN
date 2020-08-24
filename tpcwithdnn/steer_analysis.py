@@ -96,9 +96,6 @@ def main():
 
     if default["docreatevaldata"] is True:
         mydataval.create_data()
-    if default["doaddapplyvaldata"] is True:
-        mydataval.apply()
-
     if default["do_nd_validation"] is True:
         mydataval.create_nd_validation_data()
 

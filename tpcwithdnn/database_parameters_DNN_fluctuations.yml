@@ -7,8 +7,9 @@ DNN_fluctuations:
   test_bias: true
   apply_bias: false
   diroutflattree: /data/tpcml/datagm/flattree
-  tree_events: 20 # Number of events to save in a tree
+  tree_events: 20 # Number of events for validation (random events for nd_validation)
   validate_model: true
+  tree_means: [0, 9, 18] # Indices of mean maps for validation
   grid_phi: 90
   grid_z: 17
   grid_r: 17

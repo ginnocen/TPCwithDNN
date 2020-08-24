@@ -97,6 +97,7 @@ class DataValidator:
         self.total_events = 0
         self.train_events = 0
         self.tree_events = data_param["tree_events"]
+        self.tree_means = daa_param["tree_means"]
 
         if not os.path.isdir("input_plots"):
             os.makedirs("input_plots")
@@ -240,13 +241,13 @@ class DataValidator:
                                                     "derRefMeanDist" + dist_name,
                                                     "flucDist" + dist_name + "Pred"])
 
-
-        for imean, factor in zip([0, 9, 18], [1.0, 1.1, 0.9]):
+        # FIXME: Some function to calculate proper factor or make it a configurable?
+        for imean, factor in zip(self.tree_means, [1.0, 1.1, 0.9]):
             filename = "%s/%s/outputValidation_mean%f.root" % (self.dirval, self.suffix, factor)
             if os.path.isfile(filename):
                 os.remove(filename)
 
-            for irnd in np.arange(self.maxrandomfiles):
+            for irnd in np.arange(self.tree_events):
                 imap = [irnd, imean]
                 # TODO: Should it be dirinput_train, test, apply?
                 (arr_r_pos, arr_phi_pos, arr_z_pos, arr_mean_sc, arr_fluc_sc,
