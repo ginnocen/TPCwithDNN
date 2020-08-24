@@ -1,16 +1,13 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=fixme, too-many-statements, too-many-instance-attributes
 import os
-import gzip
-import pickle
-import subprocess
 from array import array
 
 import matplotlib
 import numpy as np
 import pandas as pd
 from keras.models import model_from_json
-from root_pandas import read_root
+from root_pandas import to_root
 
 from ROOT import gROOT, TFile, TTree  # pylint: disable=import-error, no-name-in-module
 
@@ -97,7 +94,7 @@ class DataValidator:
         self.total_events = 0
         self.train_events = 0
         self.tree_events = data_param["tree_events"]
-        self.tree_means = daa_param["tree_means"]
+        self.tree_means = data_param["tree_means"]
 
         if not os.path.isdir("input_plots"):
             os.makedirs("input_plots")
