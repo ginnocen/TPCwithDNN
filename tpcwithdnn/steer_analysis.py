@@ -80,7 +80,7 @@ def main():
                   "test": [train_events, train_events + test_events],
                   "apply": [train_events + test_events, total_events]}
         myopt.set_ranges(ranges, total_events)
-        mydataval.set_ranges(ranges, train_events, total_events)
+        mydataval.set_ranges(ranges, total_events)
 
         if default["dotrain"] is True:
             myopt.train()
@@ -96,8 +96,6 @@ def main():
 
     if default["docreatevaldata"] is True:
         mydataval.create_data()
-    if default["do_nd_validation"] is True:
-        mydataval.create_nd_validation_data()
 
     logger.info("Program finished.")
 
