@@ -55,7 +55,7 @@ setup(
   # https://packaging.python.org/en/latest/requirements.html
   install_requires=[ "numpy", "pandas", "matplotlib", "scipy==1.4.1",
                      "keras==2.3.1", "tensorflow==2.1.0", "PyYaml", "RootInteractive",
-                     "pydot", "pylint"],
+                     "pydot", "pylint", "root_pandas"],
 
   python_requires='>=3.6, <3.7',
 

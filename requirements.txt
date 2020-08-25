@@ -8,3 +8,4 @@ PyYaml
 RootInteractive
 pydot
 pylint
+root_pandas

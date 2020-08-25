@@ -12,8 +12,8 @@ from root_pandas import to_root
 from ROOT import gROOT, TFile, TTree  # pylint: disable=import-error, no-name-in-module
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.data_loader import load_data_original, get_event_mean_indices
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
+from tpcwithdnn.data_loader import load_data_original, get_event_mean_indices
 from tpcwithdnn.data_loader import load_data_apply_nd, load_data_derivatives_ref_mean
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
