@@ -128,7 +128,7 @@ class DataValidator:
                                                     "meanDist" + dist_name,
                                                     "randomDist" + dist_name,
                                                     "derRefMeanDist" + dist_name])
-        if self.validate_model is True:
+        if self.validate_model:
             json_file = open("%s/model_%s_nEv%d.json" % \
                              (self.dirmodel, self.suffix, self.total_events), "r")
             loaded_model_json = json_file.read()
@@ -187,7 +187,7 @@ class DataValidator:
                 df_single_map[column_names[14 + ind_dist * 4]] = \
                     mat_der_ref_mean_dist[ind_dist, :]
 
-            if self.validate_model is True:
+            if self.validate_model:
                 if self.selopt_input == 0:
                     vec_sel_z = vec_z_pos > 0
                 elif self.selopt_input == 1:
@@ -213,7 +213,7 @@ class DataValidator:
                 for ind_dist in range(self.dim_output):
                     mat_fluc_dist_predict[ind_dist, :] = \
                         mat_fluc_dist_predict_group[0, :, :, :, ind_dist].flatten()
-                    df_single_map[column_names[15 + ind_dist]] = \
+                    df_single_map[column_names[23 + ind_dist]] = \
                         pd.Series(mat_fluc_dist_predict[ind_dist, :]) # NaN for hanging rows
 
             df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
