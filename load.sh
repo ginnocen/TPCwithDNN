@@ -89,6 +89,9 @@ then
         export LD_LIBRARY_PATH=/home/dsekihat/local/cuda/lib64/:$LD_LIBRARY_PATH;
         export FLUCTUATIONDIR="/data/tpcml/";
         activate-virtualenv
-        ml-activate-root
+
+        # If not on aliceml inform user to source own ROOT
+        ml-activate-root > /dev/null 2>&1
+        [[ "$?" != "0" ]] &&  echo "PLEASE SOURCE YOUR OWN ROOT PACKAGE"
     fi
 fi
