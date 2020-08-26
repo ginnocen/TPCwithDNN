@@ -2,10 +2,13 @@
 # pylint: disable=fixme, too-many-statements, too-many-instance-attributes
 import os
 from array import array
+
 import matplotlib
+
 from ROOT import TFile, TTree  # pylint: disable=import-error, no-name-in-module
-from machine_learning_hep.logger import get_logger
-from data_loader import load_data_original, get_event_mean_indices
+
+from tpcwithdnn.logger import get_logger
+from tpcwithdnn.data_loader import load_data_original, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
@@ -49,6 +52,7 @@ class DataValidator:
         self.range_mean_index = data_param["range_mean_index"]
         self.indices_events_means = None
         self.total_events = 0
+        self.tree_events = data_param["tree_events"]
 
 
     def set_ranges(self, ranges, total_events):
@@ -145,8 +149,7 @@ class DataValidator:
                         randomid[0] = indexev[0]
                         tree.Fill()
 
-            # Set as you want
-            if counter == 10:
+            if counter + 1 == self.tree_events:
                 break
 
         myfile.Write()

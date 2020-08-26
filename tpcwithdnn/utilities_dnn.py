@@ -6,7 +6,8 @@ from keras.layers import AveragePooling3D, Conv3DTranspose
 from keras.layers.core import Dropout
 from keras.layers.normalization import BatchNormalization
 from keras.layers.convolutional import Conv3D, MaxPooling3D
-from symmetry_padding_3d import SymmetryPadding3d
+
+from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 
 #https://github.com/mimrtl/DeepRad-Tools/blob/master/Examples/Unet.py
 def conv_block(m, dim, activation, batchnorm, residual, dropout=0):

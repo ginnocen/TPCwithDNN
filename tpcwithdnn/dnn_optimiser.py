@@ -1,32 +1,35 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=protected-access
+# pylint: disable=protected-access, too-many-locals
 import os
 from array import array
-#import datetime
 import matplotlib
 import matplotlib.pyplot as plt
+
 import numpy as np
+
 from keras.callbacks import TensorBoard
 from keras.optimizers import Adam
 from keras.models import model_from_json
 from keras.utils.vis_utils import plot_model
+
 from root_numpy import fill_hist
+
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT, TTree  # pylint: disable=import-error, no-name-in-module
-from symmetry_padding_3d import SymmetryPadding3d
-from machine_learning_hep.logger import get_logger
-from fluctuation_data_generator import FluctuationDataGenerator
-from utilities_dnn import u_net
-from data_loader import load_train_apply, load_data_original, get_event_mean_indices
+from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
+
+from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
+from tpcwithdnn.logger import get_logger
+from tpcwithdnn.fluctuation_data_generator import FluctuationDataGenerator
+from tpcwithdnn.utilities_dnn import u_net
+from tpcwithdnn.data_loader import load_train_apply, get_event_mean_indices
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
 class DnnOptimiser:
     # Class Attribute
-    # TODO: What is this for?
     species = "dnnoptimiser"
 
     h_dist_name = "h_dist"
@@ -56,7 +59,6 @@ class DnnOptimiser:
         # Directories
         self.dirmodel = data_param["dirmodel"]
         self.dirval = data_param["dirval"]
-        self.diroutflattree = data_param["diroutflattree"]
         train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
                     else data_param["dirinput_nobias"]
         test_dir = data_param["dirinput_bias"] if data_param["test_bias"] \
@@ -119,6 +121,7 @@ class DnnOptimiser:
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
 
+        # Parameters for getting input indices
         self.maxrandomfiles = data_param["maxrandomfiles"]
         self.range_mean_index = data_param["range_mean_index"]
         self.indices_events_means = None
@@ -127,96 +130,6 @@ class DnnOptimiser:
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
-
-
-    # pylint: disable=too-many-locals
-    def dumpflattree(self):
-        self.logger.info("DnnOptimizer::dumpflattree")
-        self.logger.warning("DO YOU REALLY WANT TO DO IT? IT TAKES TIME")
-        outfile_name = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
-        myfile = TFile.Open(outfile_name, "recreate")
-
-        tree = TTree('tvoxels', 'tree with histos')
-        indexr = array('i', [0])
-        indexphi = array('i', [0])
-        indexz = array('i', [0])
-        posr = array('f', [0])
-        posphi = array('f', [0])
-        posz = array('f', [0])
-        evtid = array('i', [0])
-        meanid = array('i', [0])
-        randomid = array('i', [0])
-        distmeanr = array('f', [0])
-        distmeanrphi = array('f', [0])
-        distmeanz = array('f', [0])
-        distrndr = array('f', [0])
-        distrndrphi = array('f', [0])
-        distrndz = array('f', [0])
-        tree.Branch('indexr', indexr, 'indexr/I')
-        tree.Branch('indexphi', indexphi, 'indexphi/I')
-        tree.Branch('indexz', indexz, 'indexz/I')
-        tree.Branch('posr', posr, 'posr/F')
-        tree.Branch('posphi', posphi, 'posphi/F')
-        tree.Branch('posz', posz, 'posz/F')
-        tree.Branch('distmeanr', distmeanr, 'distmeanr/F')
-        tree.Branch('distmeanrphi', distmeanrphi, 'distmeanrphi/F')
-        tree.Branch('distmeanz', distmeanz, 'distmeanz/F')
-        tree.Branch('distrndr', distrndr, 'distrndr/F')
-        tree.Branch('distrndrphi', distrndrphi, 'distrndrphi/F')
-        tree.Branch('distrndz', distrndz, 'distrndz/F')
-        tree.Branch('evtid', evtid, 'evtid/I')
-        tree.Branch('meanid', meanid, 'meanid/I')
-        tree.Branch('randomid', randomid, 'randomid/I')
-
-        for counter, indexev in enumerate(self.indices_events_means):
-            self.logger.info("processing event: %d [%d, %d]", counter, indexev[0], indexev[1])
-
-            # TODO: Should it be for train or apply data?
-            [vec_r_pos, vec_phi_pos, vec_z_pos,
-             _, _,
-             vec_mean_dist_r, vec_random_dist_r,
-             vec_mean_dist_rphi, vec_random_dist_rphi,
-             vec_mean_dist_z, vec_random_dist_z] = load_data_original(self.dirinput_apply, indexev)
-
-            vec_r_pos = vec_r_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vec_phi_pos = vec_phi_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vec_z_pos = vec_z_pos.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vec_mean_dist_r = vec_mean_dist_r.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vec_random_dist_r = vec_random_dist_r.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vec_mean_dist_rphi = vec_mean_dist_rphi.reshape(self.grid_phi, self.grid_r,
-                                                            self.grid_z*2)
-            vec_random_dist_rphi = vec_random_dist_rphi.reshape(self.grid_phi, self.grid_r,
-                                                                self.grid_z*2)
-            vec_mean_dist_z = vec_mean_dist_z.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-            vec_random_dist_z = vec_random_dist_z.reshape(self.grid_phi, self.grid_r, self.grid_z*2)
-
-            for cur_indexphi in range(self.grid_phi):
-                for cur_indexr in range(self.grid_r):
-                    for cur_indexz in range(self.grid_z*2):
-                        indexphi[0] = cur_indexphi
-                        indexr[0] = cur_indexr
-                        indexz[0] = cur_indexz
-                        posr[0] = vec_r_pos[cur_indexphi][cur_indexr][cur_indexz]
-                        posphi[0] = vec_phi_pos[cur_indexphi][cur_indexr][cur_indexz]
-                        posz[0] = vec_z_pos[cur_indexphi][cur_indexr][cur_indexz]
-                        distmeanr[0] = vec_mean_dist_r[cur_indexphi][cur_indexr][cur_indexz]
-                        distmeanrphi[0] = vec_mean_dist_rphi[cur_indexphi][cur_indexr][cur_indexz]
-                        distmeanz[0] = vec_mean_dist_z[cur_indexphi][cur_indexr][cur_indexz]
-                        distrndr[0] = vec_random_dist_r[cur_indexphi][cur_indexr][cur_indexz]
-                        distrndrphi[0] = vec_random_dist_rphi[cur_indexphi][cur_indexr][cur_indexz]
-                        distrndz[0] = vec_random_dist_z[cur_indexphi][cur_indexr][cur_indexz]
-                        evtid[0] = indexev[0] + 10000*indexev[1]
-                        meanid[0] = indexev[1]
-                        randomid[0] = indexev[0]
-                        tree.Fill()
-
-            # Set as you want
-            if counter == 10:
-                break
-
-        myfile.Write()
-        myfile.Close()
-        self.logger.info("Tree written in %s", outfile_name)
 
 
     def train(self):
@@ -268,9 +181,6 @@ class DnnOptimiser:
         model.save_weights("%s/model_%s_nEv%d.h5" % (self.dirmodel, self.suffix, self.total_events))
         self.logger.info("Saved trained model to disk")
 
-    # TODO: What is it for? To remove?
-    def groupbyindices_input(self, arrayflat):
-        return arrayflat.reshape(1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input)
 
     def apply(self):
         self.logger.info("DnnOptimizer::apply, input size: %d", self.dim_input)
