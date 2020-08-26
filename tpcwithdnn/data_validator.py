@@ -1,5 +1,5 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=fixme, too-many-statements, too-many-instance-attributes
+# pylint: disable=too-many-statements, too-many-instance-attributes
 import os
 import matplotlib
 import numpy as np
@@ -19,9 +19,6 @@ class DataValidator:
     # Class Attribute
     species = "data validator"
 
-    # FIXME: here I just copied something from the dnn_analyzer. It is likely
-    # more information (e.g. the model name). You can just copy what you need
-    # from the dnn_optimiser and delete what you dont need.
     def __init__(self, data_param, case):
         self.logger = get_logger()
         self.logger.info("DataValidator::Init\nCase: %s", case)
@@ -58,7 +55,8 @@ class DataValidator:
                              (test_dir, self.grid_z, self.grid_r, self.grid_phi)
         self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_val = data_param["dirinput_nobias"]
+        self.dirinput_val = "%s/SC-%d-%d-%d/" % \
+                            (data_param["dirinput_nobias"], self.grid_z, self.grid_r, self.grid_phi)
 
         # DNN config
         self.filters = data_param["filters"]
@@ -104,21 +102,14 @@ class DataValidator:
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
-        # FIXME : as you can imagine this is a complete duplication of what we
-        # have in the dnn optimiser. But once this class is finished, we will
-        # remove that part of code from the dnn_analyzer. Most likely also the
-        # plotting code will be moved here. For the moment lets just keep the
-        # code duplication.
-
         self.logger.info("DataValidator::create_data")
 
         tree_filename = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
         if os.path.isfile(tree_filename):
             os.remove(tree_filename)
 
-        # TODO: Should it be dirinput_train, test, apply?
         vec_der_ref_mean_sc, mat_der_ref_mean_dist = \
-            load_data_derivatives_ref_mean(self.dirinput_apply)
+            load_data_derivatives_ref_mean(self.dirinput_val, self.selopt_input)
 
         dist_names = np.array(self.nameopt_predout)[np.array(self.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
@@ -141,53 +132,19 @@ class DataValidator:
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
 
-        # FIXME: Shall we use same data / dir as for apply()?
-        # Ernst comment in doc: unbiased for validation, biased for training
-        # If we use self.dirinput_val instead of self_dirinput_apply, what should we iterate on
-        # instead of self.partition["apply"] ?
-        for counter, indexev in enumerate(self.partition["apply"]):
-            self.logger.info("processing event: %d [%d, %d]", counter, indexev[0], indexev[1])
+        counter = 0
+        for imean in [0, 9, 18]:
+            for irnd in range(self.maxrandomfiles):
+                counter = counter + 1
+                self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
 
-            [vec_r_pos, vec_phi_pos, vec_z_pos,
-             vec_mean_sc, vec_random_sc,
-             vec_mean_dist_r, vec_rand_dist_r,
-             vec_mean_dist_rphi, vec_rand_dist_rphi,
-             vec_mean_dist_z, vec_rand_dist_z] = load_data_original(self.dirinput_apply, indexev)
+                [vec_r_pos, vec_phi_pos, vec_z_pos,
+                 vec_mean_sc, vec_random_sc,
+                 vec_mean_dist_r, vec_rand_dist_r,
+                 vec_mean_dist_rphi, vec_rand_dist_rphi,
+                 vec_mean_dist_z, vec_rand_dist_z] = load_data_original(self.dirinput_val,
+                                                                        [irnd, imean])
 
-            mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
-            mat_random_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
-            mat_fluc_dist = mat_mean_dist - mat_random_dist
-
-            vec_index_random = np.empty(vec_z_pos.size)
-            vec_index_random[:] = indexev[0]
-            vec_index_mean = np.empty(vec_z_pos.size)
-            vec_index_mean[:] = indexev[1]
-            vec_index = np.empty(vec_z_pos.size)
-            vec_index[:] = indexev[0] + 10000 * indexev[1]
-            vec_fluc_sc = vec_mean_sc - vec_random_sc
-            vec_delta_sc = np.empty(vec_z_pos.size)
-            vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
-
-            df_single_map = pd.DataFrame({column_names[0] : vec_index,
-                                          column_names[1] : vec_index_mean,
-                                          column_names[2] : vec_index_random,
-                                          column_names[3] : vec_phi_pos,
-                                          column_names[4] : vec_r_pos,
-                                          column_names[5] : vec_z_pos,
-                                          column_names[6] : vec_fluc_sc,
-                                          column_names[7] : vec_mean_sc,
-                                          column_names[8] : vec_random_sc,
-                                          column_names[9] : vec_delta_sc,
-                                          column_names[10] : vec_der_ref_mean_sc})
-
-            for ind_dist in range(3):
-                df_single_map[column_names[11 + ind_dist * 4]] = mat_fluc_dist[ind_dist, :]
-                df_single_map[column_names[12 + ind_dist * 4]] = mat_mean_dist[ind_dist, :]
-                df_single_map[column_names[13 + ind_dist * 4]] = mat_random_dist[ind_dist, :]
-                df_single_map[column_names[14 + ind_dist * 4]] = \
-                    mat_der_ref_mean_dist[ind_dist, :]
-
-            if self.validate_model:
                 if self.selopt_input == 0:
                     vec_sel_z = vec_z_pos > 0
                 elif self.selopt_input == 1:
@@ -195,30 +152,73 @@ class DataValidator:
                 elif self.selopt_input == 2:
                     vec_sel_z = vec_z_pos
 
-                input_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z,
-                                         self.dim_input))
-                index_fill_input = 0
-                if self.opt_train[0] == 1:
-                    vec_sel_mean_sc = vec_mean_sc[vec_sel_z]
-                    input_single[0, :, :, :, index_fill_input] = \
-                        vec_sel_mean_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
-                    index_fill_input = index_fill_input + 1
-                if self.opt_train[1] == 1:
-                    vec_sel_fluc_sc = vec_fluc_sc[vec_sel_z]
-                    input_single[0, :, :, :, index_fill_input] = \
-                        vec_sel_fluc_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
+                vec_z_pos = vec_z_pos[vec_sel_z]
+                vec_r_pos = vec_r_pos[vec_sel_z]
+                vec_phi_pos = vec_phi_pos[vec_sel_z]
+                vec_mean_sc = vec_mean_sc[vec_sel_z]
+                vec_random_sc = vec_random_sc[vec_sel_z]
+                vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
+                vec_mean_dist_rphi = vec_mean_dist_rphi[vec_sel_z]
+                vec_mean_dist_z = vec_mean_dist_z[vec_sel_z]
+                vec_rand_dist_r = vec_rand_dist_r[vec_sel_z]
+                vec_rand_dist_rphi = vec_rand_dist_rphi[vec_sel_z]
+                vec_rand_dist_z = vec_rand_dist_z[vec_sel_z]
 
-                mat_fluc_dist_predict_group = loaded_model.predict(input_single)
-                mat_fluc_dist_predict = np.empty((self.dim_output, vec_sel_fluc_sc.size))
-                for ind_dist in range(self.dim_output):
-                    mat_fluc_dist_predict[ind_dist, :] = \
-                        mat_fluc_dist_predict_group[0, :, :, :, ind_dist].flatten()
-                    df_single_map[column_names[23 + ind_dist]] = \
-                        pd.Series(mat_fluc_dist_predict[ind_dist, :]) # NaN for hanging rows
+                mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
+                mat_rand_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
+                mat_fluc_dist = mat_mean_dist - mat_rand_dist
 
-            df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
+                vec_index_random = np.empty(vec_z_pos.size)
+                vec_index_random[:] = irnd
+                vec_index_mean = np.empty(vec_z_pos.size)
+                vec_index_mean[:] = imean
+                vec_index = np.empty(vec_z_pos.size)
+                vec_index[:] = irnd + 10000 * imean
+                vec_fluc_sc = vec_mean_sc - vec_random_sc
+                vec_delta_sc = np.empty(vec_z_pos.size)
+                vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
-            if counter + 1 == self.tree_events:
-                break
+                df_single_map = pd.DataFrame({column_names[0] : vec_index,
+                                              column_names[1] : vec_index_mean,
+                                              column_names[2] : vec_index_random,
+                                              column_names[3] : vec_phi_pos,
+                                              column_names[4] : vec_r_pos,
+                                              column_names[5] : vec_z_pos,
+                                              column_names[6] : vec_fluc_sc,
+                                              column_names[7] : vec_mean_sc,
+                                              column_names[8] : vec_delta_sc,
+                                              column_names[9] : vec_der_ref_mean_sc})
+
+                for ind_dist in range(3):
+                    df_single_map[column_names[10 + ind_dist * 3]] = mat_fluc_dist[ind_dist, :]
+                    df_single_map[column_names[11 + ind_dist * 3]] = mat_mean_dist[ind_dist, :]
+                    df_single_map[column_names[12 + ind_dist * 3]] = \
+                        mat_der_ref_mean_dist[ind_dist, :]
+
+                if self.validate_model:
+                    input_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z,
+                                             self.dim_input))
+                    index_fill_input = 0
+                    if self.opt_train[0] == 1:
+                        input_single[0, :, :, :, index_fill_input] = \
+                            vec_mean_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
+                        index_fill_input = index_fill_input + 1
+                    if self.opt_train[1] == 1:
+                        input_single[0, :, :, :, index_fill_input] = \
+                            vec_fluc_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
+
+                    mat_fluc_dist_predict_group = loaded_model.predict(input_single)
+                    mat_fluc_dist_predict = np.empty((self.dim_output, vec_fluc_sc.size))
+                    for ind_dist in range(self.dim_output):
+                        mat_fluc_dist_predict[ind_dist, :] = \
+                            mat_fluc_dist_predict_group[0, :, :, :, ind_dist].flatten()
+                        df_single_map[column_names[19 + ind_dist]] = \
+                            mat_fluc_dist_predict[ind_dist, :]
+
+                df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
+
+                if counter == self.tree_events:
+                    self.logger.info("Tree written in %s", tree_filename)
+                    return
 
         self.logger.info("Tree written in %s", tree_filename)
