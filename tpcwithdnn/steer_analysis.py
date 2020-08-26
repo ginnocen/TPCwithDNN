@@ -4,7 +4,7 @@ main script for doing tpc calibration with dnn
 
 import yaml
 
-import tpcwithdnn.check_root
+import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.dnn_optimiser import DnnOptimiser
 from tpcwithdnn.data_validator import DataValidator

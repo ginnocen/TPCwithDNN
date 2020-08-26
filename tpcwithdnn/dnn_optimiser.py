@@ -2,7 +2,6 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=protected-access, too-many-locals
 import os
-from array import array
 import matplotlib
 import matplotlib.pyplot as plt
 
