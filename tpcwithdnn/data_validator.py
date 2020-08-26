@@ -5,7 +5,7 @@ import matplotlib
 import numpy as np
 import pandas as pd
 from keras.models import model_from_json
-from root_pandas import to_root # pylint: disable=unused-import
+from root_pandas import to_root # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
