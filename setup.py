@@ -53,8 +53,8 @@ setup(
   # your project is installed. For an analysis of "install_requires" vs pip's
   # requirements files see:
   # https://packaging.python.org/en/latest/requirements.html
-  install_requires=[ "numpy", "pandas", "matplotlib", "scipy==1.4.1",
-                     "keras==2.3.1", "tensorflow==2.1.0", "PyYaml", "RootInteractive",
+  install_requires=[ "numpy==1.18.5", "pandas", "matplotlib", "scipy==1.4.1",
+                     "keras==2.3.1", "PyYaml", "RootInteractive", "tf-nightly-gpu==2.4.0.dev20200908",
                      "pydot", "pylint"],
 
   python_requires='>=3.6, <3.7',

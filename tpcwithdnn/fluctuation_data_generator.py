@@ -2,12 +2,12 @@
 # pylint: disable=missing-module-docstring, missing-class-docstring
 import numpy as np
 
-import keras
+import tensorflow.keras
 
 from tpcwithdnn.data_loader import load_train_apply
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-class FluctuationDataGenerator(keras.utils.Sequence):
+class FluctuationDataGenerator(tensorflow.keras.utils.Sequence):
 
     def __init__(self, list_ids, phi_slice, r_row, z_col, batch_size, shuffle,
                  opt_train, opt_predout, selopt_input, selopt_output, data_dir,

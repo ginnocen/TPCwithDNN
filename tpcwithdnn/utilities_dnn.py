@@ -1,11 +1,11 @@
 # pylint: disable=too-many-arguments, invalid-name
 # pylint: disable=missing-module-docstring, missing-function-docstring
-from keras.models import Model
-from keras.layers import Input, concatenate, UpSampling3D
-from keras.layers import AveragePooling3D, Conv3DTranspose
-from keras.layers.core import Dropout
-from keras.layers.normalization import BatchNormalization
-from keras.layers.convolutional import Conv3D, MaxPooling3D
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input, concatenate, UpSampling3D
+from tensorflow.keras.layers import AveragePooling3D, Conv3DTranspose
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import Conv3D, MaxPooling3D
 
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 

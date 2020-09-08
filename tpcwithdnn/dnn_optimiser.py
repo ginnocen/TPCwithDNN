@@ -7,10 +7,10 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from keras.callbacks import TensorBoard
-from keras.optimizers import Adam
-from keras.models import model_from_json
-from keras.utils.vis_utils import plot_model
+from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.models import model_from_json
+from tensorflow.keras.utils import plot_model
 
 from root_numpy import fill_hist # pylint: disable=import-error
 
@@ -24,7 +24,6 @@ from tpcwithdnn.fluctuation_data_generator import FluctuationDataGenerator
 from tpcwithdnn.utilities_dnn import u_net
 from tpcwithdnn.data_loader import load_train_apply, get_event_mean_indices
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
 class DnnOptimiser:
@@ -153,10 +152,10 @@ class DnnOptimiser:
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         model._get_distribution_strategy = lambda: None
-        his = model.fit_generator(generator=training_generator,
-                                  validation_data=validation_generator,
-                                  use_multiprocessing=True,
-                                  epochs=self.epochs, workers=1, callbacks=[tensorboard_callback])
+        his = model.fit(training_generator,
+                        validation_data=validation_generator,
+                        use_multiprocessing=False,
+                        epochs=self.epochs, callbacks=[tensorboard_callback])
 
         plt.style.use("ggplot")
         plt.figure()
