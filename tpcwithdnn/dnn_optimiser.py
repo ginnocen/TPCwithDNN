@@ -126,6 +126,9 @@ class DnnOptimiser:
         self.indices_events_means = None
         self.partition = None
         self.total_events = 0
+        self.train_events = 0
+        self.test_events = 0
+        self.apply_events = 0
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
@@ -145,11 +148,11 @@ class DnnOptimiser:
                       metrics=[self.metrics]) # Mean squared error
 
         model.summary()
-        plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),
+        plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.train_events),
                    show_shapes=True, show_layer_names=True)
 
         #log_dir = "logs/" + datetime.datetime.now(datetime.timezone.utc).strftime("%Y%m%d_%H%M%S")
-        log_dir = 'logs/' + '%s_nEv%d' % (self.suffix, self.total_events)
+        log_dir = 'logs/' + '%s_nEv%d' % (self.suffix, self.train_events)
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         model._get_distribution_strategy = lambda: None
@@ -171,13 +174,13 @@ class DnnOptimiser:
         plt.xlabel("Epoch #")
         plt.ylabel("Loss/Accuracy")
         plt.legend(loc="lower left")
-        plt.savefig("plots/plot_%s_nEv%d.png" % (self.suffix, self.total_events))
+        plt.savefig("plots/plot_%s_nEv%d.png" % (self.suffix, self.train_events))
 
         model_json = model.to_json()
-        with open("%s/model_%s_nEv%d.json" % (self.dirmodel, self.suffix, self.total_events), "w") \
+        with open("%s/model_%s_nEv%d.json" % (self.dirmodel, self.suffix, self.train_events), "w") \
             as json_file:
             json_file.write(model_json)
-        model.save_weights("%s/model_%s_nEv%d.h5" % (self.dirmodel, self.suffix, self.total_events))
+        model.save_weights("%s/model_%s_nEv%d.h5" % (self.dirmodel, self.suffix, self.train_events))
         self.logger.info("Saved trained model to disk")
 
 
@@ -185,16 +188,16 @@ class DnnOptimiser:
         self.logger.info("DnnOptimizer::apply, input size: %d", self.dim_input)
 
         json_file = open("%s/model_%s_nEv%d.json" % \
-                         (self.dirmodel, self.suffix, self.total_events), "r")
+                         (self.dirmodel, self.suffix, self.train_events), "r")
         loaded_model_json = json_file.read()
         json_file.close()
         loaded_model = \
             model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
         loaded_model.load_weights("%s/model_%s_nEv%d.h5" % \
-                                  (self.dirmodel, self.suffix, self.total_events))
+                                  (self.dirmodel, self.suffix, self.train_events))
 
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                            (self.dirval, self.suffix, self.total_events), "recreate")
+                            (self.dirval, self.suffix, self.train_events), "recreate")
         h_dist_all_events = TH2F("%s_all_events_%s" % (self.h_dist_name, self.suffix),
                                  "", 500, -5, 5, 500, -5, 5)
         h_deltas_all_events = TH1F("%s_all_events_%s" % (self.h_deltas_name, self.suffix),
@@ -290,9 +293,9 @@ class DnnOptimiser:
 
 
     @staticmethod
-    def plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name, total_events):
-        cev = TCanvas("canvas_%s_nEv%d_%s" % (suffix, total_events, opt_name),
-                      "canvas_%s_nEv%d_%s" % (suffix, total_events, opt_name),
+    def plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name, train_events):
+        cev = TCanvas("canvas_%s_nEv%d_%s" % (suffix, train_events, opt_name),
+                      "canvas_%s_nEv%d_%s" % (suffix, train_events, opt_name),
                       1400, 1000)
         cev.Divide(2, 2)
         cev.cd(1)
@@ -318,7 +321,7 @@ class DnnOptimiser:
         #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
         #h_deltas_vs_dist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
         #h_deltas_vs_dist.Draw("colz")
-        cev.SaveAs("plots/canvas_%s_nEv%d.pdf" % (suffix, total_events))
+        cev.SaveAs("plots/canvas_%s_nEv%d.pdf" % (suffix, train_events))
 
     def plot(self):
         self.logger.info("DnnOptimizer::plot")
@@ -327,7 +330,7 @@ class DnnOptimiser:
                 opt_name = self.nameopt_predout[iname]
 
                 myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                                    (self.dirval, self.suffix, self.total_events), "open")
+                                    (self.dirval, self.suffix, self.train_events), "open")
                 h_dist_all_events = myfile.Get("%s_all_events_%s" % (self.h_dist_name, self.suffix))
                 h_deltas_all_events = myfile.Get("%s_all_events_%s" % \
                                                  (self.h_deltas_name, self.suffix))
@@ -337,7 +340,7 @@ class DnnOptimiser:
                     myfile.Get("%s_all_events_%s" % (self.profile_name, self.suffix))
                 self.plot_distorsion(h_dist_all_events, h_deltas_all_events,
                                      h_deltas_vs_dist_all_events, profile_deltas_vs_dist_all_events,
-                                     self.suffix, opt_name, self.total_events)
+                                     self.suffix, opt_name, self.train_events)
 
                 counter = 0
                 for iexperiment in self.partition['apply']:
@@ -347,7 +350,7 @@ class DnnOptimiser:
                     h_deltas_vs_dist = myfile.Get("%s_%s" % (self.h_deltas_vs_dist_name, h_suffix))
                     profile = myfile.Get("%s_%s" % (self.profile_name, h_suffix))
                     self.plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, profile,
-                                         h_suffix, opt_name, self.total_events)
+                                         h_suffix, opt_name, self.train_events)
                     counter = counter + 1
                     if counter > 100:
                         return
@@ -429,8 +432,8 @@ class DnnOptimiser:
                           (func_label, events_counts[0][2], var_label)
                 canvas, frame, leg = self.setup_canvas(hist_name, opt_name, x_label, y_label)
 
-                for i, (train_events, _, _, total_events) in enumerate(events_counts):
-                    filename = "%s/output_%s_nEv%d.root" % (self.dirval, self.suffix, total_events)
+                for i, (train_events, _, _, _) in enumerate(events_counts):
+                    filename = "%s/output_%s_nEv%d.root" % (self.dirval, self.suffix, train_events)
                     self.logger.info("Reading %s...", filename)
 
                     root_file = TFile.Open(filename, "read")
@@ -447,7 +450,7 @@ class DnnOptimiser:
 
                 leg.Draw()
                 self.add_desc_to_canvas()
-                self.save_canvas(canvas, frame, "20200803", hist_name, file_formats)
+                self.save_canvas(canvas, frame, "plots/20200803", hist_name, file_formats)
 
 
     def draw_profile(self, events_counts):
@@ -457,9 +460,11 @@ class DnnOptimiser:
     def draw_std_dev(self, events_counts):
         self.draw_multievent_hist(events_counts, "std dev", "std_dev", self.h_std_dev_name)
 
-
-    def set_ranges(self, ranges, total_events):
+    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
         self.total_events = total_events
+        self.train_events = train_events
+        self.test_events = test_events
+        self.apply_events = apply_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
             self.maxrandomfiles, self.range_mean_index, ranges)

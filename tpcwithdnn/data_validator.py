@@ -87,14 +87,21 @@ class DataValidator:
         self.indices_events_means = None
         self.partition = None
         self.total_events = 0
+        self.train_events = 0
+        self.test_events = 0
+        self.apply_events = 0
         self.tree_events = data_param["tree_events"]
 
         if not os.path.isdir(self.diroutflattree):
             os.makedirs(self.diroutflattree)
+        if not os.path.isdir("%s/%s" % (self.diroutflattree, self.suffix)):
+            os.makedirs("%s/%s" % (self.diroutflattree, self.suffix))
 
-
-    def set_ranges(self, ranges, total_events):
+    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
         self.total_events = total_events
+        self.train_events = train_events
+        self.test_events = test_events
+        self.apply_events = apply_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
             self.maxrandomfiles, self.range_mean_index, ranges)
@@ -104,7 +111,11 @@ class DataValidator:
     def create_data(self):
         self.logger.info("DataValidator::create_data")
 
-        tree_filename = "%s/tree%s.root" % (self.diroutflattree, self.suffix_ds)
+        tree_filename = "%s/treeInput_%s.root" % (self.diroutflattree, self.suffix_ds)
+        if self.validate_model:
+            tree_filename = "%s/%s/treeValidation_nEv%d.root" \
+                            % (self.diroutflattree, self.suffix, self.train_events)
+
         if os.path.isfile(tree_filename):
             os.remove(tree_filename)
 
@@ -121,13 +132,13 @@ class DataValidator:
                                                     "derRefMeanDist" + dist_name])
         if self.validate_model:
             json_file = open("%s/model_%s_nEv%d.json" % \
-                             (self.dirmodel, self.suffix, self.total_events), "r")
+                             (self.dirmodel, self.suffix, self.train_events), "r")
             loaded_model_json = json_file.read()
             json_file.close()
             loaded_model = \
                 model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
             loaded_model.load_weights("%s/model_%s_nEv%d.h5" % \
-                                      (self.dirmodel, self.suffix, self.total_events))
+                                      (self.dirmodel, self.suffix, self.train_events))
 
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])

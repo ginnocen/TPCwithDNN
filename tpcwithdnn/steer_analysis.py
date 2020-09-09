@@ -2,6 +2,7 @@
 main script for doing tpc calibration with dnn
 """
 
+import sys
 import yaml
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
@@ -25,7 +26,13 @@ def main():
     logger = get_logger()
     logger.info("Starting TPC ML...")
 
-    with open("default.yml", 'r') as default_data:
+    if len(sys.argv) == 2:
+        default_file_name = sys.argv[1]
+        print("Using user specified steering options file: %s" % default_file_name)
+    else:
+        default_file_name = "default.yml"
+
+    with open(default_file_name, 'r') as default_data:
         default = yaml.safe_load(default_data)
     case = default["case"]
     with open("database_parameters_%s.yml" % case, 'r') as parameters_data:
@@ -79,8 +86,8 @@ def main():
         ranges = {"train": [0, train_events],
                   "test": [train_events, train_events + test_events],
                   "apply": [train_events + test_events, total_events]}
-        myopt.set_ranges(ranges, total_events)
-        mydataval.set_ranges(ranges, total_events)
+        myopt.set_ranges(ranges, total_events, train_events, test_events, apply_events)
+        mydataval.set_ranges(ranges, total_events, train_events, test_events, apply_events)
 
         if default["dotrain"] is True:
             myopt.train()
