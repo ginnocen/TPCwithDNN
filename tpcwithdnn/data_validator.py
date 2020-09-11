@@ -124,11 +124,10 @@ class DataValidator:
 
         dist_names = np.array(self.nameopt_predout)[np.array(self.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
-                                 "flucSC", "meanSC", "randomSC", "deltaSC", "derRefMeanSC"])
+                                 "flucSC", "meanSC", "deltaSC", "derRefMeanSC"])
         for dist_name in self.nameopt_predout:
             column_names = np.append(column_names, ["flucDist" + dist_name,
                                                     "meanDist" + dist_name,
-                                                    "randomDist" + dist_name,
                                                     "derRefMeanDist" + dist_name])
         if self.validate_model:
             json_file = open("%s/model_%s_nEv%d.json" % \
@@ -184,7 +183,7 @@ class DataValidator:
                 vec_index_mean = np.empty(vec_z_pos.size)
                 vec_index_mean[:] = imean
                 vec_index = np.empty(vec_z_pos.size)
-                vec_index[:] = irnd + 10000 * imean
+                vec_index[:] = irnd + 1000 * imean
                 vec_fluc_sc = vec_mean_sc - vec_random_sc
                 vec_delta_sc = np.empty(vec_z_pos.size)
                 vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
@@ -192,8 +191,8 @@ class DataValidator:
                 df_single_map = pd.DataFrame({column_names[0] : vec_index,
                                               column_names[1] : vec_index_mean,
                                               column_names[2] : vec_index_random,
-                                              column_names[3] : vec_phi_pos,
-                                              column_names[4] : vec_r_pos,
+                                              column_names[3] : vec_r_pos,
+                                              column_names[4] : vec_phi_pos,
                                               column_names[5] : vec_z_pos,
                                               column_names[6] : vec_fluc_sc,
                                               column_names[7] : vec_mean_sc,
