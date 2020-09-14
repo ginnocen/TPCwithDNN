@@ -16,9 +16,9 @@ DNN_fluctuations:
   selopt_output: 0 # 0 is use to predict distorsions only for positive z-values
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
-  nameopt_predout: [R, Rphi, z] #R, Rphi, z output distorsion predictions
+  nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
   maxrandomfiles: 970 #this is the total number of random events generated
-  range_mean_index: [0,26] # min and max index of mean SC configurations 
+  range_mean_index: [0,26] # min and max index of mean SC configurations
   train_events: [900] # events for training (include a mix of SC config)
   test_events: [100]
   apply_events: [6000]
