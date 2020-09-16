@@ -7,6 +7,7 @@ DNN_fluctuations:
   test_bias: true
   apply_bias: false
   diroutflattree: trees
+  dirouthistograms: histograms
   tree_events: 20 # Number of events for validation (random events for nd_validation)
   validate_model: true
   grid_phi: 90
