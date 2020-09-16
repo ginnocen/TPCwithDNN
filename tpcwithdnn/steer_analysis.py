@@ -16,14 +16,18 @@ from tpcwithdnn.dnn_optimiser import DnnOptimiser
 from tpcwithdnn.data_validator import DataValidator
 
 ## optionally limit GPU memory usage
-# import tensorflow as tf
-# gpus = tf.config.experimental.list_physical_devices('GPU')
-# if gpus:
-#   try:
-#     for gpu in gpus:
-#       tf.config.experimental.set_memory_growth(gpu, True)
-#   except RuntimeError as e:
-#     print(e)
+if os.environ.get('TPCwithDNNSETMEMLIMIT'):
+    import tensorflow as tf
+    gpus = tf.config.experimental.list_physical_devices('GPU')
+    if gpus:
+        try:
+            tf.config.experimental.set_virtual_device_configuration(gpus[0], \
+                [tf.config.experimental.VirtualDeviceConfiguration(memory_limit= \
+                int(os.environ.get('TPCwithDNNSETMEMLIMIT')))])
+            # for gpu in gpus:
+            #     tf.config.experimental.set_memory_growth(gpu, True)
+        except RuntimeError as e:
+            print(e)
 
 # pylint: disable=too-many-locals, too-many-branches
 def main():
@@ -102,12 +106,13 @@ def main():
             myopt.plot()
         if default["dogrid"] is True:
             myopt.gridsearch()
+        if default["docreatevaldata"] is True:
+            mydataval.create_data()
+        if default["docreatendhistograms"] is True:
+            mydataval.create_nd_histograms()
 
     if default["doprofile"] is True:
         myopt.draw_profile(all_events_counts)
-
-    if default["docreatevaldata"] is True:
-        mydataval.create_data()
 
     logger.info("Program finished.")
 
