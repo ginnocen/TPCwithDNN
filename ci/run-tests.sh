@@ -60,6 +60,7 @@ function swallow() {
 function test-pylint()
 {
     local test_files=$@
+    install-package
     echo "run test: pylint"
     type pylint
     if [[ "$test_files" != "" ]]

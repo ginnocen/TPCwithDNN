@@ -2,7 +2,12 @@
 main script for doing tpc calibration with dnn
 """
 
+import os
 import yaml
+
+# Needs to be set before any tensorflow import to suppress logging
+# pylint: disable=wrong-import-position
+os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
