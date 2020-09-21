@@ -108,8 +108,10 @@ def main():
             myopt.gridsearch()
         if default["docreatevaldata"] is True:
             mydataval.create_data()
-        if default["docreatendhistograms"] is True:
+        if default["docreatepdfmaps"] is True:
             mydataval.create_nd_histograms()
+            mydataval.create_pdf_maps()
+            mydataval.merge_pdf_maps()
 
     if default["doprofile"] is True:
         myopt.draw_profile(all_events_counts)

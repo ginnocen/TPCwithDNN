@@ -7,4 +7,4 @@ meanid=$4
 codeDir=${TPCwithDNN}
 
 cd ${workDir}
-time python3 ${codeDir}/macros/createNDHistogram.py ${case} ${var} ${meanid}
+time python3 ${codeDir}/macros/create_pdf_map.py ${case} ${var} ${meanid}

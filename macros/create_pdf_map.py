@@ -62,6 +62,7 @@ def main():
         mydataval.set_ranges(ranges, total_events, train_events, test_events, apply_events)
 
         mydataval.create_nd_histogram(var, mean_id)
+        mydataval.create_pdf_map(var, mean_id)
 
     logger.info("Program finished.")
 

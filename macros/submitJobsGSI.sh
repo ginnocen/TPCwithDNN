@@ -71,7 +71,7 @@ submitValData()
   ## go to working directory first before submitting
   workDir=$(pwd)
   codeDir=${TPCwithDNN}
-  batchCommand="sbatch --get-user-env --mem-per-cpu=200000 --time=08:00:00"
+  batchCommand="sbatch --get-user-env --mem-per-cpu=50000 --time=08:00:00"
 
   if [ ! -d logs ]; then
     mkdir logs
@@ -83,37 +83,58 @@ submitValData()
   echo '#!/bin/bash' >${submitFile}
   echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>${submitFile}
   echo "createSteeringXMLFile \${nEvTrain} ${jobPrefix}_nEv\${nEvTrain}.yml false false false false false true false" >>${submitFile}
-  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_CUDA.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} ${jobPrefix}_nEv\${nEvTrain}.yml" >>${submitFile}
+  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} ${jobPrefix}_nEv\${nEvTrain}.yml" >>${submitFile}
   ${batchCommand} --array=1,5,10 -o logs/${jobPrefix}_nEv%a000.o -e logs/${jobPrefix}_nEv%a000.e ${submitFile}
   rm ${submitFile}
 }
 
-submitNDHistograms()
+submitPDFMaps()
 {
   ## go to working directory first before submitting
   workDir=$(pwd)
   codeDir=${TPCwithDNN}
-  batchCommand="sbatch --get-user-env --mem-per-cpu=200000 --time=08:00:00 --ntasks=1"
+  batchCommand="sbatch --get-user-env --mem-per-cpu=50000 --time=08:00:00 --ntasks=1"
 
   if [ ! -d logs ]; then
     mkdir logs
   fi
 
-  submitFile=scdcalib_ndhistograms.sh
-  jobPrefix=ndHistograms
+  submitFile=scdcalib_pdfmaps.sh
+  jobPrefix=pdfmaps
 
-  histoParams=histogramParameters.list
-  createHistogramList ${histoParams}
-  numberHistos=$(wc -l ${histoParams} | awk '{print $1}')
+  pdfMapList=pdfMaps.list
+  createPDFMapList ${pdfMapList}
+  numberMaps=$(wc -l ${pdfMapList} | awk '{print $1}')
 
   echo '#!/bin/bash' >${submitFile}
-  echo "ihisto=\$(cat ${histoParams} | sed -n \${SLURM_ARRAY_TASK_ID}p)" >>${submitFile}
-  echo "nEvTrain=\$(echo \${ihisto} | awk -F' ' '{print \$1}')" >>${submitFile}
-  echo "case=\$(echo \${ihisto} | awk -F' ' '{print \$2}')" >>${submitFile}
-  echo "var=\$(echo \${ihisto} | awk -F' ' '{print \$3}')" >>${submitFile}
-  echo "meanid=\$(echo \${ihisto} | awk -F' ' '{print \$4}')" >>${submitFile}
-  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_CUDA.sif ${codeDir}/macros/runNDHistograms.sh ${workDir} \${case} \${var} \${meanid}" >>${submitFile}
+  echo "imap=\$(cat ${pdfMapList} | sed -n \${SLURM_ARRAY_TASK_ID}p)" >>${submitFile}
+  echo "nEvTrain=\$(echo \${imap} | awk -F' ' '{print \$1}')" >>${submitFile}
+  echo "case=\$(echo \${imap} | awk -F' ' '{print \$2}')" >>${submitFile}
+  echo "var=\$(echo \${imap} | awk -F' ' '{print \$3}')" >>${submitFile}
+  echo "meanid=\$(echo \${imap} | awk -F' ' '{print \$4}')" >>${submitFile}
+  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runPDFMap.sh ${workDir} \${case} \${var} \${meanid}" >>${submitFile}
   ${batchCommand} --array=1-${numberHistos} -o logs/${jobPrefix}_%a.o -e logs/${jobPrefix}_%a.e ${submitFile}
+  rm ${submitFile}
+}
+
+submitMergePDFMaps()
+{
+  ## go to working directory first before submitting
+  workDir=$(pwd)
+  codeDir=${TPCwithDNN}
+  batchCommand="sbatch --get-user-env --mem-per-cpu=50000 --time=08:00:00 --ntasks=1"
+
+  if [ ! -d logs ]; then
+    mkdir logs
+  fi
+
+  submitFile=scdcalib_pdfmaps.sh
+  jobPrefix=mergepdfmaps
+
+  echo '#!/bin/bash' >${submitFile}
+  echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>${submitFile}
+  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runMergePDFMaps.sh ${workDir} DNN_fluctuations_nEv\${nEvTrain}" >>${submitFile}
+  ${batchCommand} --array=1,5,10 -o logs/${jobPrefix}_nEv%a000.o -e logs/${jobPrefix}_nEv%a000.e ${submitFile}
   rm ${submitFile}
 }
 
@@ -181,7 +202,7 @@ createSteeringXMLFile()
   dogrid=$6
   doprofile=$7
   docreatevaldata=$8
-  docreatendhistograms=$9
+  docreatepdfmaps=$9
 
   echo "case: DNN_fluctuations_nEv${nEvTrain}" > ${filename}
   echo "dotrain: ${dotrain}" >> ${filename}
@@ -190,11 +211,11 @@ createSteeringXMLFile()
   echo "dogrid: ${dogrid}" >> ${filename}
   echo "doprofile: ${doprofile}" >> ${filename}
   echo "docreatevaldata: ${docreatevaldata}" >> ${filename}
-  echo "docreatendhistograms: ${docreatendhistograms}" >> ${filename}
+  echo "docreatepdfmaps: ${docreatepdfmaps}" >> ${filename}
 }
 export -f createSteeringXMLFile
 
-createHistogramList()
+createPDFMapList()
 {
   fileName=$1
   if [ -f ${fileName} ]; then
@@ -224,9 +245,9 @@ createHistogramList()
     echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanDistR 0" >>${fileName}
     echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanDistR 9" >>${fileName}
     echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanDistR 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDist 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDist 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDist 18" >>${fileName}
+    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDistR 0" >>${fileName}
+    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDistR 9" >>${fileName}
+    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDistR 18" >>${fileName}
   done
 }
-export -f createHistogramList
+export -f createPDFMapList

@@ -5,4 +5,4 @@ doplot: false
 dogrid: false
 doprofile: false
 docreatevaldata: true
-docreatendhistograms: false
+docreatepdfmaps: false

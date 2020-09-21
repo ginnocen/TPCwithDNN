@@ -4,12 +4,14 @@ import sys
 import os
 import gzip
 import pickle
+import math
 import matplotlib
 import numpy as np
 import pandas as pd
 from tensorflow.keras.models import model_from_json
 from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
+from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
@@ -304,9 +306,108 @@ class DataValidator:
         for var in var_list:
             self.create_nd_histogram(var, mean_id)
 
+
     def create_nd_histograms(self):
         """
         Create nd histograms for mean maps with id 0, 9, 18
         """
         for mean_id in [0, 9, 18]:
             self.create_nd_histograms_meanid(mean_id)
+
+
+    def create_pdf_map(self, var, mean_id):
+        """
+        Create a pdf map for given variable and mean id
+        var: string of the variable name
+        mean_id: index of mean map. Only 0 (factor=1.0), 9 (factor=1.1) and 18 (factor=0.9) working.
+        """
+        self.logger.info("DataValidator::create_pdf_map, var = %s, mean_id = %d", var, mean_id)
+        if mean_id not in (0, 9, 18):
+            self.logger.info("Code implementation only designed for mean ids 0, 9, 18. Exiting...")
+            sys.exit()
+        mean_factor = 1 + 0.1 * (mean_id != 0) * (1 - 2 * (mean_id == 18))
+
+        input_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
+            % (self.dirouthistograms, self.suffix, var, mean_factor, self.train_events)
+        with gzip.open(input_file_name, 'rb') as input_file:
+            histo = pickle.load(input_file)
+
+        output_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
+            % (self.diroutflattree, self.suffix, var, mean_factor, self.train_events)
+        dim_var = 0
+        # slices: (start_bin, stop_bin, step, grouping) for each histogram dimension
+        slices = ((0, histo['H'].shape[0], 1, 0),
+                (0, histo['H'].shape[1], 1, 0),
+                (0, histo['H'].shape[2], 1, 0),
+                (0, histo['H'].shape[3], 1, 0),
+                (0, histo['H'].shape[4], 1, 0))
+        df_pdf_map = makePdfMaps(histo, slices, dim_var)
+        # set the index name to retrieve the name of the variable of interest later
+        df_pdf_map.index.name = histo['name']
+        df_pdf_map.to_root(output_file_name, key=histo['name'], mode='w', store_index=True)
+        self.logger.info("Pdf map %s written to %s.", histo['name'], output_file_name)
+
+
+    def create_pdf_maps_meanid(self, mean_id):
+        """
+        Create pdf maps for given mean id
+        mean_id: index of mean map. Only 0 (factor=1.0), 9 (factor=1.1) and 18 (factor=0.9) working.
+        """
+        dist_names_list = np.array(self.nameopt_predout) \
+            [np.array([self.opt_predout[0], self.opt_predout[1], self.opt_predout[2]]) > 0]
+
+        var_list = ['flucSC', 'meanSC', 'derRefMeanSC']
+        for dist_name in dist_names_list:
+            var_list.append('flucDist' + dist_name + 'Pred')
+            var_list.append('flucDist' + dist_name)
+            var_list.append('meanDist' + dist_name)
+            var_list.append('derRefMeanDist' + dist_name)
+            var_list.append('flucDist' + dist_name + 'Diff')
+
+        for var in var_list:
+            self.create_pdf_map(var, mean_id)
+
+    def create_pdf_maps(self):
+        """
+        Create pdf maps for mean maps with id 0, 9, 18
+        """
+        for mean_id in [0, 9, 18]:
+            self.create_pdf_maps_meanid(mean_id)
+
+    def merge_pdf_maps(self):
+        """
+        Merge pdf maps for different variables into one file
+        """
+        self.logger.info("DataValidator::merge_pdf_maps")
+
+        dist_names_list = np.array(self.nameopt_predout)[np.array([self.opt_predout[0], \
+                                                                   self.opt_predout[1], \
+                                                                   self.opt_predout[2]]) > 0]
+
+        var_list = ['flucSC', 'meanSC', 'derRefMeanSC']
+        for dist_name in dist_names_list:
+            var_list.append('flucDist' + dist_name + 'Pred')
+            var_list.append('flucDist' + dist_name)
+            var_list.append('meanDist' + dist_name)
+            var_list.append('derRefMeanDist' + dist_name)
+            var_list.append('flucDist' + dist_name + 'Diff')
+
+        df_merged = pd.DataFrame()
+        for mean_factor in [1.0, 1.1, 0.9]:
+            input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
+                % (self.diroutflattree, self.suffix, mean_factor, self.train_events)
+            df = read_root(input_file_name_0, columns="*Bin*")
+            df['fsector'] = df['phiBinCenter'] / math.pi * 9
+            df['meanMap'] = mean_factor
+            for var in var_list:
+                input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
+                    % (self.diroutflattree, self.suffix, var, mean_factor, self.train_events)
+                df_temp = read_root(input_file_name, ignore="*Bin*")
+                for col in list(df_temp.keys()):
+                    df[var + '_' + col] = df_temp[col]
+            df_merged = df_merged.append(df, ignore_index=True)
+
+        output_file_name = "%s/%s/pdfmaps_nEv%d.root" \
+            % (self.diroutflattree, self.suffix, self.train_events)
+        df_merged.to_root(output_file_name, key='pdfmaps', mode='w', store_index=False)
+        self.logger.info("Pdf maps written to %s.", output_file_name)
