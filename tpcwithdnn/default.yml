@@ -6,3 +6,5 @@ dogrid: false
 doprofile: false
 docreatevaldata: true
 docreatepdfmaps: false
+docreatepdfmapforvariable: false
+domergepdfmaps: false

@@ -58,6 +58,7 @@ tpcwithdnn/*.txt
 *.vscode
 **/.mypy_cache
 setup.cfg
+**/.ipynb_checkpoints
 
 # macOS
 .DS_Store

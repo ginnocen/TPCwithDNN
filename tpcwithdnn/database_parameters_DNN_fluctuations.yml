@@ -10,6 +10,8 @@ DNN_fluctuations:
   dirouthistograms: histograms
   tree_events: 20 # Number of events for validation (random events for nd_validation)
   validate_model: true
+  pdf_map_var: flucSC
+  pdf_map_mean_id: 0
   grid_phi: 90
   grid_z: 17
   grid_r: 17

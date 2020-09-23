@@ -15,8 +15,8 @@ submitTrainingCUDA()
   echo '#!/bin/bash' >scdcalib_train.sh
   echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>scdcalib_train.sh
   echo "nEvTest=\$((\${nEvTrain}/5))" >>scdcalib_train.sh
-  echo "createSteeringXMLFile \${nEvTrain} train_nEv\${nEvTrain}.yml true false false false false false false" >>scdcalib_train.sh
-  echo "createParamXMLFile 180 33 33 \${nEvTrain} \${nEvTest} 3000 CUDA" >>scdcalib_train.sh
+  echo "createSteeringXMLFile DNN_fluctuations_nEv\${nEvTrain} train_nEv\${nEvTrain}.yml true false false false false false false false false" >>scdcalib_train.sh
+  echo "createParamXMLFile DNN_fluctuations_nEv\${nEvTrain} 180 33 33 \${nEvTrain} \${nEvTest} 3000 CUDA" >>scdcalib_train.sh
   echo "singularity exec --nv /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_CUDA.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} train_nEv\${nEvTrain}.yml" >>scdcalib_train.sh
   ${batchCommand} --array=1,5,10 -o logs/train_nEv%a000.o -e logs/train_nEv%a000.e scdcalib_train.sh
   rm scdcalib_train.sh
@@ -36,8 +36,8 @@ submitTrainingCUDA16GB()
   echo '#!/bin/bash' >scdcalib_train.sh
   echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>scdcalib_train.sh
   echo "nEvTest=\$((\${nEvTrain}/5))" >>scdcalib_train.sh
-  echo "createSteeringXMLFile \${nEvTrain} train_nEv\${nEvTrain}.yml true false false false false false false" >>scdcalib_train.sh
-  echo "createParamXMLFile 180 33 33 \${nEvTrain} \${nEvTest} 3000 CUDA" >>scdcalib_train.sh
+  echo "createSteeringXMLFile DNN_fluctuations_nEv\${nEvTrain} train_nEv\${nEvTrain}.yml true false false false false false false false false" >>scdcalib_train.sh
+  echo "createParamXMLFile DNN_fluctuations_nEv\${nEvTrain} 180 33 33 \${nEvTrain} \${nEvTest} 3000 CUDA" >>scdcalib_train.sh
   echo "sed -i 's/SC\-33\-33\-180/SC\-33\-33\-180\_memGPU16GB/g' database_parameters_DNN_fluctuations_nEv\${nEvTrain}.yml" >>scdcalib_train.sh
   echo "export TPCwithDNNSETMEMLIMIT=16384" >>scdcalib_train.sh
   echo "singularity exec --nv /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_CUDA.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} train_nEv\${nEvTrain}.yml" >>scdcalib_train.sh
@@ -59,8 +59,8 @@ submitTrainingROCM()
   echo '#!/bin/bash' >scdcalib_train.sh
   echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>scdcalib_train.sh
   echo "nEvTest=\$((\${nEvTrain}/5))" >>scdcalib_train.sh
-  echo "createSteeringXMLFile \${nEvTrain} train_nEv\${nEvTrain}.yml true false false false false false false" >>scdcalib_train.sh
-  echo "createParamXMLFile 180 33 33 \${nEvTrain} \${nEvTest} 3000 ROCM" >>scdcalib_train.sh
+  echo "createSteeringXMLFile DNN_fluctuations_nEv\${nEvTrain} train_nEv\${nEvTrain}.yml true false false false false false false false false" >>scdcalib_train.sh
+  echo "createParamXMLFile DNN_fluctuations_nEv\${nEvTrain} 180 33 33 \${nEvTrain} \${nEvTest} 3000 ROCM" >>scdcalib_train.sh
   echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} train_nEv\${nEvTrain}.yml" >>scdcalib_train.sh
   ${batchCommand} --array=1,5,10 -o logs/train_nEv%a000.o -e logs/train_nEv%a000.e scdcalib_train.sh
   rm scdcalib_train.sh
@@ -82,7 +82,7 @@ submitValData()
 
   echo '#!/bin/bash' >${submitFile}
   echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>${submitFile}
-  echo "createSteeringXMLFile \${nEvTrain} ${jobPrefix}_nEv\${nEvTrain}.yml false false false false false true false" >>${submitFile}
+  echo "createSteeringXMLFile DNN_fluctuations_nEv\${nEvTrain} ${jobPrefix}_nEv\${nEvTrain}.yml false false false false false true false false false" >>${submitFile}
   echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} ${jobPrefix}_nEv\${nEvTrain}.yml" >>${submitFile}
   ${batchCommand} --array=1,5,10 -o logs/${jobPrefix}_nEv%a000.o -e logs/${jobPrefix}_nEv%a000.e ${submitFile}
   rm ${submitFile}
@@ -109,11 +109,16 @@ submitPDFMaps()
   echo '#!/bin/bash' >${submitFile}
   echo "imap=\$(cat ${pdfMapList} | sed -n \${SLURM_ARRAY_TASK_ID}p)" >>${submitFile}
   echo "nEvTrain=\$(echo \${imap} | awk -F' ' '{print \$1}')" >>${submitFile}
-  echo "case=\$(echo \${imap} | awk -F' ' '{print \$2}')" >>${submitFile}
-  echo "var=\$(echo \${imap} | awk -F' ' '{print \$3}')" >>${submitFile}
-  echo "meanid=\$(echo \${imap} | awk -F' ' '{print \$4}')" >>${submitFile}
-  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runPDFMap.sh ${workDir} \${case} \${var} \${meanid}" >>${submitFile}
-  ${batchCommand} --array=1-${numberHistos} -o logs/${jobPrefix}_%a.o -e logs/${jobPrefix}_%a.e ${submitFile}
+  echo "nEvTest=\$((\${nEvTrain}/5))" >>${submitFile}
+  echo "var=\$(echo \${imap} | awk -F' ' '{print \$2}')" >>${submitFile}
+  echo "meanid=\$(echo \${imap} | awk -F' ' '{print \$3}')" >>${submitFile}
+  echo "createSteeringXMLFile DNN_fluctuations_nEv\${nEvTrain}_var\${var}_meanid\${meanid} ${jobPrefix}_nEv\${nEvTrain}_var\${var}_meanid\${meanid}.yml false false false false false false false true false" >>${submitFile}
+  echo "createParamXMLFile DNN_fluctuations_nEv\${nEvTrain}_var\${var}_meanid\${meanid} 180 33 33 \${nEvTrain} \${nEvTest} 3000 ROCM" >>${submitFile}
+  echo "sed -i \"s/pdf\\_map\\_var\\:\\ flucSC/pdf\\_map\\_var\\:\\ \${var}/g\" database_parameters_DNN_fluctuations_nEv\${nEvTrain}_var\${var}_meanid\${meanid}.yml" >>${submitFile}
+  echo "sed -i \"s/pdf\\_map\\mean\\_id\\:\\ 0/pdf\\_map\\mean\\_id\\:\\ \${meanid}/g\" database_parameters_DNN_fluctuations_nEv\${nEvTrain}_var\${var}_meanid\${meanid}.yml" >>${submitFile}
+  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} ${jobPrefix}_nEv\${nEvTrain}_var\${var}_meanid\${meanid}.yml" >>${submitFile}
+  echo "rm ${jobPrefix}_nEv\${nEvTrain}_var\${var}_meanid\${meanid}.yml database_parameters_DNN_fluctuations_nEv\${nEvTrain}_var\${var}_meanid\${meanid}.yml" >>${submitFile}
+  ${batchCommand} --array=1-${numberMaps} -o logs/${jobPrefix}_%a.o -e logs/${jobPrefix}_%a.e ${submitFile}
   rm ${submitFile}
 }
 
@@ -133,24 +138,26 @@ submitMergePDFMaps()
 
   echo '#!/bin/bash' >${submitFile}
   echo "nEvTrain=\$((\${SLURM_ARRAY_TASK_ID}*1000))" >>${submitFile}
-  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runMergePDFMaps.sh ${workDir} DNN_fluctuations_nEv\${nEvTrain}" >>${submitFile}
+  echo "createSteeringXMLFile DNN_fluctuations_nEv\${nEvTrain} ${jobPrefix}_nEv\${nEvTrain}.yml false false false false false false false false true" >>${submitFile}
+  echo "singularity exec /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-500/SCDcalibML_ROCM.sif ${codeDir}/macros/runTPCwithDNN.sh ${workDir} ${jobPrefix}_nEv\${nEvTrain}.yml" >>${submitFile}
   ${batchCommand} --array=1,5,10 -o logs/${jobPrefix}_nEv%a000.o -e logs/${jobPrefix}_nEv%a000.e ${submitFile}
   rm ${submitFile}
 }
 
 createParamXMLFile()
 {
-  nphi=$1
-  nr=$2
-  nz=$3
-  nEvTrain=$4
-  nEvTest=$5
-  nEvApply=$6
-  node=$7
+  case=$1
+  nphi=$2
+  nr=$3
+  nz=$4
+  nEvTrain=$5
+  nEvTest=$6
+  nEvApply=$7
+  node=$8
 
-  fileName=database_parameters_DNN_fluctuations_nEv${nEvTrain}.yml
+  fileName=database_parameters_${case}.yml
 
-  echo "DNN_fluctuations_nEv${nEvTrain}:" >${fileName}
+  echo "${case}:" >${fileName}
   echo "  dirmodel: /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-439/${node}/SC-${nz}-${nr}-${nphi}/models" >>${fileName}
   echo "  dirval: /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-439/${node}/SC-${nz}-${nr}-${nphi}/validation" >>${fileName}
   echo "  dirinput_bias: /lustre/alice/users/mkleiner/NOTESData/JIRA/ATO-439/bias" >>${fileName}
@@ -162,6 +169,8 @@ createParamXMLFile()
   echo "  dirouthistograms: /lustre/alice/users/hellbaer/NOTESData/JIRA/ATO-439/${node}/SC-${nz}-${nr}-${nphi}/histograms" >>${fileName}
   echo "  tree_events: 27000 # Number of events for validation (random events for nd_validation)" >>${fileName}
   echo "  validate_model: true" >>${fileName}
+  echo "  pdf_map_var: flucSC" >>${fileName}
+  echo "  pdf_map_mean_id: 0" >>${fileName}
   echo "  grid_phi: ${nphi}" >>${fileName}
   echo "  grid_z: ${nz}" >>${fileName}
   echo "  grid_r: ${nr}" >>${fileName}
@@ -194,7 +203,7 @@ export -f createParamXMLFile
 createSteeringXMLFile()
 {
   ## create xml file (default.yml) with steering options
-  nEvTrain=$1
+  case=$1
   filename=$2
   dotrain=$3
   doapply=$4
@@ -203,8 +212,10 @@ createSteeringXMLFile()
   doprofile=$7
   docreatevaldata=$8
   docreatepdfmaps=$9
+  docreatepdfmapforvariable=${10}
+  domergepdfmaps=${11}
 
-  echo "case: DNN_fluctuations_nEv${nEvTrain}" > ${filename}
+  echo "case: ${case}" > ${filename}
   echo "dotrain: ${dotrain}" >> ${filename}
   echo "doapply: ${doapply}" >> ${filename}
   echo "doplot: ${doplot}" >> ${filename}
@@ -212,6 +223,8 @@ createSteeringXMLFile()
   echo "doprofile: ${doprofile}" >> ${filename}
   echo "docreatevaldata: ${docreatevaldata}" >> ${filename}
   echo "docreatepdfmaps: ${docreatepdfmaps}" >> ${filename}
+  echo "docreatepdfmapforvariable: ${docreatepdfmapforvariable}" >> ${filename}
+  echo "domergepdfmaps: ${domergepdfmaps}" >> ${filename}
 }
 export -f createSteeringXMLFile
 
@@ -224,30 +237,30 @@ createPDFMapList()
 
   touch ${fileName}
   for nEvTrain in {1000,5000,10000}; do
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucSC 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucSC 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucSC 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanSC 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanSC 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanSC 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanSC 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanSC 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanSC 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistR 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistR 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistR 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistRPred 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistRPred 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistRPred 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistRDiff 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistRDiff 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} flucDistRDiff 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanDistR 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanDistR 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} meanDistR 18" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDistR 0" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDistR 9" >>${fileName}
-    echo "${nEvTrain} DNN_fluctuations_nEv${nEvTrain} derRefMeanDistR 18" >>${fileName}
+    echo "${nEvTrain} flucSC 0" >>${fileName}
+    echo "${nEvTrain} flucSC 9" >>${fileName}
+    echo "${nEvTrain} flucSC 18" >>${fileName}
+    echo "${nEvTrain} meanSC 0" >>${fileName}
+    echo "${nEvTrain} meanSC 9" >>${fileName}
+    echo "${nEvTrain} meanSC 18" >>${fileName}
+    echo "${nEvTrain} derRefMeanSC 0" >>${fileName}
+    echo "${nEvTrain} derRefMeanSC 9" >>${fileName}
+    echo "${nEvTrain} derRefMeanSC 18" >>${fileName}
+    echo "${nEvTrain} flucDistR 0" >>${fileName}
+    echo "${nEvTrain} flucDistR 9" >>${fileName}
+    echo "${nEvTrain} flucDistR 18" >>${fileName}
+    echo "${nEvTrain} flucDistRPred 0" >>${fileName}
+    echo "${nEvTrain} flucDistRPred 9" >>${fileName}
+    echo "${nEvTrain} flucDistRPred 18" >>${fileName}
+    echo "${nEvTrain} flucDistRDiff 0" >>${fileName}
+    echo "${nEvTrain} flucDistRDiff 9" >>${fileName}
+    echo "${nEvTrain} flucDistRDiff 18" >>${fileName}
+    echo "${nEvTrain} meanDistR 0" >>${fileName}
+    echo "${nEvTrain} meanDistR 9" >>${fileName}
+    echo "${nEvTrain} meanDistR 18" >>${fileName}
+    echo "${nEvTrain} derRefMeanDistR 0" >>${fileName}
+    echo "${nEvTrain} derRefMeanDistR 9" >>${fileName}
+    echo "${nEvTrain} derRefMeanDistR 18" >>${fileName}
   done
 }
 export -f createPDFMapList

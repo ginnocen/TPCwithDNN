@@ -112,6 +112,13 @@ def main():
             mydataval.create_nd_histograms()
             mydataval.create_pdf_maps()
             mydataval.merge_pdf_maps()
+        if default["docreatepdfmapforvariable"] is True:
+            mydataval.create_nd_histogram(db_parameters[case]["pdf_map_var"], \
+                                          db_parameters[case]["pdf_map_mean_id"])
+            mydataval.create_pdf_map(db_parameters[case]["pdf_map_var"], \
+                                     db_parameters[case]["pdf_map_mean_id"])
+        if default["domergepdfmaps"] is True:
+            mydataval.merge_pdf_maps()
 
     if default["doprofile"] is True:
         myopt.draw_profile(all_events_counts)
