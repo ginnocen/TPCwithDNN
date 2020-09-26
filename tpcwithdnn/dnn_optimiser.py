@@ -144,10 +144,9 @@ class DnnOptimiser:
                       depth=self.depth, batchnorm=self.batch_normalization,
                       pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout, 
                       upconv=self.upconv, residual=self.residual, use_dilated=self.use_dilated)
-        
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr), metrics=[self.metrics]) # Mean squared error
-        model.summary()
 
+        model.summary()
         plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),
                    show_shapes=True, show_layer_names=True)
 
@@ -206,7 +205,7 @@ class DnnOptimiser:
         h_deltas_vs_dist_all_events = TH2F("%s_all_events_%s" % \
                                            (self.h_deltas_vs_dist_name, self.suffix),
                                            "", 500, -5.0, 5.0, 100, -0.5, 0.5)
-        
+                                           
         for iexperiment in self.partition['apply']:
             indexev = iexperiment
             inputs_, exp_outputs_ = load_train_apply(self.dirinput_apply, indexev,

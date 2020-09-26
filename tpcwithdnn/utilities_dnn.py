@@ -35,7 +35,6 @@ def level_block(m, dim, depth, inc_rate, activation, dropout, batchnorm, pool_ty
 
         m = level_block(m, int(inc_rate*dim), depth-1, inc_rate, activation, dropout, batchnorm,
                         pool_type, upconv, residual, use_dilated)
-        
         if upconv:
             m = UpSampling3D(size=(2, 2, 2))(m)
         elif not upconv and use_dilated:
@@ -44,7 +43,6 @@ def level_block(m, dim, depth, inc_rate, activation, dropout, batchnorm, pool_ty
         else:
             m = Conv3DTranspose(dim, 3, strides=2, activation=activation,
                                 padding='same')(m)
-
         diff_phi = n.shape[1] - m.shape[1]
         diff_r = n.shape[2] - m.shape[2]
         diff_z = n.shape[3] - m.shape[3]
@@ -53,7 +51,6 @@ def level_block(m, dim, depth, inc_rate, activation, dropout, batchnorm, pool_ty
             m = SymmetryPadding3d(padding=padding, mode="SYMMETRIC")(m)
         elif (diff_r != 0 or diff_z != 0):
             m = SymmetryPadding3d(padding=padding, mode="CONSTANT")(m)
-        
         if depth == 2 and use_dilated:
             n = dilated_dense_net(n, dim)
         n = concatenate([n, m])
@@ -94,31 +91,15 @@ def dilated_dense_net(m, dim, activation="relu", dropout=0.5, sub_blocks=3):
     for i in range(sub_blocks):
         n = Conv3D(dim, 1, activation=activation, kernel_initializer='normal')(x)
         n = Dropout(dropout)(n) if dropout else n
-        n = Conv3D(int(dim/4), 3, activation=activation, padding='same', kernel_initializer='normal', \
-                            dilation_rate=dilation_rate)(n)
+        n = Conv3D(int(dim/4), 3, activation=activation, padding='same', kernel_initializer='normal', dilation_rate=dilation_rate)(n)
         n = Dropout(dropout)(n) if dropout else n
         n = concatenate([n, x])
         x = n
         n = Conv3D(dim, 1, activation=activation, kernel_initializer='normal')(x)
         n = Dropout(dropout)(n) if dropout else n
-        n = Conv3D(int(dim/4), 3, activation=activation, padding='same', kernel_initializer='normal', \
-                            dilation_rate=dilation_rate)(n)
+        n = Conv3D(int(dim/4), 3, activation=activation, padding='same', kernel_initializer='normal', dilation_rate=dilation_rate)(n)
         n = Dropout(dropout)(n) if dropout else n
         n = concatenate([n, x])
         x = n
         dilation_rate *= 2
     return n
-
-
-
-
-
-
-        
-
-        
-        
-
-
-
-
