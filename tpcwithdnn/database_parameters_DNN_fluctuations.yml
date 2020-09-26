@@ -24,14 +24,18 @@ DNN_fluctuations:
   apply_events: [6000]
   max_events: 10000 # number of all available events
   use_scaler: 0
-  filters: 4
+  filters: 4 # 64
   pooling: 0
-  batch_size: 27
+  batch_size: 27 # 16
   shuffle: false
-  depth: 4
-  batch_normalization: 0
-  dropout: 0.0
+  depth: 4 # 3
+  batch_normalization: 0 # 1
+  dropout: 0.0 # 0.5
   epochs: 20
-  lossfun: mse
+  lossfun: mse 
   metrics: mse
   adamlr: 0.001000
+  upconv: True # False
+  residual: False # True
+  use_dilated: False # True
+
