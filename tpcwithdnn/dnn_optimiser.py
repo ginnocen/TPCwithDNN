@@ -1,7 +1,6 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=protected-access, too-many-locals
-# pylint: disable=line-too-long
 import os
 import matplotlib
 import matplotlib.pyplot as plt
@@ -145,7 +144,8 @@ class DnnOptimiser:
                         depth=self.depth, batchnorm=self.batch_normalization,
                         pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout,
                         upconv=self.upconv, residual=self.residual, use_dilated=self.use_dilated)
-        model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr), metrics=[self.metrics]) # Mean squared error
+        model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
+                        metrics=[self.metrics]) # Mean squared error
 
         model.summary()
         plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.total_events),

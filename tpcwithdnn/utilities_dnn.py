@@ -1,6 +1,5 @@
 # pylint: disable=too-many-arguments, invalid-name
 # pylint: disable=missing-module-docstring, missing-function-docstring
-# pylint: disable=unused-variable
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, concatenate, UpSampling3D, Add, Activation
 from tensorflow.keras.layers import AveragePooling3D, Conv3DTranspose
@@ -89,7 +88,7 @@ def simple_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation=
 def dilated_dense_net(m, dim, activation="relu", dropout=0.5, sub_blocks=3):
     dilation_rate = 1
     x = m
-    for i in range(sub_blocks):
+    for dummy in range(sub_blocks):
         n = Conv3D(dim, 1, activation=activation, kernel_initializer='normal')(x)
         n = Dropout(dropout)(n) if dropout else n
         n = Conv3D(int(dim/4), 3, activation=activation, padding='same',
