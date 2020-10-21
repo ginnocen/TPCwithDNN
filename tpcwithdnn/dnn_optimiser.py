@@ -1,6 +1,7 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=protected-access, too-many-locals
+# pylint: disable=line-too-long
 import os
 import matplotlib
 import matplotlib.pyplot as plt
@@ -141,9 +142,9 @@ class DnnOptimiser:
         validation_generator = FluctuationDataGenerator(self.partition['validation'],
                                                         data_dir=self.dirinput_test, **self.params)
         model = u_net((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
-                      depth=self.depth, batchnorm=self.batch_normalization,
-                      pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout, 
-                      upconv=self.upconv, residual=self.residual, use_dilated=self.use_dilated)
+                        depth=self.depth, batchnorm=self.batch_normalization,
+                        pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout,
+                        upconv=self.upconv, residual=self.residual, use_dilated=self.use_dilated)
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr), metrics=[self.metrics]) # Mean squared error
 
         model.summary()
@@ -160,7 +161,7 @@ class DnnOptimiser:
                         validation_data=validation_generator,
                         use_multiprocessing=False,
                         epochs=self.epochs, callbacks=[tensorboard_callback])
-        
+
         plt.style.use("ggplot")
         plt.figure()
         plt.yscale('log')
@@ -205,7 +206,7 @@ class DnnOptimiser:
         h_deltas_vs_dist_all_events = TH2F("%s_all_events_%s" % \
                                            (self.h_deltas_vs_dist_name, self.suffix),
                                            "", 500, -5.0, 5.0, 100, -0.5, 0.5)
-                                           
+
         for iexperiment in self.partition['apply']:
             indexev = iexperiment
             inputs_, exp_outputs_ = load_train_apply(self.dirinput_apply, indexev,

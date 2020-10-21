@@ -1,5 +1,6 @@
 # pylint: disable=too-many-arguments, invalid-name
 # pylint: disable=missing-module-docstring, missing-function-docstring
+# pylint: disable=unused-variable
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, concatenate, UpSampling3D, Add, Activation
 from tensorflow.keras.layers import AveragePooling3D, Conv3DTranspose
@@ -91,15 +92,18 @@ def dilated_dense_net(m, dim, activation="relu", dropout=0.5, sub_blocks=3):
     for i in range(sub_blocks):
         n = Conv3D(dim, 1, activation=activation, kernel_initializer='normal')(x)
         n = Dropout(dropout)(n) if dropout else n
-        n = Conv3D(int(dim/4), 3, activation=activation, padding='same', kernel_initializer='normal', dilation_rate=dilation_rate)(n)
+        n = Conv3D(int(dim/4), 3, activation=activation, padding='same',
+                        kernel_initializer='normal', dilation_rate=dilation_rate)(n)
         n = Dropout(dropout)(n) if dropout else n
         n = concatenate([n, x])
         x = n
         n = Conv3D(dim, 1, activation=activation, kernel_initializer='normal')(x)
         n = Dropout(dropout)(n) if dropout else n
-        n = Conv3D(int(dim/4), 3, activation=activation, padding='same', kernel_initializer='normal', dilation_rate=dilation_rate)(n)
+        n = Conv3D(int(dim/4), 3, activation=activation, padding='same',
+                        kernel_initializer='normal', dilation_rate=dilation_rate)(n)
         n = Dropout(dropout)(n) if dropout else n
         n = concatenate([n, x])
         x = n
         dilation_rate *= 2
     return n
+    
