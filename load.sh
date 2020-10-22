@@ -87,6 +87,7 @@ then
             create-virtualenv --force
         fi
         export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH;
+        export ALICE_ROOT=/home/pyadmin/alice/sw/ubuntu1804_x86-64/AliRoot/master-1
         export FLUCTUATIONDIR="/data/tpcml/";
         activate-virtualenv
 

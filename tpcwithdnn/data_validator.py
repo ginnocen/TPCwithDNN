@@ -143,7 +143,6 @@ class DataValidator:
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
 
-        counter = 0
         for imean, mean_factor in zip([0, 9, 18], [1.0, 1.1, 0.9]):
             tree_filename = "%s/treeInput_mean%.1f_%s.root" \
                             % (self.diroutflattree, mean_factor, self.suffix_ds)
@@ -154,6 +153,7 @@ class DataValidator:
             if os.path.isfile(tree_filename):
                 os.remove(tree_filename)
 
+            counter = 0
             for irnd in range(self.maxrandomfiles):
                 counter = counter + 1
                 self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
@@ -238,8 +238,7 @@ class DataValidator:
                 df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
 
                 if counter == self.tree_events:
-                    self.logger.info("Tree written in %s", tree_filename)
-                    return
+                    break
 
             self.logger.info("Tree written in %s", tree_filename)
 
