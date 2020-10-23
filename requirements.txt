@@ -8,3 +8,4 @@ RootInteractive
 tf-nightly-gpu==2.4.0.dev20200908; sys_platform == 'linux'
 pydot
 pylint
+notebook
