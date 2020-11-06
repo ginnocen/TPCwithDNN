@@ -59,6 +59,10 @@ tpcwithdnn/*.txt
 **/.mypy_cache
 setup.cfg
 **/.ipynb_checkpoints
+*.idea
 
 # macOS
 .DS_Store
+
+# singularity containers
+*.sif
