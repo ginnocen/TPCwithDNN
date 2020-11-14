@@ -8,11 +8,10 @@ makeValTreesList()
   listName=valtrees.list
   rm -f ${listName}
   touch ${listName}
-  for ievent in {500,1000,2000,5000}; do
-    for mean in 0.9 1.0 1.1 ; do
-        echo "#Title:model.nEv${ievent}.mean${mean}" >> ${listName}
-        echo "${DATA_MAIN_DIR}/trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0/treeValidation_mean${mean}_nEv${ievent}.root" >> ${listName}
-    done
+  ievent=500
+  for mean in 0.9 1.0 1.1 ; do
+      echo "#Title:model.mean${mean}" >> ${listName}
+      echo "${DATA_MAIN_DIR}/trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0/treeValidation_mean${mean}_nEv${ievent}.root" >> ${listName}
   done
 }
 
