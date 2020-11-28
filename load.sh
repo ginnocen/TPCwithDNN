@@ -90,6 +90,7 @@ then
         export ALICE_ROOT=/home/pyadmin/alice/sw/ubuntu1804_x86-64/AliRoot/master-1
         export FLUCTUATIONDIR="/data/tpcml/";
         activate-virtualenv
+        export PYTHONPATH=$VIRTUALENV_PATH/lib/python3.6/site-packages/:$PYTHONPATH
 
         # If not on aliceml inform user to source own ROOT
         ml-activate-root > /dev/null 2>&1
