@@ -1,0 +1,1 @@
+tensorboard --logdir logs/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0_nEv900 --port 9010
