@@ -1,14 +1,13 @@
 import uproot
-import pandas as pd
-import numpy as np
-from numpy import asarray
-from sklearn.datasets import make_regression
+#from numpy import asarray
+#from sklearn.datasets import make_regression
 from keras.models import Sequential
 from keras.layers import Dense
-from sklearn.model_selection import train_test_split, cross_validate
-from root_numpy import fill_hist
-from ROOT import TH2F, TFile
-import xgboost
+from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import cross_validate
+from root_numpy import fill_hist # pylint: disable=import-error
+from ROOT import TH2F, TFile # pylint: disable=import-error
+#import xgboost # pylint: disable=import-error
 
 Xvar = ["fXTrack1", "fAlphaTrack1", "fYTrack1", "fZTrack1", "fSnpTrack1", \
         "fTglTrack1", "fSigned1PtTrack1", \
@@ -35,13 +34,12 @@ y = dataframe[yvar]
 
 X_train, X_test, y_train, y_test = train_test_split(X, y ,test_size=0.2)
 
-def get_model(n_inputs, n_outputs):
-	model = Sequential()
-	model.add(Dense(400, input_dim=n_inputs, kernel_initializer='he_uniform', activation='relu'))
-	model.add(Dense(n_outputs, kernel_initializer='he_uniform'))
-	model.compile(loss='mae', optimizer='adam')
-	return model
-
+def get_model(n_inputs_, n_outputs_):
+    model_ = Sequential()
+    model_.add(Dense(400, input_dim=n_inputs_, kernel_initializer='he_uniform', activation='relu'))
+    model_.add(Dense(n_outputs_, kernel_initializer='he_uniform'))
+    model_.compile(loss='mae', optimizer='adam')
+    return model_
 
 n_inputs, n_outputs = X.shape[1], y.shape[1]
 # get model
@@ -62,4 +60,3 @@ fill_hist(histo, arr2)
 fileout = TFile("fileout.root", "recreate")
 fileout.cd()
 histo.Write()
-
