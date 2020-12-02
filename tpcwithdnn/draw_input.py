@@ -1,9 +1,7 @@
-from ROOT import TFile, TCanvas, TLegend # pylint: disable=import-error, no-name-in-module
-from ROOT import TH1, TH2, TH2F # pylint: disable=import-error, no-name-in-module
-from ROOT import gStyle, kBlue, kGreen, kRed, kOrange # pylint: disable=import-error, no-name-in-module
+from ROOT import TFile, TCanvas # pylint: disable=import-error, no-name-in-module
+from ROOT import gStyle # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare # pylint: disable=import-error, no-name-in-module
-from ROOT import kDarkBodyRadiator # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT, TTree, gPad  # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT,  gPad  # pylint: disable=import-error, no-name-in-module
 
 def setup_frame(x_label, y_label, z_label):
     htemp = gPad.GetPrimitive("htemp")
@@ -24,31 +22,31 @@ def setup_frame(x_label, y_label, z_label):
     htemp.GetZaxis().SetLabelSize(0.035)
 
 def draw_input():
-  gROOT.SetBatch()
-  gStyle.SetOptStat(0)
-  gStyle.SetOptTitle(0)
-  f = TFile.Open("trees/treeInput_mean1.0_phi180_r65_z65.root","READ")
-  t = f.Get("validation")
+    gROOT.SetBatch()
+    gStyle.SetOptStat(0)
+    gStyle.SetOptTitle(0)
+    f = TFile.Open("trees/treeInput_mean1.0_phi180_r65_z65.root","READ")
+    t = f.Get("validation")
 
-  t.SetMarkerStyle(kFullSquare)
+    t.SetMarkerStyle(kFullSquare)
 
-  c1 = TCanvas()
+    c1 = TCanvas()
 
-  t.Draw("meanSC:r:phi", "z>0 && z<1", "profcolz")
-  setup_frame("#varphi (rad)", "r (cm)", "mean SC (fC/cm^3)")
-  c1.SetRightMargin(0.15)
-  c1.SetLeftMargin(0.1)
-  c1.SetTopMargin(0.03)
-  c1.SetBottomMargin(0.1)
-  c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_labelled_with_z.png")
+    t.Draw("meanSC:r:phi", "z>0 && z<1", "profcolz")
+    setup_frame("#varphi (rad)", "r (cm)", "mean SC (fC/cm^3)")
+    c1.SetRightMargin(0.15)
+    c1.SetLeftMargin(0.1)
+    c1.SetTopMargin(0.03)
+    c1.SetBottomMargin(0.1)
+    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_labelled_with_z.png")
 
-  t.Draw("r:z:meanDistR", "phi>0 && phi<3.14/9", "colz")
-  setup_frame("z (cm)", "r (cm)", "mean distorsion dr (cm)")
-  c1.SetRightMargin(0.15)
-  c1.SetLeftMargin(0.1)
-  c1.SetTopMargin(0.03)
-  c1.SetBottomMargin(0.1)
-  c1.SaveAs("r_z_meanDistR_phi_sector0_labelled.png")
+    t.Draw("r:z:meanDistR", "phi>0 && phi<3.14/9", "colz")
+    setup_frame("z (cm)", "r (cm)", "mean distorsion dr (cm)")
+    c1.SetRightMargin(0.15)
+    c1.SetLeftMargin(0.1)
+    c1.SetTopMargin(0.03)
+    c1.SetBottomMargin(0.1)
+    c1.SaveAs("r_z_meanDistR_phi_sector0_labelled.png")
 
 def main():
     draw_input()

@@ -1,9 +1,9 @@
 from ROOT import TFile, TCanvas, TLegend # pylint: disable=import-error, no-name-in-module
-from ROOT import TH1, TH2, TH2F # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kBlue, kGreen, kRed, kOrange # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond # pylint: disable=import-error, no-name-in-module
 from ROOT import kDarkBodyRadiator # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, gPad  # pylint: disable=import-error, no-name-in-module
+# pylint: disable=fixme
 
 def setup_canvas(hist_name):
     canvas = TCanvas(hist_name, hist_name, 0, 0, 800, 800)
