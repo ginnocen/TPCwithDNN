@@ -32,7 +32,7 @@ def setup_frame(x_label, y_label):
 def draw_model_perf():
     pdf_dir = "trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1" \
               "_useSCFluc1_pred_doR1_dophi0_doz0"
-    # gROOT.SetBatch()
+    gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
     gStyle.SetPalette(kDarkBodyRadiator)
@@ -71,23 +71,17 @@ def draw_model_perf():
             for nev, color, marker in zip(nevs, colors, markers):
                 pdf_file = TFile.Open("%s/pdfmaps_nEv%d.root" % (pdf_dir, nev), "read")
                 tree = pdf_file.Get("pdfmaps")
-                # tree.SetDirectory(0)
                 tree.SetMarkerColor(color)
                 tree.SetMarkerStyle(marker)
                 tree.SetMarkerSize(2)
                 same_str = "" if nev == 500 else "same"
                 tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_var, x_var, hist_str), cut, same_str)
-                #opt = tree.GetDrawOption()
-                #print("Option: ", opt)
                 leg.AddEntry(tree, "N_{ev}^{training} = %d" % nev, "F")
-                # print("th type: ", type(gPad.GetPrimitive("th")))
-                # htemp = TH2(gPad.GetPrimitive("th"))
                 # leg.AddEntry(htemp, "N_{ev}^{training} = %d" % nev, "F")
                 pdf_file.Close()
 
             setup_frame(x_label, y_label)
-            # canvas.Update()
-            # leg.Draw()
+            # leg.Draw() # FIXME: It crashes :-(
             for file_format in file_formats:
                 canvas.SaveAs("plots/%s_%s_%s.%s" % (filename, x_var_short, y_label, file_format))
 
