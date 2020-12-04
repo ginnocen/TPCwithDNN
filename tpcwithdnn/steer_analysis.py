@@ -122,6 +122,8 @@ def main():
 
     if default["doprofile"] is True:
         myopt.draw_profile(all_events_counts)
+        myopt.draw_std_dev(all_events_counts)
+        myopt.draw_mean_std_dev(all_events_counts)
 
     logger.info("Program finished.")
 
