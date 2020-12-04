@@ -447,25 +447,27 @@ class DnnOptimiser:
                     if "mean" in func_label and "std" in func_label:
                         hist.Delete("C")
                         leg.DeleteEntry()
-                        hist_mean = root_file.Get("%s_all_events_%s" % (self.profile_name, self.suffix))
-                        hist_stddev = root_file.Get("%s_all_events_%s" % (self.h_std_dev_name, self.suffix))
+                        hist_mean = root_file.Get("%s_all_events_%s" % \
+                                (self.profile_name, self.suffix))
+                        hist_stddev = root_file.Get("%s_all_events_%s" % \
+                                (self.h_std_dev_name, self.suffix))
                         hist_mean.SetDirectory(0)
                         hist_stddev.SetDirectory(0)
-                        hist = hist_mean.ProjectionX("hist_meanSD");
-                        hist.Reset();
-                        hist.Sumw2();
+                        hist = hist_mean.ProjectionX("hist_meanSD")
+                        hist.Reset()
+                        hist.Sumw2()
                         hist.SetDirectory(0)
-                        nbin = hist_mean.GetNbinsX();
+                        nbin = hist_mean.GetNbinsX()
                         for ibin in range(0,nbin):
-                            hist.SetBinContent(ibin+1,hist_mean.GetBinContent(ibin+1));
-                            hist.SetBinError(ibin+1,hist_stddev.GetBinContent(ibin+1));
+                            hist.SetBinContent(ibin+1,hist_mean.GetBinContent(ibin+1))
+                            hist.SetBinError(ibin+1,hist_stddev.GetBinContent(ibin+1))
 
                         hist.SetMarkerStyle(20)
                         hist.SetMarkerColor(colors[i])
                         hist.SetLineColor(colors[i])
-                        hist.SetFillColor(colors[i]);
-                        hist.SetFillStyle(3001);
-                        hist.Draw("sameE2");
+                        hist.SetFillColor(colors[i])
+                        hist.SetFillStyle(3001)
+                        hist.Draw("sameE2")
                         # train_events_k = train_events / 1000
                         leg.AddEntry(hist, "N_{ev}^{training} = %d" % train_events, "FP")
 
@@ -485,7 +487,8 @@ class DnnOptimiser:
         self.draw_multievent_hist(events_counts, "std dev", "std_dev", self.h_std_dev_name)
 
     def draw_mean_std_dev(self, events_counts):
-        self.draw_multievent_hist(events_counts, "mean #pm std.dev.", "mean_std_dev", self.profile_name)
+        self.draw_multievent_hist(events_counts, "mean #pm std.dev.", "mean_std_dev",
+                self.profile_name)
 
     def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
         self.total_events = total_events
