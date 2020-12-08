@@ -474,9 +474,6 @@ class DnnOptimiser:
                     root_file.Close()
 
                 leg.Draw()
-                #canvas.Modified();
-                #canvas.Update();
-                #TPython.Prompt();
                 self.add_desc_to_canvas()
                 self.save_canvas(canvas, frame, "plots/20200803", hist_name, file_formats)
 
