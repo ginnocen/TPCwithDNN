@@ -2,11 +2,11 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=protected-access, too-many-locals
 import os
+import datetime
 import matplotlib
 import matplotlib.pyplot as plt
 
 import numpy as np
-import datetime
 
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.optimizers import Adam
@@ -416,7 +416,6 @@ class DnnOptimiser:
         gStyle.SetOptStat(0)
         gStyle.SetOptTitle(0)
         date = datetime.date.today().strftime("%Y%m%d")
-        
         file_formats = ["pdf"]
         # file_formats = ["png", "eps", "pdf"]
         var_labels = ["dr", "rd#varphi", "dz"]
