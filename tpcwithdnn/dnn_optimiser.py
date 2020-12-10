@@ -6,6 +6,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import numpy as np
+import datetime
 
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.optimizers import Adam
@@ -16,7 +17,6 @@ from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
-#from ROOT import TPython  # pylint: disable=import-error, no-name-in-module
 
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 from tpcwithdnn.logger import get_logger
@@ -415,7 +415,8 @@ class DnnOptimiser:
     def draw_multievent_hist(self, events_counts, func_label, hist_name, source_hist):
         gStyle.SetOptStat(0)
         gStyle.SetOptTitle(0)
-
+        date = datetime.date.today().strftime("%Y%m%d")
+        
         file_formats = ["pdf"]
         # file_formats = ["png", "eps", "pdf"]
         var_labels = ["dr", "rd#varphi", "dz"]
@@ -475,7 +476,7 @@ class DnnOptimiser:
 
                 leg.Draw()
                 self.add_desc_to_canvas()
-                self.save_canvas(canvas, frame, "plots/20200803", hist_name, file_formats)
+                self.save_canvas(canvas, frame, "plots/{0}".format(date), hist_name, file_formats)
 
     def draw_profile(self, events_counts):
         self.draw_multievent_hist(events_counts, "mean", "profile", self.profile_name)
