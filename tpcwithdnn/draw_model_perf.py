@@ -10,7 +10,7 @@ def setup_canvas(hist_name):
     canvas.SetMargin(0.13, 0.05, 0.12, 0.05)
     canvas.SetTicks(1, 1)
 
-    leg = TLegend(0.3, 0.65, 0.65, 0.8)
+    leg = TLegend(0.5, 0.75, 0.8, 0.9)
     leg.SetBorderSize(0)
     leg.SetTextSize(0.03)
 
@@ -30,27 +30,43 @@ def setup_frame(x_label, y_label):
     htemp.GetYaxis().SetLabelSize(0.035)
 
 def draw_model_perf():
-    pdf_dir = "trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1" \
-              "_useSCFluc1_pred_doR1_dophi0_doz0"
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
     gStyle.SetPalette(kDarkBodyRadiator)
 
-    filename = "py_model_perf"
+    # pdf_dir = "trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1" \
+    #           "_useSCFluc1_pred_doR1_dophi0_doz0"
+    # nevs = [500, 1000, 2000, 5000]
+    pdf_dir_90 = "/mnt/temp/mkabus/val-20201209/trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0/"
+    pdf_dir_180 = "/mnt/temp/mkabus/val-20201209/trees/phi180_r33_z33_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0/"
+
+    filename = "model_perf_90-180"
     file_formats = ["png"] # "pdf" - lasts long
 
-    nevs = [500, 1000, 2000, 5000]
+    nevs_90 = [5000, 10000, 18000]
+    nevs_180 = [18000]
+    nevs = nevs_90 + nevs_180
+    pdf_files_90 = ["%s/pdfmaps_nEv%d.root" % (pdf_dir_90, nev) for nev in nevs_90]
+    pdf_files_180 = ["%s/pdfmaps_nEv%d.root" % (pdf_dir_180, nev) for nev in nevs_180]
+    pdf_file_names = pdf_files_90 + pdf_files_180
+
+    grans = [90, 90, 90, 180]
+
     colors = [kBlue, kOrange, kGreen, kRed]
     markers = [kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond]
 
     # TODO: Why fsector from [9, 10]?
-    cut_r = "zBinCenter>0 && zBinCenter<5 && flucDistR_entries>50 && fsector>9.00 && fsector<9.05" \
-            " && deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122"
-    cut_fsector = "zBinCenter>0 && zBinCenter<5 && flucDistR_entries>50" \
+    # cut_r = "zBinCenter>0 && zBinCenter<5 && flucDistR_entries>50 && fsector>9.00 && fsector<9.05" \
+    #         " && deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122"
+    # cut_r = "zBinCenter>0 && zBinCenter<5 && fsector>9.00 && fsector<9.05" \
+    #        " && deltaSCBinCenter>0.020 && deltaSCBinCenter<0.023"
+    cut_r = "zBinCenter>0 && zBinCenter<5 && fsector>9.00 && fsector<9.05" \
+           " && rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057"
+    cut_fsector = "zBinCenter>0 && zBinCenter<5" \
                   " && rBinCenter>86.0 && rBinCenter<86.1" \
-                  " && deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122"
-    cuts = [cut_r, cut_fsector]
+                  " && deltaSCBinCenter>0.00 && deltaSCBinCenter<0.05"
+    cuts = [cut_r] #, cut_fsector]
 
     var_name = "flucDistRDiff"
     y_vars = ["rmsd", "means"]
@@ -59,31 +75,32 @@ def draw_model_perf():
     x_vars_short = ["r", "fsector"]
     x_labels = ["r (cm)", "fsector"] # TODO: what units?
 
-    hist_strs = { "r_rmsd": "33, 83.5, 254.5, 200, 0.015, 0.145",
-            "fsector_rmsd": "90, -1.0, 19, 200, 0.04, 0.27",
-            "r_means": "33, 83.5, 254.5, 200, -0.13, 0.07",
-            "fsector_means": "90, -1.0, 19, 200, -0.16, 0.06"}
+    hist_strs = { "r_rmsd": "33, 195.0, 245.5, 20, 0.000, 0.06", # 83.5 254.5, 200
+            "fsector_rmsd": "90, -1.0, 19, 200, 0.00, 0.1",
+            "r_means": "33, 195.0, 245.5, 20, -0.06, 0.06",
+            "fsector_means": "90, -1.0, 19, 200, -0.07, 0.01"}
 
     for y_var, y_label in zip(y_vars, y_labels):
         for x_var, x_var_short, x_label, cut in zip(x_vars, x_vars_short, x_labels, cuts):
             canvas, leg = setup_canvas("perf_%s" % y_label)
             hist_str = hist_strs["%s_%s" % (x_var_short, y_var)]
-            for nev, color, marker in zip(nevs, colors, markers):
-                pdf_file = TFile.Open("%s/pdfmaps_nEv%d.root" % (pdf_dir, nev), "read")
-                tree = pdf_file.Get("pdfmaps")
+            pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
+            trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
+            for ind, (nev, color, marker, tree, gran) in enumerate(zip(nevs, colors, markers, trees, grans)):
                 tree.SetMarkerColor(color)
                 tree.SetMarkerStyle(marker)
                 tree.SetMarkerSize(2)
-                same_str = "" if nev == 500 else "same"
+                same_str = "" if ind == 0 else "same"
+                gran_str = "180x33x33" if gran == 180 else "90x17x17"
                 tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_var, x_var, hist_str), cut, same_str)
-                leg.AddEntry(tree, "N_{ev}^{training} = %d" % nev, "F")
-                # leg.AddEntry(htemp, "N_{ev}^{training} = %d" % nev, "F")
-                pdf_file.Close()
+                leg.AddEntry(tree, "N_{ev}^{training} = %d, %s" % (nev, gran_str), "P")
 
             setup_frame(x_label, y_label)
-            # leg.Draw() # FIXME: It crashes :-(
+            leg.Draw()
             for file_format in file_formats:
-                canvas.SaveAs("plots/%s_%s_%s.%s" % (filename, x_var_short, y_label, file_format))
+                canvas.SaveAs("plots/20201210_%s_%s_%s.%s" % (filename, x_var_short, y_label, file_format))
+            for pdf_file in pdf_files:
+                pdf_file.Close()
 
 def main():
     draw_model_perf()
