@@ -107,7 +107,8 @@ class DataValidator:
 
         events_file = "%s/events_%s_nEv%d.csv" % (self.dirmodel, self.suffix, self.train_events)
         apply_inds = np.genfromtxt(events_file, delimiter=",")
-        self.apply_inds = apply_inds[(apply_inds[:,1] == 0) | (apply_inds[:,1] == 9) | (apply_inds[:,1] == 18)]
+        self.apply_inds = apply_inds[(apply_inds[:,1] == 0) | (apply_inds[:,1] == 9) | \
+                                     (apply_inds[:,1] == 18)]
 
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
