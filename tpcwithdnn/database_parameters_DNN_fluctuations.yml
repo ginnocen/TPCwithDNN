@@ -5,7 +5,7 @@ DNN_fluctuations:
   dirinput_nobias: /data/tpcml/data_20200518/nobias
   train_bias: true
   test_bias: true
-  apply_bias: true
+  apply_bias: false
   diroutflattree: trees
   dirouthistograms: histograms
   tree_events: 20 # Number of events for validation (random events for nd_validation)

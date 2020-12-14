@@ -1,11 +1,11 @@
 case: DNN_fluctuations
 dotrain: false
-doapply: false
-doplot: false
+doapply: true
+doplot: true
 dogrid: false
-doprofile: false
-docreatevaldata: true
-docreatepdfmaps: true
+doprofile: true
+docreatevaldata: false
+docreatepdfmaps: false
 docreatepdfmapforvariable: false
 docreatepdfmapformeanid: false
-domergepdfmaps: true
+domergepdfmaps: false
