@@ -1,3 +1,4 @@
+# pylint: disable=too-many-locals
 from ROOT import TFile, TCanvas, TLegend # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kBlue, kGreen, kRed, kOrange # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond # pylint: disable=import-error, no-name-in-module
@@ -38,8 +39,11 @@ def draw_model_perf():
     # pdf_dir = "trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1" \
     #           "_useSCFluc1_pred_doR1_dophi0_doz0"
     # nevs = [500, 1000, 2000, 5000]
-    pdf_dir_90 = "/mnt/temp/mkabus/val-20201209/trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0/"
-    pdf_dir_180 = "/mnt/temp/mkabus/val-20201209/trees/phi180_r33_z33_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1_dophi0_doz0/"
+    trees_dir = "/mnt/temp/mkabus/val-20201209/trees"
+    suffix = "filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1_useSCFluc1_pred_doR1" \
+             "_dophi0_doz0/"
+    pdf_dir_90 = "%s/phi90_r17_z17_%s" % (trees_dir, suffix)
+    pdf_dir_180 = "%s/phi180_r33_z33_%s" % (trees_dir, suffix)
 
     filename = "model_perf_90-180"
     file_formats = ["png"] # "pdf" - lasts long
@@ -56,17 +60,15 @@ def draw_model_perf():
     colors = [kBlue, kOrange, kGreen, kRed]
     markers = [kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond]
 
-    # TODO: Why fsector from [9, 10]?
-    # cut_r = "zBinCenter>0 && zBinCenter<5 && flucDistR_entries>50 && fsector>9.00 && fsector<9.05" \
-    #         " && deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122"
-    # cut_r = "zBinCenter>0 && zBinCenter<5 && fsector>9.00 && fsector<9.05" \
-    #        " && deltaSCBinCenter>0.020 && deltaSCBinCenter<0.023"
+    # flucDistR_entries>50
+    # deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122
+    # deltaSCBinCenter>0.020 && deltaSCBinCenter<0.023
     cut_r = "zBinCenter>0 && zBinCenter<5 && fsector>9.00 && fsector<9.05" \
            " && rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057"
     cut_fsector = "zBinCenter>0 && zBinCenter<5" \
                   " && rBinCenter>86.0 && rBinCenter<86.1" \
                   " && deltaSCBinCenter>0.00 && deltaSCBinCenter<0.05"
-    cuts = [cut_r] #, cut_fsector]
+    cuts = [cut_r, cut_fsector]
 
     var_name = "flucDistRDiff"
     y_vars = ["rmsd", "means"]
@@ -86,7 +88,8 @@ def draw_model_perf():
             hist_str = hist_strs["%s_%s" % (x_var_short, y_var)]
             pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
             trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
-            for ind, (nev, color, marker, tree, gran) in enumerate(zip(nevs, colors, markers, trees, grans)):
+            styles = enumerate(zip(nevs, colors, markers, trees, grans))
+            for ind, (nev, color, marker, tree, gran) in styles:
                 tree.SetMarkerColor(color)
                 tree.SetMarkerStyle(marker)
                 tree.SetMarkerSize(2)
@@ -97,8 +100,8 @@ def draw_model_perf():
 
             setup_frame(x_label, y_label)
             leg.Draw()
-            for file_format in file_formats:
-                canvas.SaveAs("plots/20201210_%s_%s_%s.%s" % (filename, x_var_short, y_label, file_format))
+            for ff in file_formats:
+                canvas.SaveAs("plots/20201210_%s_%s_%s.%s" % (filename, x_var_short, y_label, ff))
             for pdf_file in pdf_files:
                 pdf_file.Close()
 
