@@ -96,7 +96,7 @@ def main():
                   "test": [train_events, train_events + test_events],
                   "apply": [train_events + test_events, total_events]}
         myopt.set_ranges(ranges, total_events, train_events, test_events, apply_events)
-        mydataval.set_ranges(ranges, total_events, train_events, test_events, apply_events)
+        mydataval.set_ranges(train_events)
 
         if default["dotrain"] is True:
             myopt.train()

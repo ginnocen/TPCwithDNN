@@ -15,7 +15,7 @@ from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=imp
 
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
-from tpcwithdnn.data_loader import load_data_original, get_event_mean_indices
+from tpcwithdnn.data_loader import load_data_original
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -90,14 +90,10 @@ class DataValidator:
 
         # Parameters for getting input indices
         self.maxrandomfiles = data_param["maxrandomfiles"]
-        self.range_mean_index = data_param["range_mean_index"]
-        self.indices_events_means = None
-        self.partition = None
-        self.total_events = 0
         self.train_events = 0
-        self.test_events = 0
-        self.apply_events = 0
         self.tree_events = data_param["tree_events"]
+        self.apply_inds = None
+        self.use_apply = data_param["use_apply"]
 
         if not os.path.isdir(self.diroutflattree):
             os.makedirs(self.diroutflattree)
@@ -106,15 +102,93 @@ class DataValidator:
         if not os.path.isdir("%s/%s" % (self.dirouthistograms, self.suffix)):
             os.makedirs("%s/%s" % (self.dirouthistograms, self.suffix))
 
-    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
-        self.total_events = total_events
+    def set_ranges(self, train_events):
         self.train_events = train_events
-        self.test_events = test_events
-        self.apply_events = apply_events
 
-        self.indices_events_means, self.partition = get_event_mean_indices(
-            self.maxrandomfiles, self.range_mean_index, ranges)
+        events_file = "%s/events_%s_nEv%d.csv" % (self.dirmodel, self.suffix, self.train_events)
+        apply_inds = np.genfromtxt(events_file, delimiter=",")
+        self.apply_inds = apply_inds[(apply_inds[:,1] == 0) | (apply_inds[:,1] == 9) | (apply_inds[:,1] == 18)]
 
+    def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
+                              mat_der_ref_mean_dist, loaded_model, tree_filename):
+        [vec_r_pos, vec_phi_pos, vec_z_pos,
+         vec_mean_sc, vec_random_sc,
+         vec_mean_dist_r, vec_rand_dist_r,
+         vec_mean_dist_rphi, vec_rand_dist_rphi,
+         vec_mean_dist_z, vec_rand_dist_z] = load_data_original(self.dirinput_val,
+                                                                [irnd, imean])
+
+        if self.selopt_input == 0:
+            vec_sel_z = vec_z_pos > 0
+        elif self.selopt_input == 1:
+            vec_sel_z = vec_z_pos < 0
+        elif self.selopt_input == 2:
+            vec_sel_z = vec_z_pos
+
+        vec_z_pos = vec_z_pos[vec_sel_z]
+        vec_r_pos = vec_r_pos[vec_sel_z]
+        vec_phi_pos = vec_phi_pos[vec_sel_z]
+        vec_mean_sc = vec_mean_sc[vec_sel_z]
+        vec_random_sc = vec_random_sc[vec_sel_z]
+        vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
+        vec_mean_dist_rphi = vec_mean_dist_rphi[vec_sel_z]
+        vec_mean_dist_z = vec_mean_dist_z[vec_sel_z]
+        vec_rand_dist_r = vec_rand_dist_r[vec_sel_z]
+        vec_rand_dist_rphi = vec_rand_dist_rphi[vec_sel_z]
+        vec_rand_dist_z = vec_rand_dist_z[vec_sel_z]
+
+        mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
+        mat_rand_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
+        mat_fluc_dist = mat_mean_dist - mat_rand_dist
+
+        vec_index_random = np.empty(vec_z_pos.size)
+        vec_index_random[:] = irnd
+        vec_index_mean = np.empty(vec_z_pos.size)
+        vec_index_mean[:] = imean
+        vec_index = np.empty(vec_z_pos.size)
+        vec_index[:] = irnd + 1000 * imean
+        vec_fluc_sc = vec_mean_sc - vec_random_sc
+        vec_delta_sc = np.empty(vec_z_pos.size)
+        vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
+
+        df_single_map = pd.DataFrame({column_names[0] : vec_index,
+                                      column_names[1] : vec_index_mean,
+                                      column_names[2] : vec_index_random,
+                                      column_names[3] : vec_r_pos,
+                                      column_names[4] : vec_phi_pos,
+                                      column_names[5] : vec_z_pos,
+                                      column_names[6] : vec_fluc_sc,
+                                      column_names[7] : vec_mean_sc,
+                                      column_names[8] : vec_delta_sc,
+                                      column_names[9] : vec_der_ref_mean_sc})
+
+        for ind_dist in range(3):
+            df_single_map[column_names[10 + ind_dist * 3]] = mat_fluc_dist[ind_dist, :]
+            df_single_map[column_names[11 + ind_dist * 3]] = mat_mean_dist[ind_dist, :]
+            df_single_map[column_names[12 + ind_dist * 3]] = \
+                mat_der_ref_mean_dist[ind_dist, :]
+
+        if self.validate_model:
+            input_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z,
+                                     self.dim_input))
+            index_fill_input = 0
+            if self.opt_train[0] == 1:
+                input_single[0, :, :, :, index_fill_input] = \
+                    vec_mean_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
+                index_fill_input = index_fill_input + 1
+            if self.opt_train[1] == 1:
+                input_single[0, :, :, :, index_fill_input] = \
+                    vec_fluc_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
+
+            mat_fluc_dist_predict_group = loaded_model.predict(input_single)
+            mat_fluc_dist_predict = np.empty((self.dim_output, vec_fluc_sc.size))
+            for ind_dist in range(self.dim_output):
+                mat_fluc_dist_predict[ind_dist, :] = \
+                    mat_fluc_dist_predict_group[0, :, :, :, ind_dist].flatten()
+                df_single_map[column_names[19 + ind_dist]] = \
+                    mat_fluc_dist_predict[ind_dist, :]
+
+        df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
@@ -154,91 +228,25 @@ class DataValidator:
                 os.remove(tree_filename)
 
             counter = 0
-            for irnd in range(self.maxrandomfiles):
-                counter = counter + 1
-                self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
-
-                [vec_r_pos, vec_phi_pos, vec_z_pos,
-                 vec_mean_sc, vec_random_sc,
-                 vec_mean_dist_r, vec_rand_dist_r,
-                 vec_mean_dist_rphi, vec_rand_dist_rphi,
-                 vec_mean_dist_z, vec_rand_dist_z] = load_data_original(self.dirinput_val,
-                                                                        [irnd, imean])
-
-                if self.selopt_input == 0:
-                    vec_sel_z = vec_z_pos > 0
-                elif self.selopt_input == 1:
-                    vec_sel_z = vec_z_pos < 0
-                elif self.selopt_input == 2:
-                    vec_sel_z = vec_z_pos
-
-                vec_z_pos = vec_z_pos[vec_sel_z]
-                vec_r_pos = vec_r_pos[vec_sel_z]
-                vec_phi_pos = vec_phi_pos[vec_sel_z]
-                vec_mean_sc = vec_mean_sc[vec_sel_z]
-                vec_random_sc = vec_random_sc[vec_sel_z]
-                vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
-                vec_mean_dist_rphi = vec_mean_dist_rphi[vec_sel_z]
-                vec_mean_dist_z = vec_mean_dist_z[vec_sel_z]
-                vec_rand_dist_r = vec_rand_dist_r[vec_sel_z]
-                vec_rand_dist_rphi = vec_rand_dist_rphi[vec_sel_z]
-                vec_rand_dist_z = vec_rand_dist_z[vec_sel_z]
-
-                mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
-                mat_rand_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
-                mat_fluc_dist = mat_mean_dist - mat_rand_dist
-
-                vec_index_random = np.empty(vec_z_pos.size)
-                vec_index_random[:] = irnd
-                vec_index_mean = np.empty(vec_z_pos.size)
-                vec_index_mean[:] = imean
-                vec_index = np.empty(vec_z_pos.size)
-                vec_index[:] = irnd + 1000 * imean
-                vec_fluc_sc = vec_mean_sc - vec_random_sc
-                vec_delta_sc = np.empty(vec_z_pos.size)
-                vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
-
-                df_single_map = pd.DataFrame({column_names[0] : vec_index,
-                                              column_names[1] : vec_index_mean,
-                                              column_names[2] : vec_index_random,
-                                              column_names[3] : vec_r_pos,
-                                              column_names[4] : vec_phi_pos,
-                                              column_names[5] : vec_z_pos,
-                                              column_names[6] : vec_fluc_sc,
-                                              column_names[7] : vec_mean_sc,
-                                              column_names[8] : vec_delta_sc,
-                                              column_names[9] : vec_der_ref_mean_sc})
-
-                for ind_dist in range(3):
-                    df_single_map[column_names[10 + ind_dist * 3]] = mat_fluc_dist[ind_dist, :]
-                    df_single_map[column_names[11 + ind_dist * 3]] = mat_mean_dist[ind_dist, :]
-                    df_single_map[column_names[12 + ind_dist * 3]] = \
-                        mat_der_ref_mean_dist[ind_dist, :]
-
-                if self.validate_model:
-                    input_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z,
-                                             self.dim_input))
-                    index_fill_input = 0
-                    if self.opt_train[0] == 1:
-                        input_single[0, :, :, :, index_fill_input] = \
-                            vec_mean_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
-                        index_fill_input = index_fill_input + 1
-                    if self.opt_train[1] == 1:
-                        input_single[0, :, :, :, index_fill_input] = \
-                            vec_fluc_sc.reshape(self.grid_phi, self.grid_r, self.grid_z)
-
-                    mat_fluc_dist_predict_group = loaded_model.predict(input_single)
-                    mat_fluc_dist_predict = np.empty((self.dim_output, vec_fluc_sc.size))
-                    for ind_dist in range(self.dim_output):
-                        mat_fluc_dist_predict[ind_dist, :] = \
-                            mat_fluc_dist_predict_group[0, :, :, :, ind_dist].flatten()
-                        df_single_map[column_names[19 + ind_dist]] = \
-                            mat_fluc_dist_predict[ind_dist, :]
-
-                df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
-
-                if counter == self.tree_events:
-                    break
+            if self.use_apply:
+                for ind_ev in self.apply_inds:
+                    if ind_ev[1] != imean:
+                        continue
+                    irnd = ind_ev[0]
+                    self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
+                    self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
+                                               mat_der_ref_mean_dist, loaded_model, tree_filename)
+                    counter = counter + 1
+                    if counter == self.tree_events:
+                        break
+            else:
+                for irnd in range(self.maxrandomfiles):
+                    self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
+                    self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
+                                               mat_der_ref_mean_dist, loaded_model, tree_filename)
+                    counter = counter + 1
+                    if counter == self.tree_events:
+                        break
 
             self.logger.info("Tree written in %s", tree_filename)
 

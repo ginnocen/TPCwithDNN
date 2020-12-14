@@ -1,14 +1,15 @@
 DNN_fluctuations:
-  dirmodel: model_new_random
+  dirmodel: model_repository
   dirval: validation_new_random
   dirinput_bias: /data/tpcml/data_20200518/bias
   dirinput_nobias: /data/tpcml/data_20200518/nobias
   train_bias: true
   test_bias: true
-  apply_bias: false
+  apply_bias: true
   diroutflattree: trees
   dirouthistograms: histograms
   tree_events: 20 # Number of events for validation (random events for nd_validation)
+  use_apply: false # Whether the validator uses only the events from apply partition
   validate_model: true
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
@@ -22,10 +23,10 @@ DNN_fluctuations:
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
   maxrandomfiles: 970 #this is the total number of random events generated
   range_mean_index: [0,26] # min and max index of mean SC configurations
-  train_events: [900] # events for training (include a mix of SC config)
-  test_events: [100]
-  apply_events: [6000]
-  max_events: 10000 # number of all available events
+  train_events: [10000] # events for training (include a mix of SC config)
+  test_events: [1000]
+  apply_events: [7000]
+  max_events: 20000 # number of all available events
   use_scaler: 0
   filters: 4
   pooling: 0

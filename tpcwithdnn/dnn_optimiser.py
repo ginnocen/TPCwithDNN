@@ -416,6 +416,7 @@ class DnnOptimiser:
         gStyle.SetOptStat(0)
         gStyle.SetOptTitle(0)
         date = datetime.date.today().strftime("%Y%m%d")
+
         file_formats = ["pdf"]
         # file_formats = ["png", "eps", "pdf"]
         var_labels = ["dr", "rd#varphi", "dz"]
@@ -495,4 +496,9 @@ class DnnOptimiser:
 
         self.indices_events_means, self.partition = get_event_mean_indices(
             self.maxrandomfiles, self.range_mean_index, ranges)
+
+        events_inds = np.array(self.partition['apply'])
+        events_file = "%s/events_%s_nEv%d.csv" % (self.dirmodel, self.suffix, self.train_events)
+        np.savetxt(events_file, events_inds, delimiter=",", fmt="%d")
+
         self.logger.info("Processing %d events", self.total_events)
