@@ -92,8 +92,8 @@ class DataValidator:
         self.maxrandomfiles = data_param["maxrandomfiles"]
         self.train_events = 0
         self.tree_events = data_param["tree_events"]
-        self.apply_inds = None
-        self.use_apply = data_param["use_apply"]
+        self.part_inds = None
+        self.use_partition = data_param["use_partition"]
 
         if not os.path.isdir(self.diroutflattree):
             os.makedirs(self.diroutflattree)
@@ -105,10 +105,11 @@ class DataValidator:
     def set_ranges(self, train_events):
         self.train_events = train_events
 
-        events_file = "%s/events_%s_nEv%d.csv" % (self.dirmodel, self.suffix, self.train_events)
-        apply_inds = np.genfromtxt(events_file, delimiter=",")
-        self.apply_inds = apply_inds[(apply_inds[:,1] == 0) | (apply_inds[:,1] == 9) | \
-                                     (apply_inds[:,1] == 18)]
+        events_file = "%s/events_%s_%s_nEv%d.csv" % (self.dirmodel, self.use_partition,
+                                                     self.suffix, self.train_events)
+        part_inds = np.genfromtxt(events_file, delimiter=",")
+        self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
+                                     (part_inds[:,1] == 18)]
 
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
@@ -229,8 +230,8 @@ class DataValidator:
                 os.remove(tree_filename)
 
             counter = 0
-            if self.use_apply:
-                for ind_ev in self.apply_inds:
+            if self.use_partition != 'random':
+                for ind_ev in self.part_inds:
                     if ind_ev[1] != imean:
                         continue
                     irnd = ind_ev[0]

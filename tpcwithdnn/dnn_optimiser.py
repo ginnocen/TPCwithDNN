@@ -500,8 +500,10 @@ class DnnOptimiser:
         self.indices_events_means, self.partition = get_event_mean_indices(
             self.maxrandomfiles, self.range_mean_index, ranges)
 
-        events_inds = np.array(self.partition['apply'])
-        events_file = "%s/events_%s_nEv%d.csv" % (self.dirmodel, self.suffix, self.train_events)
-        np.savetxt(events_file, events_inds, delimiter=",", fmt="%d")
+        for part in self.partition:
+            events_inds = np.array(self.partition[part])
+            events_file = "%s/events_%s_%s_nEv%d.csv" % \
+                          (self.dirmodel, part, self.suffix, self.train_events)
+            np.savetxt(events_file, events_inds, delimiter=",", fmt="%d")
 
         self.logger.info("Processing %d events", self.total_events)
