@@ -38,13 +38,15 @@ From: rocm/tensorflow:rocm3.9-tf2.3-dev
     apt-get install -y wget
     ## Python packages
     python3 -m pip uninstall -y enum34
-    python3 -m pip install conda
+    python3 -m pip install conda aliBuild notebook
+    python3 -m pip install pytest pytest_tornasync pandas bokeh anytree tabulate
+    python3 -m pip install voila panel ipyvolume ipywidgets iminuit
     python3 -m pip install torch torchvision
-    python3 -m pip install tensorflow_probability iminuit
-    python3 -m pip install tensorflow-datasets pytest pandas bokeh==1.4.0 anytree ipywidgets tabulate
+    python3 -m pip install tensorflow_probability  tensorflow-datasets
     python3 -m pip install jax scikit-garden
     python3 -m pip install git+https://github.com/ginnocen/MachineLearningHEP
-    python3 -m pip install --upgrade git+https://github.com/miranov25/RootInteractive
+    ## RootInteractive latest tag is installed with TPCwithDNN
+    # python3 -m pip install --upgrade git+https://github.com/miranov25/RootInteractive
     python3 -m pip install --upgrade --force-reinstall gast==0.3.3
     python3 -m pip install --upgrade git+https://github.com/AliceO2Group/TPCwithDNN
     python3 -m pip install --upgrade tensorflow-rocm tensorboard tensorflow-estimator keras pydot
