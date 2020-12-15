@@ -1,5 +1,5 @@
 DNN_fluctuations:
-  dirmodel: model_new_random
+  dirmodel: model_repository
   dirval: validation_new_random
   dirinput_bias: /data/tpcml/data_20200518/bias
   dirinput_nobias: /data/tpcml/data_20200518/nobias
@@ -24,9 +24,10 @@ DNN_fluctuations:
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
   maxrandomfiles: 970 #this is the total number of random events generated
   range_mean_index: [0,26] # min and max index of mean SC configurations
-  train_events: [10000] # events for training (include a mix of SC config)
-  test_events: [1000]
-  apply_events: [7000]
+  # events for training (include a mix of SC config)
+  train_events: [10000] # 5000, 18000
+  test_events: [1000] # 500, 1800
+  apply_events: [7000] # 7000, 7000
   max_events: 27000 # number of all available events
   use_scaler: 0
   filters: 4
