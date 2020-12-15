@@ -105,11 +105,12 @@ class DataValidator:
     def set_ranges(self, train_events):
         self.train_events = train_events
 
-        events_file = "%s/events_%s_%s_nEv%d.csv" % (self.dirmodel, self.use_partition,
-                                                     self.suffix, self.train_events)
-        part_inds = np.genfromtxt(events_file, delimiter=",")
-        self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
-                                     (part_inds[:,1] == 18)]
+        if self.use_partition != 'random':
+            events_file = "%s/events_%s_%s_nEv%d.csv" % (self.dirmodel, self.use_partition,
+                                                         self.suffix, self.train_events)
+            part_inds = np.genfromtxt(events_file, delimiter=",")
+            self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
+                                         (part_inds[:,1] == 18)]
 
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
