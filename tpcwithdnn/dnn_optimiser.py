@@ -3,6 +3,7 @@
 # pylint: disable=protected-access, too-many-locals
 import os
 import datetime
+import random
 import matplotlib
 import matplotlib.pyplot as plt
 
@@ -128,6 +129,8 @@ class DnnOptimiser:
         self.train_events = 0
         self.test_events = 0
         self.apply_events = 0
+
+        random.seed(12345)
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
