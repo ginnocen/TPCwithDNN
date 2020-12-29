@@ -83,6 +83,9 @@ class DnnOptimiser:
         self.lossfun = data_param["lossfun"]
         self.metrics = data_param["metrics"]
         self.adamlr = data_param["adamlr"]
+        self.upconv = data_param["upconv"]
+        self.residual = data_param["residual"]
+        self.use_dilated = data_param["use_dilated"]
 
         self.params = {'phi_slice': self.grid_phi,
                        'r_row' : self.grid_r,
@@ -144,10 +147,11 @@ class DnnOptimiser:
         validation_generator = FluctuationDataGenerator(self.partition['validation'],
                                                         data_dir=self.dirinput_test, **self.params)
         model = u_net((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
-                      depth=self.depth, batchnorm=self.batch_normalization,
-                      pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout)
+                        depth=self.depth, batchnorm=self.batch_normalization,
+                        pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout,
+                        upconv=self.upconv, residual=self.residual, use_dilated=self.use_dilated)
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
-                      metrics=[self.metrics]) # Mean squared error
+                        metrics=[self.metrics]) # Mean squared error
 
         model.summary()
         plot_model(model, to_file='plots/model_%s_nEv%d.png' % (self.suffix, self.train_events),
@@ -158,6 +162,7 @@ class DnnOptimiser:
         tensorboard_callback = TensorBoard(log_dir=log_dir, histogram_freq=1)
 
         model._get_distribution_strategy = lambda: None
+
         his = model.fit(training_generator,
                         validation_data=validation_generator,
                         use_multiprocessing=False,
