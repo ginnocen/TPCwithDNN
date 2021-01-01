@@ -6,7 +6,7 @@ h5py<3.0.0
 keras==2.3.1
 PyYaml
 RootInteractive
-tf-nightly-gpu==2.4.0.dev20200908; sys_platform == 'linux'
+tensorflow>=2.4.0
 pydot
 pylint
 notebook
