@@ -1,6 +1,7 @@
 DNN_fluctuations:
   dirmodel: model_repository
   dirval: validation_new_random
+  dirplots: plots
   dirinput_bias: /data/tpcml/data_20200518/bias
   dirinput_nobias: /data/tpcml/data_20200518/nobias
   train_bias: true
