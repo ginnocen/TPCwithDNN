@@ -1,6 +1,6 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=protected-access, too-many-locals
+# pylint: disable=protected-access, too-many-locals, wrong-import-position
 import os
 import datetime
 
@@ -73,11 +73,11 @@ class DnnOptimiser:
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
-        self.dirinput_train = "%s/SC-%d-%d-%d" % \
+        self.dirinput_train = "%s/SC-%d-%d-%d/" % \
                               (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_test = "%s/SC-%d-%d-%d" % \
+        self.dirinput_test = "%s/SC-%d-%d-%d/" % \
                              (test_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_apply = "%s/SC-%d-%d-%d" % \
+        self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
 
         # DNN config
