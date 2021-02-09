@@ -4,13 +4,18 @@
 import os
 import datetime
 
+SEED = 12345
+os.environ['PYTHONHASHSEED'] = str(SEED)
 import random
-random.seed(12345)
+random.seed(SEED)
 
 import matplotlib
 import matplotlib.pyplot as plt
 
 import numpy as np
+np.random.seed(SEED)
+import tensorflow as tf
+tf.random.set_seed(SEED)
 
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.optimizers import Adam
