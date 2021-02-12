@@ -23,7 +23,7 @@ from tensorflow.keras.models import model_from_json
 from tensorflow.keras.utils import plot_model
 
 from root_numpy import fill_hist # pylint: disable=import-error
-from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad, TLatex # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
 
@@ -141,7 +141,10 @@ class DnnOptimiser:
 
         gROOT.SetStyle("Plain")
         gROOT.SetBatch()
-
+        gStyle.SetOptStat(0)
+        gStyle.SetTextFont(42)
+        gStyle.SetLabelFont(42)
+        gStyle.SetTitleFont(42)
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
@@ -305,6 +308,10 @@ class DnnOptimiser:
     @staticmethod
     def plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name,
                         dirplots, train_events):
+        def add_alice_text():
+            tex = TLatex(0.15, 0.8, "#scale[0.8]{ALICE work in progress}")
+            tex.SetNDC()
+            return tex
         cev = TCanvas("canvas_%s_nEv%d_%s" % (suffix, train_events, opt_name),
                       "canvas_%s_nEv%d_%s" % (suffix, train_events, opt_name),
                       1400, 1000)
@@ -313,21 +320,29 @@ class DnnOptimiser:
         h_dist.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % opt_name)
         h_dist.GetYaxis().SetTitle("Predicted distortion fluctuation (cm)")
         h_dist.Draw("colz")
+        tex1 = add_alice_text()
+        tex1.Draw()
         cev.cd(2)
         gPad.SetLogy()
         h_deltas_vs_dist.GetXaxis().SetTitle("Numeric %s distorsion fluctuation (cm)" % opt_name)
         h_deltas_vs_dist.ProjectionX().Draw()
         h_deltas_vs_dist.GetYaxis().SetTitle("Entries")
+        tex2 = add_alice_text()
+        tex2.Draw()
         cev.cd(3)
         gPad.SetLogy()
         h_deltas.GetXaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)"
                                      % opt_name)
         h_deltas.GetYaxis().SetTitle("Entries")
         h_deltas.Draw()
+        tex3 = add_alice_text()
+        tex3.Draw()
         cev.cd(4)
         prof.GetYaxis().SetTitle("(Predicted - Numeric) %s distortion fluctuation (cm)" % opt_name)
         prof.GetXaxis().SetTitle("Numeric %s distortion fluctuation (cm)" % opt_name)
         prof.Draw()
+        tex4 = add_alice_text()
+        tex4.Draw()
         #cev.cd(5)
         #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
         #h_deltas_vs_dist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
