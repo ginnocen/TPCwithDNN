@@ -11,9 +11,11 @@ def setup_canvas(hist_name):
     canvas.SetMargin(0.13, 0.05, 0.12, 0.05)
     canvas.SetTicks(1, 1)
 
-    leg = TLegend(0.3, 0.75, 0.8, 0.9)
+    leg = TLegend(0.28, 0.75, 0.8, 0.9)
     leg.SetBorderSize(0)
     leg.SetTextSize(0.03)
+    leg.SetTextFont(42)
+    leg.SetMargin(0.15)
 
     return canvas, leg
 
@@ -78,16 +80,18 @@ def draw_model_perf():
     cuts = [cut_r, cut_fsector]
 
     var_name = "flucDistRDiff"
-    y_vars = ["rmsd", "means"]
+    y_vars = ["rmsd"] #, "means"]
     y_labels = ["RMSE", "Mean"] # TODO: what units?
     x_vars = ["rBinCenter", "fsector"]
-    x_vars_short = ["r", "fsector"]
+    x_vars_short = ["r"] #, "fsector"]
     x_labels = ["r (cm)", "fsector"] # TODO: what units?
 
-    hist_strs = { "r_rmsd": "33, 83.5, 110, 200, 0.000, 0.06", # 195.0, 245.5, 20, # 83.5, 254.5, 200,
+    # "r_rmsd": 195.0, 245.5, 20, # 83.5, 254.5, 200,
+    hist_strs = { "r_rmsd": "33, 83.5, 110, 200, 0.000, 0.06",
             "fsector_rmsd": "90, -1.0, 19, 200, 0.00, 0.1",
             "r_means": "33, 195.0, 245.5, 20, -0.06, 0.06",
             "fsector_means": "90, -1.0, 19, 200, -0.07, 0.01"}
+    gran_desc = "#it{n}_{#it{#varphi}} #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}"
 
     for y_var, y_label in zip(y_vars, y_labels):
         for x_var, x_var_short, x_label, cut in zip(x_vars, x_vars_short, x_labels, cuts):
@@ -101,16 +105,17 @@ def draw_model_perf():
                 tree.SetMarkerStyle(marker)
                 tree.SetMarkerSize(2)
                 same_str = "" if ind == 0 else "same"
-                gran_str = "180x33x33" if gran == 180 else "90x17x17"
+                gran_str = "180 #times 33 #times 33" if gran == 180 else "90 #times 17 #times 17"
                 tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_var, x_var, hist_str), cut, same_str)
-                leg.AddEntry(tree, "N_{ev}^{training} = %d, granularity = %s" % (nev, gran_str), "P")
+                leg.AddEntry(tree, "#it{N}_{ev}^{training} = %d, %s = %s" %\
+                             (nev, gran_desc, gran_str), "P")
 
             setup_frame(x_label, y_label)
             leg.Draw()
             tex = add_alice_text()
             tex.Draw()
             for ff in file_formats:
-                canvas.SaveAs("plots/20210211_%s_%s_%s.%s" % (filename, x_var_short, y_label, ff))
+                canvas.SaveAs("20210211_%s_%s_%s.%s" % (filename, x_var_short, y_label, ff))
             for pdf_file in pdf_files:
                 pdf_file.Close()
 
