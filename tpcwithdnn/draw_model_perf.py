@@ -1,9 +1,9 @@
 # pylint: disable=too-many-locals
-from ROOT import TFile, TCanvas, TLegend # pylint: disable=import-error, no-name-in-module
+from ROOT import TFile, TCanvas, TLegend, TLatex # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kBlue, kGreen, kRed, kOrange # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond # pylint: disable=import-error, no-name-in-module
 from ROOT import kDarkBodyRadiator # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT, gPad  # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT, gPad # pylint: disable=import-error, no-name-in-module
 # pylint: disable=fixme
 
 def setup_canvas(hist_name):
@@ -11,7 +11,7 @@ def setup_canvas(hist_name):
     canvas.SetMargin(0.13, 0.05, 0.12, 0.05)
     canvas.SetTicks(1, 1)
 
-    leg = TLegend(0.5, 0.75, 0.8, 0.9)
+    leg = TLegend(0.3, 0.75, 0.8, 0.9)
     leg.SetBorderSize(0)
     leg.SetTextSize(0.03)
 
@@ -29,6 +29,12 @@ def setup_frame(x_label, y_label):
     htemp.GetYaxis().SetTitleSize(0.045)
     htemp.GetXaxis().SetLabelSize(0.035)
     htemp.GetYaxis().SetLabelSize(0.035)
+
+def add_alice_text():
+    tex = TLatex(0.53, 0.7, "#scale[0.8]{ALICE work in progress}")
+    tex.SetNDC()
+    tex.SetTextFont(42)
+    return tex
 
 def draw_model_perf():
     gROOT.SetBatch()
@@ -48,14 +54,14 @@ def draw_model_perf():
     filename = "model_perf_90-180"
     file_formats = ["png"] # "pdf" - lasts long
 
-    nevs_90 = [5000, 10000, 18000]
+    nevs_90 = [10000, 18000] # 5000
     nevs_180 = [18000]
     nevs = nevs_90 + nevs_180
     pdf_files_90 = ["%s/pdfmaps_nEv%d.root" % (pdf_dir_90, nev) for nev in nevs_90]
     pdf_files_180 = ["%s/pdfmaps_nEv%d.root" % (pdf_dir_180, nev) for nev in nevs_180]
     pdf_file_names = pdf_files_90 + pdf_files_180
 
-    grans = [90, 90, 90, 180]
+    grans = [90, 90, 180]
 
     colors = [kBlue, kOrange, kGreen, kRed]
     markers = [kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond]
@@ -63,8 +69,9 @@ def draw_model_perf():
     # flucDistR_entries>50
     # deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122
     # deltaSCBinCenter>0.020 && deltaSCBinCenter<0.023
+    # rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057
     cut_r = "zBinCenter>0 && zBinCenter<5 && fsector>9.00 && fsector<9.05" \
-           " && rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057"
+           " && rBinCenter < 110 && deltaSCBinCenter>0.06 && deltaSCBinCenter<0.07"
     cut_fsector = "zBinCenter>0 && zBinCenter<5" \
                   " && rBinCenter>86.0 && rBinCenter<86.1" \
                   " && deltaSCBinCenter>0.00 && deltaSCBinCenter<0.05"
@@ -77,7 +84,7 @@ def draw_model_perf():
     x_vars_short = ["r", "fsector"]
     x_labels = ["r (cm)", "fsector"] # TODO: what units?
 
-    hist_strs = { "r_rmsd": "33, 195.0, 245.5, 20, 0.000, 0.06", # 83.5 254.5, 200
+    hist_strs = { "r_rmsd": "33, 83.5, 110, 200, 0.000, 0.06", # 195.0, 245.5, 20, # 83.5, 254.5, 200,
             "fsector_rmsd": "90, -1.0, 19, 200, 0.00, 0.1",
             "r_means": "33, 195.0, 245.5, 20, -0.06, 0.06",
             "fsector_means": "90, -1.0, 19, 200, -0.07, 0.01"}
@@ -96,12 +103,14 @@ def draw_model_perf():
                 same_str = "" if ind == 0 else "same"
                 gran_str = "180x33x33" if gran == 180 else "90x17x17"
                 tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_var, x_var, hist_str), cut, same_str)
-                leg.AddEntry(tree, "N_{ev}^{training} = %d, %s" % (nev, gran_str), "P")
+                leg.AddEntry(tree, "N_{ev}^{training} = %d, granularity = %s" % (nev, gran_str), "P")
 
             setup_frame(x_label, y_label)
             leg.Draw()
+            tex = add_alice_text()
+            tex.Draw()
             for ff in file_formats:
-                canvas.SaveAs("plots/20201210_%s_%s_%s.%s" % (filename, x_var_short, y_label, ff))
+                canvas.SaveAs("plots/20210211_%s_%s_%s.%s" % (filename, x_var_short, y_label, ff))
             for pdf_file in pdf_files:
                 pdf_file.Close()
 
