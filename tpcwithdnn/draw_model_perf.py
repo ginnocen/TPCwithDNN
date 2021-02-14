@@ -1,21 +1,21 @@
-# pylint: disable=too-many-locals
+# pylint: disable=too-many-locals, too-many-statements, fixme
+import datetime
 from ROOT import TFile, TCanvas, TLegend, TLatex # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kBlue, kGreen, kRed, kOrange # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond # pylint: disable=import-error, no-name-in-module
 from ROOT import kDarkBodyRadiator # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, gPad # pylint: disable=import-error, no-name-in-module
-# pylint: disable=fixme
 
 def setup_canvas(hist_name):
     canvas = TCanvas(hist_name, hist_name, 0, 0, 800, 800)
     canvas.SetMargin(0.13, 0.05, 0.12, 0.05)
     canvas.SetTicks(1, 1)
 
-    leg = TLegend(0.28, 0.75, 0.8, 0.9)
+    leg = TLegend(0.36, 0.75, 0.9, 0.9)
     leg.SetBorderSize(0)
     leg.SetTextSize(0.03)
     leg.SetTextFont(42)
-    leg.SetMargin(0.15)
+    leg.SetMargin(0.1)
 
     return canvas, leg
 
@@ -42,6 +42,9 @@ def draw_model_perf():
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
+    gStyle.SetTextFont(42)
+    gStyle.SetTitleFont(42)
+    gStyle.SetLabelFont(42)
     gStyle.SetPalette(kDarkBodyRadiator)
 
     # pdf_dir = "trees/phi90_r17_z17_filter4_poo0_drop0.00_depth4_batch0_scaler0_useSCMean1" \
@@ -80,10 +83,10 @@ def draw_model_perf():
     cuts = [cut_r, cut_fsector]
 
     var_name = "flucDistRDiff"
-    y_vars = ["rmsd"] #, "means"]
-    y_labels = ["RMSE", "Mean"] # TODO: what units?
+    y_vars = ["rmsd", "means"]
+    y_labels = ["RMSE (cm)", "Mean (cm)"]
     x_vars = ["rBinCenter", "fsector"]
-    x_vars_short = ["r"] #, "fsector"]
+    x_vars_short = ["r", "fsector"]
     x_labels = ["r (cm)", "fsector"] # TODO: what units?
 
     # "r_rmsd": 195.0, 245.5, 20, # 83.5, 254.5, 200,
@@ -91,7 +94,9 @@ def draw_model_perf():
             "fsector_rmsd": "90, -1.0, 19, 200, 0.00, 0.1",
             "r_means": "33, 195.0, 245.5, 20, -0.06, 0.06",
             "fsector_means": "90, -1.0, 19, 200, -0.07, 0.01"}
-    gran_desc = "#it{n}_{#it{#varphi}} #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}"
+
+    gran_desc = "#it{n}_{#it{#varphi}}#times#it{n}_{#it{r}}#times#it{n}_{#it{z}}"
+    date = datetime.date.today().strftime("%Y%m%d")
 
     for y_var, y_label in zip(y_vars, y_labels):
         for x_var, x_var_short, x_label, cut in zip(x_vars, x_vars_short, x_labels, cuts):
@@ -105,7 +110,7 @@ def draw_model_perf():
                 tree.SetMarkerStyle(marker)
                 tree.SetMarkerSize(2)
                 same_str = "" if ind == 0 else "same"
-                gran_str = "180 #times 33 #times 33" if gran == 180 else "90 #times 17 #times 17"
+                gran_str = "180#times33#times33" if gran == 180 else "90#times17#times17"
                 tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_var, x_var, hist_str), cut, same_str)
                 leg.AddEntry(tree, "#it{N}_{ev}^{training} = %d, %s = %s" %\
                              (nev, gran_desc, gran_str), "P")
@@ -115,7 +120,7 @@ def draw_model_perf():
             tex = add_alice_text()
             tex.Draw()
             for ff in file_formats:
-                canvas.SaveAs("20210211_%s_%s_%s.%s" % (filename, x_var_short, y_label, ff))
+                canvas.SaveAs("plots/%s_%s_%s_%s.%s" % (date, filename, x_var_short, y_var, ff))
             for pdf_file in pdf_files:
                 pdf_file.Close()
 
