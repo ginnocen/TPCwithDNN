@@ -23,7 +23,7 @@ from tensorflow.keras.models import model_from_json
 from tensorflow.keras.utils import plot_model
 
 from root_numpy import fill_hist # pylint: disable=import-error
-from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad, TLatex # pylint: disable=import-error, no-name-in-module
+from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
 
@@ -308,41 +308,57 @@ class DnnOptimiser:
     def plot_distorsion(self, h_dist, h_deltas, h_deltas_vs_dist, prof, suffix, opt_name):
         cev = TCanvas("canvas_%s_nEv%d_%s" % (suffix, self.train_events, opt_name),
                       "canvas_%s_nEv%d_%s" % (suffix, self.train_events, opt_name),
-                      1400, 1000)
+                      1600, 1600)
         cev.Divide(2, 2)
-        cev.cd(1)
+        c1 = cev.cd(1)
+        c1.SetMargin(0.12, 0.12, 0.12, 0.05)
         gPad.SetLogz()
         h_dist.GetXaxis().SetTitle("d#it{%s}_{true} (cm)" % opt_name.lower())
         h_dist.GetYaxis().SetTitle("d#it{%s}_{pred} (cm)" % opt_name.lower())
-        h_dist.GetYaxis().SetTitleOffset(0.8)
+        h_dist.GetXaxis().CenterTitle(True)
+        h_dist.GetYaxis().CenterTitle(True)
+        h_dist.GetXaxis().SetTitleOffset(1.2)
+        h_dist.GetYaxis().SetTitleOffset(1.2)
         h_dist.Draw("colz")
-        txt1 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, 0.04, True, False, True, True)
+        txt1 = self.add_desc_to_canvas(0.18, 0.65, 0.3, 0.9, 0.04, True, False, True, True)
         txt1.Draw()
-        cev.cd(2)
+        c2 = cev.cd(2)
+        c2.SetMargin(0.12, 0.05, 0.12, 0.05)
         gPad.SetLogy()
         h_deltas_vs_dist.GetXaxis().SetTitle("d#it{%s}_{true} (cm)" % opt_name.lower())
-        h_deltas_vs_dist.ProjectionX().Draw()
         h_deltas_vs_dist.GetYaxis().SetTitle("Entries")
-        txt2 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, 0.04, True, False, True, False)
+        h_deltas_vs_dist.GetXaxis().CenterTitle(True)
+        h_deltas_vs_dist.GetYaxis().CenterTitle(True)
+        h_deltas_vs_dist.GetXaxis().SetTitleOffset(1.2)
+        h_deltas_vs_dist.GetYaxis().SetTitleOffset(1.2)
+        h_deltas_vs_dist.ProjectionX().Draw()
+        txt2 = self.add_desc_to_canvas(0.18, 0.65, 0.3, 0.9, 0.04, True, False, True, True)
         txt2.Draw()
-        tex = TLatex(0.6, 0.8, "#scale[0.8]{ALICE work in progress}")
-        tex.SetNDC()
-        tex.Draw()
-        cev.cd(3)
+        c3 = cev.cd(3)
+        c3.SetMargin(0.12, 0.05, 0.12, 0.05)
         gPad.SetLogy()
         h_deltas.GetXaxis().SetTitle("<d#it{%s}_{pred} - d#it{%s}_{true}> (cm)"
                                      % (opt_name.lower(), opt_name.lower()))
         h_deltas.GetYaxis().SetTitle("Entries")
+        h_deltas.GetXaxis().CenterTitle(True)
+        h_deltas.GetYaxis().CenterTitle(True)
+        h_deltas.GetXaxis().SetTitleOffset(1.2)
+        h_deltas.GetYaxis().SetTitleOffset(1.5)
         h_deltas.Draw()
-        txt3 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, 0.04, True, False, True, True)
+        txt3 = self.add_desc_to_canvas(0.18, 0.65, 0.3, 0.9, 0.04, True, False, True, True)
         txt3.Draw()
-        cev.cd(4)
+        c4 = cev.cd(4)
+        c4.SetMargin(0.15, 0.05, 0.12, 0.05)
         prof.GetYaxis().SetTitle("<d#it{%s}_{pred} - d#it{%s}_{true}> (cm)"
                                  % (opt_name.lower(), opt_name.lower()))
         prof.GetYaxis().SetTitleOffset(1.3)
         prof.GetXaxis().SetTitle("d#it{%s}_{true} (cm)" % opt_name.lower())
+        prof.GetXaxis().CenterTitle(True)
+        prof.GetYaxis().CenterTitle(True)
+        prof.GetXaxis().SetTitleOffset(1.2)
+        prof.GetYaxis().SetTitleOffset(1.8)
         prof.Draw()
-        txt4 = self.add_desc_to_canvas(0.5, 0.55, 0.85, 0.85, 0.04, True, False, True, True)
+        txt4 = self.add_desc_to_canvas(0.45, 0.65, 0.85, 0.9, 0.04, True, False, True, True)
         txt4.Draw()
         #cev.cd(5)
         #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
@@ -402,15 +418,17 @@ class DnnOptimiser:
         frame.GetYaxis().SetTitleOffset(1.5)
         frame.GetXaxis().CenterTitle(True)
         frame.GetYaxis().CenterTitle(True)
-        frame.GetXaxis().SetTitleSize(0.03)
-        frame.GetYaxis().SetTitleSize(0.03)
-        frame.GetXaxis().SetLabelSize(0.03)
-        frame.GetYaxis().SetLabelSize(0.03)
+        frame.GetXaxis().SetTitleSize(0.04)
+        frame.GetYaxis().SetTitleSize(0.04)
+        frame.GetXaxis().SetLabelSize(0.04)
+        frame.GetYaxis().SetLabelSize(0.04)
 
-        leg = TLegend(0.3, 0.7, 0.9, 0.9)
+        leg = TLegend(0.5, 0.7, 0.9, 0.9)
         leg.SetBorderSize(0)
         leg.SetTextFont(42)
-        #leg.SetTextSize(0.03)
+        leg.SetTextSize(0.03)
+        leg.SetHeader("Train setup: #it{N}_{ev}^{training}, #it{n}_{#it{#varphi}}" +\
+                      " #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}", "C")
 
         return canvas, frame, leg
 
@@ -425,7 +443,8 @@ class DnnOptimiser:
             canvas.SaveAs("%s.%s" % (file_name, file_format))
 
 
-    def add_desc_to_canvas(self, xmin, ymin, xmax, ymax, size, add_gran, add_inputs, add_events, add_alice):
+    def add_desc_to_canvas(self, xmin, ymin, xmax, ymax, size,
+                           add_gran, add_inputs, add_events, add_alice):
         txt1 = TPaveText(xmin, ymin, xmax, ymax, "NDC")
         txt1.SetFillColor(kWhite)
         txt1.SetFillStyle(0)
@@ -433,6 +452,8 @@ class DnnOptimiser:
         txt1.SetTextAlign(12) # middle,left
         txt1.SetTextFont(42) # helvetica
         txt1.SetTextSize(size)
+        if add_alice:
+            txt1.AddText("ALICE work in progress")
         if add_gran:
             gran_desc = "#it{n}_{#it{#varphi}} #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}"
             gran_str = "%d #times %d #times %d" % (self.grid_phi, self.grid_r, self.grid_z)
@@ -444,17 +465,14 @@ class DnnOptimiser:
                 txt1.AddText("inputs: #rho_{SC} - <#rho_{SC}>")
         if add_events:
             txt1.AddText("#it{N}_{ev}^{training} = %d" % self.train_events)
-            txt1.AddText("#it{N}_{ev}^{validation} = %d" % self.test_events)
-            txt1.AddText("#it{N}_{ev}^{apply} = %d" % self.apply_events)
+            # txt1.AddText("#it{N}_{ev}^{validation} = %d" % self.test_events)
+            # txt1.AddText("#it{N}_{ev}^{apply} = %d" % self.apply_events)
         txt1.AddText("%d epochs" % self.epochs)
-        if add_alice:
-            txt1.AddText("ALICE work in progress")
         return txt1
 
 
     def draw_multievent_hist(self, events_counts, func_label, hist_name, source_hist):
         gROOT.ForceStyle()
-        gran_desc = "#it{n}_{#it{#varphi}}#times#it{n}_{#it{r}}#times#it{n}_{#it{z}}"
         gran_str = "%d#times%d#times%d" % (self.grid_phi, self.grid_r, self.grid_z)
         date = datetime.date.today().strftime("%Y%m%d")
 
@@ -467,9 +485,9 @@ class DnnOptimiser:
                 opt_name = self.nameopt_predout[iname]
                 var_label = var_labels[iname]
 
-                x_label = "%s_{true} (cm)" % var_label
-                y_label = "%s of d#it{%s}_{pred} - d#it{%s}_{true} (cm) in %d apply events" % \
-                          (func_label, var_label, var_label, events_counts[0][2])
+                x_label = "d#it{%s}_{true} (cm)" % var_label
+                y_label = "%s of d#it{%s}_{pred} - d#it{%s}_{true} (cm)" %\
+                          (func_label, var_label, var_label)
                 canvas, frame, leg = self.setup_canvas(hist_name, opt_name, x_label, y_label)
 
                 for i, (train_events, _, _, _) in enumerate(events_counts):
@@ -484,10 +502,9 @@ class DnnOptimiser:
                     hist.SetMarkerColor(colors[i])
                     hist.SetLineColor(colors[i])
                     # train_events_k = train_events / 1000
-                    leg.AddEntry(hist, "#it{N}_{ev}^{training} = %d, %s = %s" %\
-                                 (train_events, gran_desc, gran_str), "LP")
+                    leg.AddEntry(hist, "%d, %s" % (train_events, gran_str), "LP")
 
-                    if "mean" in func_label and "std" in func_label:
+                    if "mean" in hist_name and "std" in hist_name:
                         hist.Delete("C")
                         leg.DeleteEntry()
                         hist_mean = root_file.Get("%s_all_events_%s" % \
@@ -502,8 +519,8 @@ class DnnOptimiser:
                         hist.SetDirectory(0)
                         nbin = hist_mean.GetNbinsX()
                         for ibin in range(0,nbin):
-                            hist.SetBinContent(ibin+1,hist_mean.GetBinContent(ibin+1))
-                            hist.SetBinError(ibin+1,hist_stddev.GetBinContent(ibin+1))
+                            hist.SetBinContent(ibin+1, hist_mean.GetBinContent(ibin+1))
+                            hist.SetBinError(ibin+1, hist_stddev.GetBinContent(ibin+1))
 
                         hist.SetMarkerStyle(20)
                         hist.SetMarkerColor(colors[i])
@@ -511,25 +528,24 @@ class DnnOptimiser:
                         hist.SetFillColor(colors[i])
                         hist.SetFillStyle(3001)
                         hist.Draw("sameE2")
-                        leg.AddEntry(hist, "#it{N}_{ev}^{training} = %d, %s = %s" %\
-                                     (train_events, gran_desc, gran_str), "FP")
+                        leg.AddEntry(hist, "%d, %s" % (train_events, gran_str), "FP")
 
                     root_file.Close()
 
                 leg.Draw()
-                txt = self.add_desc_to_canvas(0.15, 0.8, 0.4, 0.92, 0.025, False, True, False, True)
+                txt = self.add_desc_to_canvas(0.15, 0.75, 0.4, 0.9, 0.03, False, True, False, True)
                 txt.Draw()
                 self.save_canvas(canvas, frame, "{}/{}".format(self.dirplots, date),
                                  hist_name, file_formats)
 
     def draw_profile(self, events_counts):
-        self.draw_multievent_hist(events_counts, "mean", "profile", self.profile_name)
+        self.draw_multievent_hist(events_counts, "#mu", "profile", self.profile_name)
 
     def draw_std_dev(self, events_counts):
-        self.draw_multievent_hist(events_counts, "std dev", "std_dev", self.h_std_dev_name)
+        self.draw_multievent_hist(events_counts, "#sigma_{std}", "std_dev", self.h_std_dev_name)
 
     def draw_mean_std_dev(self, events_counts):
-        self.draw_multievent_hist(events_counts, "mean #pm std.dev.", "mean_std_dev",
+        self.draw_multievent_hist(events_counts, "#mu #pm #sigma_{std}", "mean_std_dev",
                 self.profile_name)
 
     def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
