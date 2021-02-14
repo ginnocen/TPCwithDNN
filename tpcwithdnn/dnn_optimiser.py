@@ -143,8 +143,8 @@ class DnnOptimiser:
         gROOT.SetBatch()
         gStyle.SetOptStat(0)
         gStyle.SetTextFont(42)
-        gStyle.SetLabelFont(42)
-        gStyle.SetTitleFont(42)
+        gStyle.SetLabelFont(42, "xyz")
+        gStyle.SetTitleFont(42, "xyz")
 
     def train(self):
         self.logger.info("DnnOptimizer::train")
@@ -269,8 +269,8 @@ class DnnOptimiser:
             h1tmp = h_deltas_vs_dist.ProjectionX("h1tmp")
             h_std_dev = h1tmp.Clone("%s_%s" % (self.h_std_dev_name, h_suffix))
             h_std_dev.Reset()
-            h_std_dev.SetXTitle("Numerical distortion fluctuation (cm)")
-            h_std_dev.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
+            h_std_dev.SetXTitle("d#it{%s}_{true} (cm)")
+            h_std_dev.SetYTitle("std.dev. of (d#it{%s}_{pred} - d#it{%s}_{true}) (cm)")
             nbin = int(h_std_dev.GetNbinsX())
             for ibin in range(0, nbin):
                 h1diff = h_deltas_vs_dist.ProjectionY("h1diff", ibin+1, ibin+1, "")
@@ -290,8 +290,8 @@ class DnnOptimiser:
         h1tmp = h_deltas_vs_dist_all_events.ProjectionX("h1tmp")
         h_std_dev_all_events = h1tmp.Clone("%s_all_events_%s" % (self.h_std_dev_name, self.suffix))
         h_std_dev_all_events.Reset()
-        h_std_dev_all_events.SetXTitle("Numerical distortion fluctuation (cm)")
-        h_std_dev_all_events.SetYTitle("std.dev. of (Pred. - Num.) distortion fluctuation (cm)")
+        h_std_dev_all_events.SetXTitle("d#it{%s}_{true} (cm)")
+        h_std_dev_all_events.SetYTitle("std.dev. of (d#it{%s}_{pred} - d#it{%s}_{true}) (cm)")
         nbin = int(h_std_dev_all_events.GetNbinsX())
         for ibin in range(0, nbin):
             h1diff = h_deltas_vs_dist_all_events.ProjectionY("h1diff", ibin+1, ibin+1, "")
@@ -314,39 +314,36 @@ class DnnOptimiser:
         gPad.SetLogz()
         h_dist.GetXaxis().SetTitle("d#it{%s}_{true} (cm)" % opt_name.lower())
         h_dist.GetYaxis().SetTitle("d#it{%s}_{pred} (cm)" % opt_name.lower())
+        h_dist.GetYaxis().SetTitleOffset(0.8)
         h_dist.Draw("colz")
-        txt1 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, False, True)
+        txt1 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, 0.04, True, False, True, True)
         txt1.Draw()
-        tex1 = self.add_alice_text(0.15, 0.5)
-        tex1.Draw()
         cev.cd(2)
         gPad.SetLogy()
         h_deltas_vs_dist.GetXaxis().SetTitle("d#it{%s}_{true} (cm)" % opt_name.lower())
         h_deltas_vs_dist.ProjectionX().Draw()
         h_deltas_vs_dist.GetYaxis().SetTitle("Entries")
-        txt2 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, False, True)
+        txt2 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, 0.04, True, False, True, False)
         txt2.Draw()
-        tex2 = self.add_alice_text(0.6, 0.80)
-        tex2.Draw()
+        tex = TLatex(0.6, 0.8, "#scale[0.8]{ALICE work in progress}")
+        tex.SetNDC()
+        tex.Draw()
         cev.cd(3)
         gPad.SetLogy()
-        h_deltas.GetXaxis().SetTitle("d#it{%s}_{pred} - d#it{%s}_{true} (cm)"
+        h_deltas.GetXaxis().SetTitle("<d#it{%s}_{pred} - d#it{%s}_{true}> (cm)"
                                      % (opt_name.lower(), opt_name.lower()))
         h_deltas.GetYaxis().SetTitle("Entries")
         h_deltas.Draw()
-        txt3 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, False, True)
+        txt3 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, 0.04, True, False, True, True)
         txt3.Draw()
-        tex3 = self.add_alice_text(0.15, 0.5)
-        tex3.Draw()
         cev.cd(4)
-        prof.GetYaxis().SetTitle("d#it{%s}_{pred} - d#it{%s}_{true} (cm)"
+        prof.GetYaxis().SetTitle("<d#it{%s}_{pred} - d#it{%s}_{true}> (cm)"
                                  % (opt_name.lower(), opt_name.lower()))
+        prof.GetYaxis().SetTitleOffset(1.3)
         prof.GetXaxis().SetTitle("d#it{%s}_{true} (cm)" % opt_name.lower())
         prof.Draw()
-        txt4 = self.add_desc_to_canvas(0.15, 0.55, 0.3, 0.85, False, True)
+        txt4 = self.add_desc_to_canvas(0.5, 0.55, 0.85, 0.85, 0.04, True, False, True, True)
         txt4.Draw()
-        tex4 = self.add_alice_text(0.15, 0.5)
-        tex4.Draw()
         #cev.cd(5)
         #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
         #h_deltas_vs_dist.GetYaxis().SetTitle("(Predicted - Numeric) R distorsion (cm)")
@@ -355,6 +352,7 @@ class DnnOptimiser:
 
     def plot(self):
         self.logger.info("DnnOptimizer::plot")
+        gROOT.ForceStyle()
         for iname, opt in enumerate(self.opt_predout):
             if opt == 1:
                 opt_name = self.nameopt_predout[iname]
@@ -409,9 +407,10 @@ class DnnOptimiser:
         frame.GetXaxis().SetLabelSize(0.03)
         frame.GetYaxis().SetLabelSize(0.03)
 
-        leg = TLegend(0.6, 0.7, 0.9, 0.9)
+        leg = TLegend(0.3, 0.7, 0.9, 0.9)
         leg.SetBorderSize(0)
-        leg.SetTextSize(0.03)
+        leg.SetTextFont(42)
+        #leg.SetTextSize(0.03)
 
         return canvas, frame, leg
 
@@ -426,17 +425,18 @@ class DnnOptimiser:
             canvas.SaveAs("%s.%s" % (file_name, file_format))
 
 
-    def add_desc_to_canvas(self, xmin, ymin, xmax, ymax, add_inputs, add_events):
+    def add_desc_to_canvas(self, xmin, ymin, xmax, ymax, size, add_gran, add_inputs, add_events, add_alice):
         txt1 = TPaveText(xmin, ymin, xmax, ymax, "NDC")
         txt1.SetFillColor(kWhite)
         txt1.SetFillStyle(0)
         txt1.SetBorderSize(0)
         txt1.SetTextAlign(12) # middle,left
         txt1.SetTextFont(42) # helvetica
-        txt1.SetTextSize(0.04)
-        gran_desc = "#it{n}_{#it{#varphi}} #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}"
-        gran_str = "%d #times %d #times %d" % (self.grid_phi, self.grid_r, self.grid_z)
-        txt1.AddText("%s = %s" % (gran_desc, gran_str))
+        txt1.SetTextSize(size)
+        if add_gran:
+            gran_desc = "#it{n}_{#it{#varphi}} #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}"
+            gran_str = "%d #times %d #times %d" % (self.grid_phi, self.grid_r, self.grid_z)
+            txt1.AddText("%s = %s" % (gran_desc, gran_str))
         if add_inputs:
             if self.opt_train[0] == 1 and self.opt_train[1] == 1:
                 txt1.AddText("inputs: #rho_{SC} - <#rho_{SC}>, <#rho_{SC}>")
@@ -447,25 +447,20 @@ class DnnOptimiser:
             txt1.AddText("#it{N}_{ev}^{validation} = %d" % self.test_events)
             txt1.AddText("#it{N}_{ev}^{apply} = %d" % self.apply_events)
         txt1.AddText("%d epochs" % self.epochs)
+        if add_alice:
+            txt1.AddText("ALICE work in progress")
         return txt1
 
 
-    def add_alice_text(self, x_pos, y_pos):
-        tex = TLatex(x_pos, y_pos, "#scale[0.8]{ALICE work in progress}")
-        tex.SetNDC()
-        return tex
-
-
     def draw_multievent_hist(self, events_counts, func_label, hist_name, source_hist):
-        gStyle.SetOptStat(0)
-        gStyle.SetOptTitle(0)
-        gran_desc = "#it{n}_{#it{#varphi}} #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}"
-        gran_str = "%d #times %d #times %d" % (self.grid_phi, self.grid_r, self.grid_z)
+        gROOT.ForceStyle()
+        gran_desc = "#it{n}_{#it{#varphi}}#times#it{n}_{#it{r}}#times#it{n}_{#it{z}}"
+        gran_str = "%d#times%d#times%d" % (self.grid_phi, self.grid_r, self.grid_z)
         date = datetime.date.today().strftime("%Y%m%d")
 
-        file_formats = ["pdf"]
+        file_formats = ["pdf", "png"]
         # file_formats = ["png", "eps", "pdf"]
-        var_labels = ["d#it{r}", "rd#it{#varphi}", "d#it{z}"]
+        var_labels = ["r", "r#varphi", "z"]
         colors = [kBlue+1, kGreen+2, kRed+1, kCyan+2, kOrange+7, kMagenta+2]
         for iname, opt in enumerate(self.opt_predout):
             if opt == 1:
@@ -522,10 +517,8 @@ class DnnOptimiser:
                     root_file.Close()
 
                 leg.Draw()
-                txt = self.add_desc_to_canvas(0.15, 0.8, 0.4, 0.92, True, False)
+                txt = self.add_desc_to_canvas(0.15, 0.8, 0.4, 0.92, 0.025, False, True, False, True)
                 txt.Draw()
-                tex = self.add_alice_text(0.15, 0.8)
-                tex.Draw()
                 self.save_canvas(canvas, frame, "{}/{}".format(self.dirplots, date),
                                  hist_name, file_formats)
 
