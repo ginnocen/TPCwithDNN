@@ -1,8 +1,9 @@
 # pylint: disable=too-many-locals, too-many-statements, fixme
 import datetime
-from ROOT import TFile, TCanvas, TLegend, TLatex # pylint: disable=import-error, no-name-in-module
+from ROOT import TFile, TCanvas, TLegend, TLatex, TPaveText # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kBlue, kGreen, kRed, kOrange # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond # pylint: disable=import-error, no-name-in-module
+from ROOT import kOpenSquare, kOpenCircle, kOpenTriangleUp, kOpenDiamond # pylint: disable=import-error, no-name-in-module
 from ROOT import kDarkBodyRadiator # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT, gPad # pylint: disable=import-error, no-name-in-module
 
@@ -16,6 +17,8 @@ def setup_canvas(hist_name):
     leg.SetTextSize(0.03)
     leg.SetTextFont(42)
     leg.SetMargin(0.1)
+    leg.SetHeader("Train setup: #it{N}_{ev}^{training}, #it{n}_{#it{#varphi}}" +\
+                  " #times #it{n}_{#it{r}} #times #it{n}_{#it{z}}", "C")
 
     return canvas, leg
 
@@ -33,10 +36,26 @@ def setup_frame(x_label, y_label):
     htemp.GetYaxis().SetLabelSize(0.035)
 
 def add_alice_text():
-    tex = TLatex(0.53, 0.7, "#scale[0.8]{ALICE work in progress}")
+    tex = TLatex(0.53, 0.57, "#scale[0.8]{ALICE work in progress}")
     tex.SetNDC()
     tex.SetTextFont(42)
     return tex
+
+def add_cut_desc(cut):
+    txt = TPaveText(0.65, 0.6, 0.91, 0.75, "NDC")
+    # txt.SetFillColor(kWhite)
+    txt.SetFillStyle(0)
+    txt.SetBorderSize(0)
+    txt.SetTextAlign(32) # middle,right
+    # txt.SetTextFont(42) # helvetica
+    txt.SetTextSize(0.03)
+    for cut_var in cut:
+        if cut_var == 'sector':
+            txt.AddText("%s %d" % (cut_var, int(round(cut[cut_var][0]))))
+        else:
+            txt.AddText("%.2f < %s < %.2f" % (cut[cut_var][0], cut_var, cut[cut_var][1]))
+    txt.AddText("20 epochs")
+    return txt
 
 def draw_model_perf():
     gROOT.SetBatch()
@@ -70,59 +89,90 @@ def draw_model_perf():
 
     colors = [kBlue, kOrange, kGreen, kRed]
     markers = [kFullSquare, kFullCircle, kFullTriangleUp, kFullDiamond]
+    markers2 = [kOpenSquare, kOpenCircle, kOpenTriangleUp, kOpenDiamond]
+
+    var_name = "flucDistRDiff"
+    y_vars = ["rmsd", "means"]
+    # vars_markers =
+    y_labels = ["#it{RMSE} (cm)", "Mean (cm)"]
+    x_vars = ["rBinCenter", "fsector"]
+    x_vars_short = ["r"] #, "fsector"]
+    x_labels = ["#it{r} (cm)", "fsector"] # TODO: what units?
+
+    # "r_rmsd": 33, 195.0, 245.5, 20, # 83.5, 254.5, 200,
+    # "r_rmsd": "33, 83.5, 110, 200, 0.000, 0.06",
+    hist_strs = {"r_rmsd": "33, 83.5, 245.5, 200, 0.000, 0.06",
+            "fsector_rmsd": "90, -1.0, 19, 200, 0.00, 0.1",
+            "r_means": "33, 83.5, 245.5, 200, -0.06, 0.06",
+            "fsector_means": "90, -1.0, 19, 200, -0.07, 0.01",
+            "r_rmsd_means": "33, 83.5, 245.5, 200, -0.06, 0.06"}
+
+    # gran_desc = "#it{n}_{#it{#varphi}}#times#it{n}_{#it{r}}#times#it{n}_{#it{z}}"
+    date = datetime.date.today().strftime("%Y%m%d")
 
     # flucDistR_entries>50
     # deltaSCBinCenter>0.0121 && deltaSCBinCenter<0.0122
     # deltaSCBinCenter>0.020 && deltaSCBinCenter<0.023
     # rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057
-    cut_r = "zBinCenter>0 && zBinCenter<5 && fsector>9.00 && fsector<9.05" \
-           " && rBinCenter < 110 && deltaSCBinCenter>0.06 && deltaSCBinCenter<0.07"
-    cut_fsector = "zBinCenter>0 && zBinCenter<5" \
-                  " && rBinCenter>86.0 && rBinCenter<86.1" \
-                  " && deltaSCBinCenter>0.00 && deltaSCBinCenter<0.05"
-    cuts = [cut_r, cut_fsector]
+    cuts = {'r': {'#it{z}': (0.0, 5.0), 'sector': (9.00, 9.05), # '#it{r}': (0.0, 110.0),
+                  '(#it{<#rho>}_{SC} - #it{#rho}_{SC})': (0.06, 0.07)},
+            'fsector': {'#it{z}': (0.0, 5.0), '#it{r}': (86.0, 86.1),
+                       '(#it{<#rho>}_{SC} - #it{#rho}_{SC})': (0.00, 0.05)}}
+    cut_r = "zBinCenter > %.2f && zBinCenter < %.2f" % cuts['r']['#it{z}'] +\
+            " && fsector > %.2f  && fsector < %.2f" % cuts['r']['sector'] +\
+            " && deltaSCBinCenter > %.2f && deltaSCBinCenter < %.2f" %\
+                cuts['r']['(#it{<#rho>}_{SC} - #it{#rho}_{SC})'] +\
+            " && %s_rmsd > 0.0" % var_name
+            # " && rBinCenter > %.2f && rBinCenter < %.2f" % cuts['r']['#it{r}'] +\
+    cut_fsector = "zBinCenter > %.2f && zBinCenter < %.2f" % cuts['fsector']['#it{z}'] +\
+                  " && rBinCenter > %.2f && rBinCenter < %.2f" % cuts['fsector']['#it{r}'] +\
+                  " && deltaSCBinCenter > %.2f && deltaSCBinCenter < %.2f" %\
+                      cuts['fsector']['(#it{<#rho>}_{SC} - #it{#rho}_{SC})'] +\
+                  " && %s_rmsd > 0.0" % var_name
+    cut_r2 = "zBinCenter > %.2f && zBinCenter < %.2f" % cuts['r']['#it{z}'] +\
+            " && abs(phiBinCenter - 3.1) < 2.9" +\
+            " && deltaSCBinCenter > %.2f && deltaSCBinCenter < %.2f" %\
+              cuts['r']['(#it{<#rho>}_{SC} - #it{#rho}_{SC})'] #+\
+                  # " && rBinCenter > %.2f && rBinCenter < %.2f" % cuts['r']['#it{r}'] +\
+                  # " && fsector > %.2f  && fsector < %.2f" % cuts['r']['sector'] +\
+                  # " && %s_rmsd > 0.0" % var_name
+    cuts_list = [cut_r, cut_fsector]
 
-    var_name = "flucDistRDiff"
-    y_vars = ["rmsd", "means"]
-    y_labels = ["RMSE (cm)", "Mean (cm)"]
-    x_vars = ["rBinCenter", "fsector"]
-    x_vars_short = ["r", "fsector"]
-    x_labels = ["r (cm)", "fsector"] # TODO: what units?
+    # for y_var, y_label in zip(y_vars, y_labels):
+    y_label = "#it{RMSE} and #it{#mu} (cm)"
+    canvas, leg = setup_canvas("perf_%s" % y_label)
+    pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
+    trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
+    for x_var, x_var_short, x_label, cut in zip(x_vars, x_vars_short, x_labels, cuts_list):
+        hist_str = hist_strs["%s_%s_%s" % (x_var_short, y_vars[0], y_vars[1])]
+        # pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
+        # trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
+        styles = enumerate(zip(nevs, colors, markers, markers2, trees, grans))
+        for ind, (nev, color, marker, marker2, tree, gran) in styles:
+            tree.SetMarkerColor(color)
+            tree.SetMarkerStyle(marker)
+            tree.SetMarkerSize(2)
+            same_str = "" if ind == 0 else "same"
+            # same_str = "prof" if ind == 0 and y_ind == 0 else "prof && same"
+            gran_str = "180#times33#times33" if gran == 180 else "90#times17#times17"
+            tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_vars[0], x_var, hist_str), cut, same_str)
+            leg.AddEntry(tree, "%d, %s" % (nev, gran_str), "P")
+            # gPad.Update()
+            tree.SetMarkerStyle(marker2)
+            tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_vars[1], x_var, hist_str), cut, "same")
+            leg.AddEntry(tree, "%d, %s" % (nev, gran_str), "P")
+            # gPad.Update()
 
-    # "r_rmsd": 195.0, 245.5, 20, # 83.5, 254.5, 200,
-    hist_strs = { "r_rmsd": "33, 83.5, 110, 200, 0.000, 0.06",
-            "fsector_rmsd": "90, -1.0, 19, 200, 0.00, 0.1",
-            "r_means": "33, 195.0, 245.5, 20, -0.06, 0.06",
-            "fsector_means": "90, -1.0, 19, 200, -0.07, 0.01"}
-
-    gran_desc = "#it{n}_{#it{#varphi}}#times#it{n}_{#it{r}}#times#it{n}_{#it{z}}"
-    date = datetime.date.today().strftime("%Y%m%d")
-
-    for y_var, y_label in zip(y_vars, y_labels):
-        for x_var, x_var_short, x_label, cut in zip(x_vars, x_vars_short, x_labels, cuts):
-            canvas, leg = setup_canvas("perf_%s" % y_label)
-            hist_str = hist_strs["%s_%s" % (x_var_short, y_var)]
-            pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
-            trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
-            styles = enumerate(zip(nevs, colors, markers, trees, grans))
-            for ind, (nev, color, marker, tree, gran) in styles:
-                tree.SetMarkerColor(color)
-                tree.SetMarkerStyle(marker)
-                tree.SetMarkerSize(2)
-                same_str = "" if ind == 0 else "same"
-                gran_str = "180#times33#times33" if gran == 180 else "90#times17#times17"
-                tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_var, x_var, hist_str), cut, same_str)
-                leg.AddEntry(tree, "#it{N}_{ev}^{training} = %d, %s = %s" %\
-                             (nev, gran_desc, gran_str), "P")
-
-            setup_frame(x_label, y_label)
-            leg.Draw()
-            tex = add_alice_text()
-            tex.Draw()
-            for ff in file_formats:
-                canvas.SaveAs("plots/%s_%s_%s_%s.%s" % (date, filename, x_var_short, y_var, ff))
-            for pdf_file in pdf_files:
-                pdf_file.Close()
+        setup_frame(x_label, y_label)
+        leg.Draw()
+        tex = add_alice_text()
+        tex.Draw()
+        txt = add_cut_desc(cuts[x_var_short])
+        txt.Draw()
+        for ff in file_formats:
+            canvas.SaveAs("%s_%s_%s_%s_%s.%s" % (date, filename, x_var_short, y_vars[0], y_vars[1], ff))
+    for pdf_file in pdf_files:
+        pdf_file.Close()
 
 def main():
     draw_model_perf()
