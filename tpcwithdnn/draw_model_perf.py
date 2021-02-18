@@ -22,8 +22,8 @@ def setup_canvas(hist_name):
 
     return canvas, leg
 
-def setup_frame(x_label, y_label):
-    htemp = gPad.GetPrimitive("th")
+def setup_hist(x_label, y_label, htemp):
+    #htemp = gPad.GetPrimitive("th")
     htemp.GetXaxis().SetTitle(x_label)
     htemp.GetYaxis().SetTitle(y_label)
     htemp.GetXaxis().SetTitleOffset(1.1)
@@ -93,7 +93,6 @@ def draw_model_perf():
 
     var_name = "flucDistRDiff"
     y_vars = ["rmsd", "means"]
-    # vars_markers =
     y_labels = ["#it{RMSE} (cm)", "Mean (cm)"]
     x_vars = ["rBinCenter", "fsector"]
     x_vars_short = ["r"] #, "fsector"]
@@ -129,13 +128,13 @@ def draw_model_perf():
                   " && deltaSCBinCenter > %.2f && deltaSCBinCenter < %.2f" %\
                       cuts['fsector']['(#it{<#rho>}_{SC} - #it{#rho}_{SC})'] +\
                   " && %s_rmsd > 0.0" % var_name
-    cut_r2 = "zBinCenter > %.2f && zBinCenter < %.2f" % cuts['r']['#it{z}'] +\
+    cut_r = "zBinCenter > %.2f && zBinCenter < %.2f" % cuts['r']['#it{z}'] +\
             " && abs(phiBinCenter - 3.1) < 2.9" +\
+            " && %s_rmsd > 0.0" % var_name +\
             " && deltaSCBinCenter > %.2f && deltaSCBinCenter < %.2f" %\
-              cuts['r']['(#it{<#rho>}_{SC} - #it{#rho}_{SC})'] #+\
+                cuts['r']['(#it{<#rho>}_{SC} - #it{#rho}_{SC})']
                   # " && rBinCenter > %.2f && rBinCenter < %.2f" % cuts['r']['#it{r}'] +\
                   # " && fsector > %.2f  && fsector < %.2f" % cuts['r']['sector'] +\
-                  # " && %s_rmsd > 0.0" % var_name
     cuts_list = [cut_r, cut_fsector]
 
     # for y_var, y_label in zip(y_vars, y_labels):
@@ -143,27 +142,38 @@ def draw_model_perf():
     canvas, leg = setup_canvas("perf_%s" % y_label)
     pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
     trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
-    for x_var, x_var_short, x_label, cut in zip(x_vars, x_vars_short, x_labels, cuts_list):
+    variables = zip(x_vars, x_vars_short, x_labels, cuts_list)
+    for x_var, x_var_short, x_label, cut in variables:
         hist_str = hist_strs["%s_%s_%s" % (x_var_short, y_vars[0], y_vars[1])]
         # pdf_files = [TFile.Open(pdf_file_name, "read") for pdf_file_name in pdf_file_names]
         # trees = [pdf_file.Get("pdfmaps") for pdf_file in pdf_files]
+        hists = []
         styles = enumerate(zip(nevs, colors, markers, markers2, trees, grans))
         for ind, (nev, color, marker, marker2, tree, gran) in styles:
             tree.SetMarkerColor(color)
             tree.SetMarkerStyle(marker)
             tree.SetMarkerSize(2)
-            same_str = "" if ind == 0 else "same"
-            # same_str = "prof" if ind == 0 and y_ind == 0 else "prof && same"
+            #same_str = "" if ind == 0 else "same"
+            same_str = "prof" if ind == 0 else "profsame"
             gran_str = "180#times33#times33" if gran == 180 else "90#times17#times17"
-            tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_vars[0], x_var, hist_str), cut, same_str)
+            hist_def = ">>th_%d(%s)" % (ind, hist_str) # if ind == 0 else "" 
+            tree.Draw("%s_%s:%s%s" % (var_name, y_vars[0], x_var, hist_def), cut, same_str)
+            hist = tree.GetHistogram()
+            setup_hist(x_label, y_label, hist)
+            hists.append(hist)
+            print('hist type: {} hists last type: {}'.format(type(hist), type(hists[-1])))
             leg.AddEntry(tree, "%d, %s" % (nev, gran_str), "P")
-            # gPad.Update()
-            tree.SetMarkerStyle(marker2)
-            tree.Draw("%s_%s:%s>>th(%s)" % (var_name, y_vars[1], x_var, hist_str), cut, "same")
-            leg.AddEntry(tree, "%d, %s" % (nev, gran_str), "P")
+            #gPad.Update()
+            #tree.SetMarkerStyle(marker2)
+            #tree.Draw("%s_%s:%s:%s" % (var_name, y_vars[1], x_var, prof_var), cut, "profsame")
+            #leg.AddEntry(tree, "%d, %s" % (nev, gran_str), "P")
             # gPad.Update()
 
-        setup_frame(x_label, y_label)
+        #setup_frame(x_label, y_label, hist)
+        print('hists last type: {}'.format(type(hists[-1])))
+        for hist in hists:
+            print('current hist type: {}'.format(type(hist)))
+            hist.Draw()
         leg.Draw()
         tex = add_alice_text()
         tex.Draw()
