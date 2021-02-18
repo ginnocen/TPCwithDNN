@@ -423,7 +423,7 @@ class DnnOptimiser:
         frame.GetXaxis().SetLabelSize(0.04)
         frame.GetYaxis().SetLabelSize(0.04)
 
-        leg = TLegend(0.5, 0.7, 0.9, 0.9)
+        leg = TLegend(0.5, 0.75, 0.9, 0.9)
         leg.SetBorderSize(0)
         leg.SetTextFont(42)
         leg.SetTextSize(0.03)
@@ -460,9 +460,9 @@ class DnnOptimiser:
             txt1.AddText("%s = %s" % (gran_desc, gran_str))
         if add_inputs:
             if self.opt_train[0] == 1 and self.opt_train[1] == 1:
-                txt1.AddText("inputs: #rho_{SC} - <#rho_{SC}>, <#rho_{SC}>")
+                txt1.AddText("inputs: #it{#rho}_{SC} - <#it{#rho}_{SC}>, <#it{#rho}_{SC}>")
             elif self.opt_train[1] == 1:
-                txt1.AddText("inputs: #rho_{SC} - <#rho_{SC}>")
+                txt1.AddText("inputs: #it{#rho}_{SC} - <#it{#rho}_{SC}>")
         if add_events:
             txt1.AddText("#it{N}_{ev}^{training} = %d" % self.train_events)
             # txt1.AddText("#it{N}_{ev}^{validation} = %d" % self.test_events)
@@ -473,13 +473,14 @@ class DnnOptimiser:
 
     def draw_multievent_hist(self, events_counts, func_label, hist_name, source_hist):
         gROOT.ForceStyle()
-        gran_str = "%d#times%d#times%d" % (self.grid_phi, self.grid_r, self.grid_z)
+        gran_str = "%d#times %d #times %d" % (self.grid_phi, self.grid_r, self.grid_z)
         date = datetime.date.today().strftime("%Y%m%d")
 
         file_formats = ["pdf", "png"]
         # file_formats = ["png", "eps", "pdf"]
         var_labels = ["r", "r#varphi", "z"]
         colors = [kBlue+1, kGreen+2, kRed+1, kCyan+2, kOrange+7, kMagenta+2]
+        #colors = [kRed+1, kMagenta+2, kOrange+7, kCyan+1, kMagenta+2]
         for iname, opt in enumerate(self.opt_predout):
             if opt == 1:
                 opt_name = self.nameopt_predout[iname]
@@ -539,13 +540,13 @@ class DnnOptimiser:
                                  hist_name, file_formats)
 
     def draw_profile(self, events_counts):
-        self.draw_multievent_hist(events_counts, "#mu", "profile", self.profile_name)
+        self.draw_multievent_hist(events_counts, "#it{#mu}", "profile", self.profile_name)
 
     def draw_std_dev(self, events_counts):
-        self.draw_multievent_hist(events_counts, "#sigma_{std}", "std_dev", self.h_std_dev_name)
+        self.draw_multievent_hist(events_counts, "#it{#sigma}_{std}", "std_dev", self.h_std_dev_name)
 
     def draw_mean_std_dev(self, events_counts):
-        self.draw_multievent_hist(events_counts, "#mu #pm #sigma_{std}", "mean_std_dev",
+        self.draw_multievent_hist(events_counts, "#it{#mu} #pm #it{#sigma}_{std}", "mean_std_dev",
                 self.profile_name)
 
     def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
