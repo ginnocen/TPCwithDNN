@@ -19,6 +19,7 @@ tf.random.set_seed(SEED)
 
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.optimizers import Adam
+from tensorflow.keras.metrics import RootMeanSquaredError
 from tensorflow.keras.models import model_from_json
 from tensorflow.keras.utils import plot_model
 
@@ -90,7 +91,10 @@ class DnnOptimiser:
         self.dropout = data_param["dropout"]
         self.epochs = data_param["epochs"]
         self.lossfun = data_param["lossfun"]
-        self.metrics = data_param["metrics"]
+        if data_param["metrics"] == "rmse":
+            self.metrics = "root_mean_squared_error"
+        else:
+            self.metrics = data_param["metrics"]
         self.adamlr = data_param["adamlr"]
 
         self.params = {'phi_slice': self.grid_phi,
@@ -156,8 +160,12 @@ class DnnOptimiser:
         model = u_net((self.grid_phi, self.grid_r, self.grid_z, self.dim_input),
                       depth=self.depth, batchnorm=self.batch_normalization,
                       pool_type=self.pooling, start_channels=self.filters, dropout=self.dropout)
+        if self.metrics == "root_mean_squared_error":
+            metrics = RootMeanSquaredError()
+        else:
+            metrics = self.metrics
         model.compile(loss=self.lossfun, optimizer=Adam(lr=self.adamlr),
-                      metrics=[self.metrics]) # Mean squared error
+                      metrics=[metrics]) # Mean squared error
 
         model.summary()
         plot_model(model, to_file='%s/model_%s_nEv%d.png' % \
