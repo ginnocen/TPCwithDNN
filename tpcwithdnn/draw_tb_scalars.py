@@ -10,7 +10,7 @@ def plot_scalar():
     csv_path = "sel-logs-csv"
     file_formats = ["png"]
     regex = re.compile("^run-phi([0-9]+)_r([0-9]+)_z([0-9]+)_" +\
-                       "nEv([0-9]+)_([a-z]+)-tag-epoch_loss.csv$")
+                       "nEv([0-9]+)_([a-z]+)-tag-epoch_root_mean_squared_error.csv$")
     csv_files = list(sorted(filter(regex.match, os.listdir(csv_path))))
 
     fig = plt.figure()
@@ -24,9 +24,9 @@ def plot_scalar():
         ax.plot(data[:, 0], data[:, 1], label=label, c=cm.tab20(ind / 20))
 
     ax.set_xlabel("Epochs")
-    ax.set_ylim([0., 0.008])
-    ax.set_xlim([-1., 21])
-    ax.set_xticks(list(range(0, 25, 5)))
+    #ax.set_ylim([0., 0.012])
+    #ax.set_xlim([-1., 21])
+    ax.set_xticks(list(range(0, 22, 2)))
     ax.set_ylabel("$\it{RMSE}$")
     leg_title = r"Train setup: $\it{N}_{ev}^{training}, \it{n}_{\it{\varphi}}$" +\
                 r"$ \times \it{n}_{\it{r}} \times \it{n}_{\it{z}}$"
