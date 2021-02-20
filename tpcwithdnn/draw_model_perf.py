@@ -42,10 +42,10 @@ def add_alice_text():
     return tex
 
 def add_cut_desc(cuts, x_var):
-    txt = TPaveText(0.5, 0.78, 0.9, 0.88, "NDC")
+    txt = TPaveText(0.5, 0.78, 0.9, 0.91, "NDC")
     txt.SetFillColor(kWhite)
     txt.SetBorderSize(0)
-    txt.SetTextAlign(12) # middle, left
+    txt.SetTextAlign(12) # left, middle
     txt.SetTextSize(0.03)
     txt.AddText(cuts["deltaSC"]["desc"](cuts["deltaSC"]["%s_lim" % x_var]))
     txt.AddText("%s, 20 epochs" % cuts["z"]["desc"](cuts["z"]["%s_lim" % x_var]))
@@ -111,11 +111,12 @@ def draw_model_perf():
     # deltaSCBinCenter>0.020 && deltaSCBinCenter<0.023
     # rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057
     # deltaSCBinCenter > 0.06 && deltaSCBinCenter < 0.07
-    delta_sc_str = "#int_{#it{r}, #it{#varphi}, #it{z}} (#it{<#rho>}_{SC} - #it{#rho}_{SC})"
+    delta_sc_str = "#int_{#it{r}, #it{#varphi}, #it{z}} " +\
+                   "#frac{#it{<#rho>}_{SC} - #it{#rho}_{SC}}{#it{<#rho>}_{SC}}"
     cuts = {"deltaSC": {"r_lim": (0.05, 0.07), "fsector_lim": (0.00, 0.05),
             "desc": lambda x: "%.2f < %s < %.2f" % (x[0], delta_sc_str, x[1])},
             "z": {"r_lim":(0.0, 5.0), "fsector_lim": (0.0, 5.0),
-                  "desc": lambda x: "#it{z} < %.1f cm" % x[1]},
+                  "desc": lambda x: "%.2f < #it{z} < %.2f cm" % x},
             "r": {"r_lim": (0.0, 110.0), "fsector_lim": (86.0, 86.1),
                   "desc": lambda x: "%.2f cm < #it{r} < %.2f cm" % x},
             "fsector": {"r_lim": (9.00, 9.05), "fsector_lim": (0.0, 20.0),
