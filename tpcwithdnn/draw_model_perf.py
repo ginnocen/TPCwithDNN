@@ -42,7 +42,7 @@ def add_alice_text():
     return tex
 
 def add_cut_desc(cuts, x_var):
-    txt = TPaveText(0.5, 0.78, 0.9, 0.91, "NDC")
+    txt = TPaveText(0.5, 0.75, 0.9, 0.89, "NDC")
     txt.SetFillColor(kWhite)
     txt.SetBorderSize(0)
     txt.SetTextAlign(12) # left, middle
@@ -164,8 +164,8 @@ def draw_model_perf():
             hist.SetMinimum(-0.06)
             hist.Draw("same")
         leg.Draw()
-        tex = add_alice_text()
-        tex.Draw()
+        #tex = add_alice_text()
+        #tex.Draw()
         txt = add_cut_desc(cuts, x_var_short)
         txt.Draw()
         for ff in file_formats:
