@@ -542,7 +542,8 @@ class DnnOptimiser:
                     root_file.Close()
 
                 leg.Draw()
-                txt = self.add_desc_to_canvas(0.15, 0.81, 0.4, 0.89, 0.03, False, True, False, False)
+                txt = self.add_desc_to_canvas(0.15, 0.81, 0.4, 0.89, 0.03,
+                                              False, True, False, False)
                 txt.Draw()
                 self.save_canvas(canvas, frame, "{}/{}".format(self.dirplots, date),
                                  hist_name, file_formats)
@@ -551,7 +552,8 @@ class DnnOptimiser:
         self.draw_multievent_hist(events_counts, "#it{#mu}", "profile", self.profile_name)
 
     def draw_std_dev(self, events_counts):
-        self.draw_multievent_hist(events_counts, "#it{#sigma}_{std}", "std_dev", self.h_std_dev_name)
+        self.draw_multievent_hist(events_counts, "#it{#sigma}_{std}", "std_dev",
+                                  self.h_std_dev_name)
 
     def draw_mean_std_dev(self, events_counts):
         self.draw_multievent_hist(events_counts, "#it{#mu} #pm #it{#sigma}_{std}", "mean_std_dev",

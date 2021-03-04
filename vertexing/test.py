@@ -6,7 +6,7 @@ from keras.layers import Dense
 from sklearn.model_selection import train_test_split
 #from sklearn.model_selection import cross_validate
 from root_numpy import fill_hist # pylint: disable=import-error
-from ROOT import TH2F, TFile # pylint: disable=import-error
+from ROOT import TH2F, TFile # pylint: disable=import-error, no-name-in-module
 #import xgboost # pylint: disable=import-error
 
 Xvar = ["fXTrack1", "fAlphaTrack1", "fYTrack1", "fZTrack1", "fSnpTrack1", \

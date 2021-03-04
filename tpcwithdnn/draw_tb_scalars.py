@@ -15,6 +15,7 @@ def plot_scalar():
     csv_files = list(sorted(filter(regex.match, os.listdir(csv_path))))
 
     rc("font",**{"family":"sans-serif","sans-serif":["Helvetica"], "size": 18})
+    cmap = cm.get_cmap("tab20")
     fig = plt.figure(figsize=(12, 7))
     ax = plt.axes()
     for ind, csv_file in enumerate(csv_files):
@@ -23,14 +24,14 @@ def plot_scalar():
         label = "%s, %s x %s x %s, %s" % (file_search.group(4), file_search.group(1),
                 file_search.group(2), file_search.group(3), train_or_val)
         data = np.genfromtxt("%s/%s" % (csv_path, csv_file), delimiter=",")[1:, 1:]
-        ax.plot(data[:, 0], data[:, 1], label=label, c=cm.tab20(ind / 20))
+        ax.plot(data[:, 0], data[:, 1], label=label, c=cmap(ind / 20))
 
     ax.set_xlabel("Epochs")
     #ax.set_ylim([0., 0.012])
     #ax.set_xlim([-1., 21])
     ax.set_yticks(np.arange(0, 0.25, 0.02))
     ax.set_xticks(np.arange(0, 22, 2))
-    ax.set_ylabel("$\it{RMSE}$")
+    ax.set_ylabel(r"$\it{RMSE}$")
     leg_title = r"Train setup: $\it{N}_{ev}^{training}, \it{n}_{\it{\varphi}}$" +\
                 r"$ \times \it{n}_{\it{r}} \times \it{n}_{\it{z}}$"
     ax.legend(loc="upper right", title=leg_title)
