@@ -119,16 +119,25 @@ class DataValidator:
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
+         mean_zero_idc, random_zero_idc,
+         vec_mean_one_idc, vec_random_one_idc,
          vec_mean_sc, vec_random_sc,
          vec_mean_dist_r, vec_rand_dist_r,
          vec_mean_dist_rphi, vec_rand_dist_rphi,
-         vec_mean_dist_z, vec_rand_dist_z] = load_data_original(self.dirinput_val,
-                                                                [irnd, imean])
+         vec_mean_dist_z, vec_rand_dist_z,
+         vec_mean_corr_r, vec_rand_corr_r,
+         vec_mean_corr_rphi, vec_rand_corr_rphi,
+         vec_mean_corr_z, vec_rand_corr_z] = load_data_original_idc(self.dirinput_val,
+                                                                    [irnd, imean])
 
         vec_sel_z = (self.input_z_range[0] <= vec_z_pos) & (vec_z_pos < self.input_z_range[1])
         vec_z_pos = vec_z_pos[vec_sel_z]
         vec_r_pos = vec_r_pos[vec_sel_z]
         vec_phi_pos = vec_phi_pos[vec_sel_z]
+        mean_zero_idc = mean_zero_idc
+        random_zero_idc = random_zero_idc
+        vec_mean_one_idc = vec_mean_one_idc
+        vec_random_one_idc = vec_random_one_idc
         vec_mean_sc = vec_mean_sc[vec_sel_z]
         vec_random_sc = vec_random_sc[vec_sel_z]
         vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
@@ -137,10 +146,20 @@ class DataValidator:
         vec_rand_dist_r = vec_rand_dist_r[vec_sel_z]
         vec_rand_dist_rphi = vec_rand_dist_rphi[vec_sel_z]
         vec_rand_dist_z = vec_rand_dist_z[vec_sel_z]
+        vec_mean_corr_r = vec_mean_corr_r[vec_sel_z]
+        vec_mean_corr_rphi = vec_mean_corr_rphi[vec_sel_z]
+        vec_mean_corr_z = vec_mean_corr_z[vec_sel_z]
+        vec_rand_corr_r = vec_rand_corr_r[vec_sel_z]
+        vec_rand_corr_rphi = vec_rand_corr_rphi[vec_sel_z]
+        vec_rand_corr_z = vec_rand_corr_z[vec_sel_z]
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
         mat_rand_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
         mat_fluc_dist = mat_rand_dist - mat_mean_dist
+
+        mat_mean_corr = np.array((vec_mean_corr_r, vec_mean_corr_rphi, vec_mean_corr_z))
+        mat_rand_corr = np.array((vec_rand_corr_r, vec_rand_corr_rphi, vec_rand_corr_z))
+        mat_fluc_corr = mat_mean_corr - mat_rand_corr
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
@@ -152,6 +171,10 @@ class DataValidator:
         vec_delta_sc = np.empty(vec_z_pos.size)
         vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
+        fluc_zero_idc = mean_zero_idc - random_zero_idc
+        vec_fluc_one_idc = vec_mean_one_idc - vec_random_one_idc
+        vec_delta_one_idc = sum(vec_fluc_one_idc) / sum(vec_mean_one_idc)
+
         df_single_map = pd.DataFrame({column_names[0] : vec_index,
                                       column_names[1] : vec_index_mean,
                                       column_names[2] : vec_index_random,
@@ -161,13 +184,20 @@ class DataValidator:
                                       column_names[6] : vec_fluc_sc,
                                       column_names[7] : vec_mean_sc,
                                       column_names[8] : vec_delta_sc,
-                                      column_names[9] : vec_der_ref_mean_sc})
+                                      column_names[9] : vec_der_ref_mean_sc,
+                                      column_names[10] : vec_fluc_one_idc,
+                                      column_names[11] : vec_mean_one_idc,
+                                      column_names[12] : vec_delta_one_idc,
+                                      column_names[13] : fluc_zero_idc,
+                                      column_names[14] : mean_zero_idc})
 
-        for ind_dist in range(3):
-            df_single_map[column_names[10 + ind_dist * 3]] = mat_fluc_dist[ind_dist, :]
-            df_single_map[column_names[11 + ind_dist * 3]] = mat_mean_dist[ind_dist, :]
-            df_single_map[column_names[12 + ind_dist * 3]] = \
+        for ind_dist in range(5):
+            df_single_map[column_names[15 + ind_dist * 5]] = mat_fluc_dist[ind_dist, :]
+            df_single_map[column_names[16 + ind_dist * 5]] = mat_mean_dist[ind_dist, :]
+            df_single_map[column_names[17 + ind_dist * 5]] = \
                 mat_der_ref_mean_dist[ind_dist, :]
+            df_single_map[column_names[18 + ind_corr * 5]] = mat_fluc_corr[ind_corr, :]
+            df_single_map[column_names[19 + ind_corr * 5]] = mat_mean_corr[ind_corr, :]
 
         if self.validate_model:
             input_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z,
@@ -195,16 +225,21 @@ class DataValidator:
     def create_data(self):
         self.logger.info("DataValidator::create_data")
 
+        # TODO: Adjust the function to IDC
         vec_der_ref_mean_sc, mat_der_ref_mean_dist = \
             load_data_derivatives_ref_mean(self.dirinput_val, self.input_z_range)
 
         dist_names = np.array(self.nameopt_predout)[np.array(self.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
-                                 "flucSC", "meanSC", "deltaSC", "derRefMeanSC"])
+                                 "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
+                                 "fluc1DIDC", "mean1DIDC", "delta1DIDC",
+                                 "fluc0DIDC", "mean0DIDC"])
         for dist_name in self.nameopt_predout:
             column_names = np.append(column_names, ["flucDist" + dist_name,
                                                     "meanDist" + dist_name,
-                                                    "derRefMeanDist" + dist_name])
+                                                    "derRefMeanDist" + dist_name,
+                                                    "flucCorr" + dist_name,
+                                                    "meanCorr" + dist_name])
         if self.validate_model:
             json_file = open("%s/model_%s_nEv%d.json" % \
                              (self.dirmodel, self.suffix, self.train_events), "r")
@@ -215,6 +250,7 @@ class DataValidator:
             loaded_model.load_weights("%s/model_%s_nEv%d.h5" % \
                                       (self.dirmodel, self.suffix, self.train_events))
 
+            # TODO: Use flucCorr for IDC
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
         else:
