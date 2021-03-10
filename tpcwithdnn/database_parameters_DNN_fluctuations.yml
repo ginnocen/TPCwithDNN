@@ -1,35 +1,37 @@
 DNN_fluctuations:
-  dirmodel: model_repository
-  dirval: validation_new_random
-  dirplots: plots
-  dirinput_bias: /data/tpcml/data_20200518/bias
-  dirinput_nobias: /data/tpcml/data_20200518/nobias
+  dirmodel: model_idc
+  dirval: validation_idc
+  dirplots: /mnt/temp/mkabus/idc-study-20210310/plots
+  #dirinput_bias: /data/tpcml/data_20200518/bias
+  #dirinput_nobias: /data/tpcml/data_20200518/nobias
+  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
+  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210212/noDistortions
   train_bias: true
   test_bias: true
   apply_bias: false
-  diroutflattree: trees
-  dirouthistograms: histograms
-  tree_events: 20 # Number of events for validation (random events for nd_validation)
+  diroutflattree: /mnt/temp/mkabus/idc-study-20210310/trees
+  dirouthistograms: /mnt/temp/mkabus/idc-study-20210310/histograms
+  tree_events: 1000 # Number of events for validation (random events for nd_validation)
   use_partition: random # Whether the validator uses only the events from given partition
                         # 'random' is for choosing events randomly
-  validate_model: true
+  validate_model: false
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
-  grid_phi: 90
-  grid_z: 17
-  grid_r: 17
+  grid_phi: 180
+  grid_z: 33
+  grid_r: 33
   input_z_range: [0, 251] # train for distortions with min <= z < max
   output_z_range: [0, 251] # apply for distortions with min <= z < max
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
-  maxrandomfiles: 970 #this is the total number of random events generated
-  range_mean_index: [0,26] # min and max index of mean SC configurations
+  maxrandomfiles: 1000 #this is the total number of random events generated
+  range_mean_index: [0,6] # min and max index of mean SC configurations
   # events for training (include a mix of SC config)
-  train_events: [10000] # 5000, 18000
-  test_events: [1000] # 500, 1800
-  apply_events: [7000] # 7000, 7000
-  max_events: 27000 # number of all available events
+  train_events: [5000] # 5000, 18000
+  test_events: [600] # 500, 1800
+  apply_events: [1400] # 7000, 7000
+  max_events: 7000 # number of all available events
   use_scaler: 0
   filters: 4
   pooling: 0

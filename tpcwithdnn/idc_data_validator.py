@@ -1,27 +1,19 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=too-many-statements, too-many-instance-attributes
-import sys
 import os
-import gzip
-import pickle
-import math
 import matplotlib
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import model_from_json
 from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
-from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
-from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
-from tpcwithdnn.data_loader import load_data_original
-from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
+from tpcwithdnn.data_loader import load_data_original_idc
+from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 matplotlib.use("Agg")
 
-class DataValidator:
+class IDCDataValidator:
     # Class Attribute
     species = "IDC data validator"
 
@@ -56,14 +48,16 @@ class DataValidator:
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
-        self.dirinput_train = "%s/SC-%d-%d-%d/" % \
-                              (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_test = "%s/SC-%d-%d-%d/" % \
-                             (test_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
-                              (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_val = "%s/SC-%d-%d-%d/" % \
-                            (data_param["dirinput_nobias"], self.grid_z, self.grid_r, self.grid_phi)
+        grid_str_dash = "%d-%d-%d" % (self.grid_z, self.grid_r, self.grid_phi)
+        grid_str = "%d_%d_%d" % (self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_train = "%s/SC-%s/%s" % \
+                              (train_dir, grid_str_dash, grid_str)
+        self.dirinput_test = "%s/SC-%s/%s" % \
+                             (test_dir, grid_str_dash, grid_str)
+        self.dirinput_apply = "%s/SC-%s/%s" % \
+                              (apply_dir, grid_str_dash, grid_str)
+        self.dirinput_val = "%s/SC-%s/%s" % \
+                            (data_param["dirinput_nobias"], grid_str_dash, grid_str)
 
         # DNN config
         self.filters = data_param["filters"]
@@ -109,14 +103,15 @@ class DataValidator:
             events_file = "%s/events_%s_%s_nEv%d.csv" % (self.dirmodel, self.use_partition,
                                                          self.suffix, self.train_events)
             part_inds = np.genfromtxt(events_file, delimiter=",")
-            self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
-                                         (part_inds[:,1] == 18)]
+            self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 5) | \
+                                         (part_inds[:,1] == 2)]
 
+    # pylint: disable=too-many-locals
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
-                              mat_der_ref_mean_corr, loaded_model, tree_filename):
+                              mat_der_ref_mean_corr, tree_filename):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          mean_zero_idc, random_zero_idc,
-         vec_mean_one_idc, vec_random_one_idc,
+         mean_one_idc, random_one_idc,
          vec_mean_sc, vec_random_sc,
          vec_mean_dist_r, vec_rand_dist_r,
          vec_mean_dist_rphi, vec_rand_dist_rphi,
@@ -136,10 +131,6 @@ class DataValidator:
         vec_z_pos = vec_z_pos[vec_sel_z]
         vec_r_pos = vec_r_pos[vec_sel_z]
         vec_phi_pos = vec_phi_pos[vec_sel_z]
-        mean_zero_idc = mean_zero_idc
-        random_zero_idc = random_zero_idc
-        vec_mean_one_idc = vec_mean_one_idc
-        vec_random_one_idc = vec_random_one_idc
         vec_mean_sc = vec_mean_sc[vec_sel_z]
         vec_random_sc = vec_random_sc[vec_sel_z]
         vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
@@ -163,6 +154,20 @@ class DataValidator:
         mat_rand_corr = np.array((vec_rand_corr_r, vec_rand_corr_rphi, vec_rand_corr_z))
         mat_fluc_corr = mat_mean_corr - mat_rand_corr
 
+        vec_mean_zero_idc = np.empty(vec_z_pos.size)
+        vec_mean_zero_idc[:] = mean_zero_idc
+        vec_random_zero_idc = np.empty(vec_z_pos.size)
+        vec_random_zero_idc[:] = random_zero_idc
+
+        # TODO: How to save 1D IDCs together with the rest?
+        # The arrays need to be of the same length as the other vectors.
+        vec_mean_one_idc = np.empty(vec_z_pos.size)
+        vec_mean_one_idc[:mean_one_idc.size] = mean_one_idc
+        vec_mean_one_idc[mean_one_idc.size:] = 0.
+        vec_random_one_idc = np.empty(vec_z_pos.size)
+        vec_random_one_idc[:random_one_idc.size] = random_one_idc
+        vec_random_one_idc[random_one_idc.size:] = 0.
+
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
         vec_index_mean = np.empty(vec_z_pos.size)
@@ -174,8 +179,10 @@ class DataValidator:
         vec_delta_sc = np.empty(vec_z_pos.size)
         vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
-        fluc_zero_idc = mean_zero_idc - random_zero_idc
+        vec_fluc_zero_idc = vec_mean_zero_idc - vec_random_zero_idc
+        vec_fluc_zero_idc[mean_zero_idc.size:] = 0.
         vec_fluc_one_idc = vec_mean_one_idc - vec_random_one_idc
+        vec_fluc_one_idc[mean_one_idc.size:] = 0.
         vec_delta_one_idc = sum(vec_fluc_one_idc) / sum(vec_mean_one_idc)
 
         df_single_map = pd.DataFrame({column_names[0] : vec_index,
@@ -191,16 +198,16 @@ class DataValidator:
                                       column_names[10] : vec_fluc_one_idc,
                                       column_names[11] : vec_mean_one_idc,
                                       column_names[12] : vec_delta_one_idc,
-                                      column_names[13] : fluc_zero_idc,
-                                      column_names[14] : mean_zero_idc})
+                                      column_names[13] : vec_fluc_zero_idc,
+                                      column_names[14] : vec_mean_zero_idc})
 
         for ind_dist in range(3):
             df_single_map[column_names[15 + ind_dist * 5]] = mat_fluc_dist[ind_dist, :]
             df_single_map[column_names[16 + ind_dist * 5]] = mat_mean_dist[ind_dist, :]
             df_single_map[column_names[17 + ind_dist * 5]] = \
                 mat_der_ref_mean_corr[ind_dist, :]
-            df_single_map[column_names[18 + ind_corr * 5]] = mat_fluc_corr[ind_corr, :]
-            df_single_map[column_names[19 + ind_corr * 5]] = mat_mean_corr[ind_corr, :]
+            df_single_map[column_names[18 + ind_dist * 5]] = mat_fluc_corr[ind_dist, :]
+            df_single_map[column_names[19 + ind_dist * 5]] = mat_mean_corr[ind_dist, :]
 
         df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
 
@@ -211,7 +218,6 @@ class DataValidator:
         vec_der_ref_mean_sc, mat_der_ref_mean_corr = \
             load_data_derivatives_ref_mean_idc(self.dirinput_val, self.selopt_input)
 
-        dist_names = np.array(self.nameopt_predout)[np.array(self.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
                                  "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
                                  "fluc1DIDC", "mean1DIDC", "delta1DIDC",
@@ -238,7 +244,7 @@ class DataValidator:
                     irnd = ind_ev[0]
                     self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_dist, loaded_model, tree_filename)
+                                               mat_der_ref_mean_corr, tree_filename)
                     counter = counter + 1
                     if counter == self.tree_events:
                         break
@@ -246,7 +252,7 @@ class DataValidator:
                 for irnd in range(self.maxrandomfiles):
                     self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_dist, loaded_model, tree_filename)
+                                               mat_der_ref_mean_corr, tree_filename)
                     counter = counter + 1
                     if counter == self.tree_events:
                         break

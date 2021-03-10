@@ -8,27 +8,28 @@ def load_data_original_idc(input_data, event_index):
     Load IDC data.
     """
     # TODO: How to load both A and C side data if both needed? Concatenate? Get average?
-    factors = [100, 97, 94, 91, 103, 106, 109]
-    files = ["%s/Pos/0-vecRPos.npy" % input_data,
-             "%s/Pos/0-vecPhiPos.npy" % input_data,
-             "%s/Pos/0-vecZPos.npy" % input_data,
-             "%s/Mean/%d-%d-zeroDIDCAvgASide.npy" % (input_data, event_index[1], factors[event_index[1]]),
+    mean_factors = [100, 97, 94, 91, 103, 106, 109]
+    mean_factor = mean_factors[event_index[1]]
+    files = ["%s/Pos/vecRPos.npy" % input_data,
+             "%s/Pos/vecPhiPos.npy" % input_data,
+             "%s/Pos/vecZPos.npy" % input_data,
+             "%s/Mean/%d-%d-zeroDIDCAvgASide.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-zeroDIDCRndA.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-oneDIDCAvgASide.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-oneDIDCAvgASide.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-oneDIDCRndA.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanSC.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanSC.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomSC.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanDistR.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanDistR.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomDistR.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanDistRPhi.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanDistRPhi.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomDistRPhi.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanDistZ.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanDistZ.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomDistZ.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanCorrR.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanCorrR.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomCorrR.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanCorrRPhi.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanCorrRPhi.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomCorrRPhi.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanCorrZ.npy" % (input_data, event_index[1], factors[event_index[1]]),
+             "%s/Mean/%d-%d-vecMeanCorrZ.npy" % (input_data, event_index[1], mean_factor),
              "%s/Random/%d-vecRandomCorrZ.npy" % (input_data, event_index[0])]
 
     return [np.load(f) for f in files]
@@ -53,8 +54,8 @@ def load_data_original(input_data, event_index):
 
 def load_data_derivatives_ref_mean_idc(inputdata, z_range):
     z_pos_file = "%s/Pos/0-vecZPos.npy" % inputdata
-    ref_mean_sc_plus_file = "%s/Mean/5-vecMeanSC.npy" % inputdata
-    ref_mean_sc_minus_file = "%s/Mean/2-vecMeanSC.npy" % inputdata
+    ref_mean_sc_plus_file = "%s/Mean/5-106-vecMeanSC.npy" % inputdata
+    ref_mean_sc_minus_file = "%s/Mean/2-94-vecMeanSC.npy" % inputdata
 
     vec_z_pos = np.load(z_pos_file)
     vec_sel_z = (z_range[0] <= vec_z_pos) & (vec_z_pos < z_range[1])
@@ -63,16 +64,16 @@ def load_data_derivatives_ref_mean_idc(inputdata, z_range):
                           np.load(ref_mean_sc_minus_file)[vec_sel_z]
 
     mat_der_ref_mean_corr = np.empty((3, arr_der_ref_mean_sc.size))
-    ref_mean_corr_r_plus_file = "%s/Mean/5-vecMeanCorrR.npy" % inputdata
-    ref_mean_corr_r_minus_file = "%s/Mean/2-vecMeanCorrR.npy" % inputdata
+    ref_mean_corr_r_plus_file = "%s/Mean/5-106-vecMeanDistR.npy" % inputdata
+    ref_mean_corr_r_minus_file = "%s/Mean/2-94-vecMeanDistR.npy" % inputdata
     mat_der_ref_mean_corr[0, :] = np.load(ref_mean_corr_r_plus_file)[vec_sel_z] \
                                                 - np.load(ref_mean_corr_r_minus_file)[vec_sel_z]
-    ref_mean_corr_rphi_plus_file = "%s/Mean/5-vecMeanCorrRPhi.npy" % inputdata
-    ref_mean_corr_rphi_minus_file = "%s/Mean/2-vecMeanCorrRPhi.npy" % inputdata
+    ref_mean_corr_rphi_plus_file = "%s/Mean/5-106-vecMeanDistRPhi.npy" % inputdata
+    ref_mean_corr_rphi_minus_file = "%s/Mean/2-94-vecMeanDistRPhi.npy" % inputdata
     mat_der_ref_mean_corr[1, :] = np.load(ref_mean_corr_rphi_plus_file)[vec_sel_z] - \
                                                 np.load(ref_mean_corr_rphi_minus_file)[vec_sel_z]
-    ref_mean_corr_z_plus_file = "%s/Mean/5-vecMeanCorrZ.npy" % inputdata
-    ref_mean_corr_z_minus_file = "%s/Mean/2-vecMeanCorrZ.npy" % inputdata
+    ref_mean_corr_z_plus_file = "%s/Mean/5-106-vecMeanDistZ.npy" % inputdata
+    ref_mean_corr_z_minus_file = "%s/Mean/2-94-vecMeanDistZ.npy" % inputdata
     mat_der_ref_mean_corr[2, :] = np.load(ref_mean_corr_z_plus_file)[vec_sel_z] \
                                                 - np.load(ref_mean_corr_z_minus_file)[vec_sel_z]
 
