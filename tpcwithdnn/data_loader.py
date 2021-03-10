@@ -51,6 +51,33 @@ def load_data_original(input_data, event_index):
 
     return [np.load(f) for f in files]
 
+def load_data_derivatives_ref_mean_idc(inputdata, z_range):
+    z_pos_file = "%s/Pos/0-vecZPos.npy" % inputdata
+    ref_mean_sc_plus_file = "%s/Mean/5-vecMeanSC.npy" % inputdata
+    ref_mean_sc_minus_file = "%s/Mean/2-vecMeanSC.npy" % inputdata
+
+    vec_z_pos = np.load(z_pos_file)
+    vec_sel_z = (z_range[0] <= vec_z_pos) & (vec_z_pos < z_range[1])
+
+    arr_der_ref_mean_sc = np.load(ref_mean_sc_plus_file)[vec_sel_z] - \
+                          np.load(ref_mean_sc_minus_file)[vec_sel_z]
+
+    mat_der_ref_mean_corr = np.empty((3, arr_der_ref_mean_sc.size))
+    ref_mean_corr_r_plus_file = "%s/Mean/5-vecMeanCorrR.npy" % inputdata
+    ref_mean_corr_r_minus_file = "%s/Mean/2-vecMeanCorrR.npy" % inputdata
+    mat_der_ref_mean_corr[0, :] = np.load(ref_mean_corr_r_plus_file)[vec_sel_z] \
+                                                - np.load(ref_mean_corr_r_minus_file)[vec_sel_z]
+    ref_mean_corr_rphi_plus_file = "%s/Mean/5-vecMeanCorrRPhi.npy" % inputdata
+    ref_mean_corr_rphi_minus_file = "%s/Mean/2-vecMeanCorrRPhi.npy" % inputdata
+    mat_der_ref_mean_corr[1, :] = np.load(ref_mean_corr_rphi_plus_file)[vec_sel_z] - \
+                                                np.load(ref_mean_corr_rphi_minus_file)[vec_sel_z]
+    ref_mean_corr_z_plus_file = "%s/Mean/5-vecMeanCorrZ.npy" % inputdata
+    ref_mean_corr_z_minus_file = "%s/Mean/2-vecMeanCorrZ.npy" % inputdata
+    mat_der_ref_mean_corr[2, :] = np.load(ref_mean_corr_z_plus_file)[vec_sel_z] \
+                                                - np.load(ref_mean_corr_z_minus_file)[vec_sel_z]
+
+    return arr_der_ref_mean_sc, mat_der_ref_mean_corr
+
 def load_data_derivatives_ref_mean(inputdata, z_range):
     z_pos_file = "%s/data/Pos/0-vecZPos.npy" % inputdata
     ref_mean_sc_plus_file = "%s/data/Mean/9-vecMeanSC.npy" % inputdata
