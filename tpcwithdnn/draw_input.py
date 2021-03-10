@@ -1,26 +1,30 @@
 # pylint: disable=too-many-statements
 from ROOT import TFile, TCanvas, TH1F # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle # pylint: disable=import-error, no-name-in-module
-from ROOT import kFullSquare # pylint: disable=import-error, no-name-in-module
+from ROOT import kFullSquare, kFullCircle # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT,  gPad  # pylint: disable=import-error, no-name-in-module
 
-def setup_frame(x_label, y_label, z_label):
+def setup_frame(x_label, y_label, z_label=None):
     htemp = gPad.GetPrimitive("htemp")
+
     htemp.GetXaxis().SetTitle(x_label)
-    htemp.GetYaxis().SetTitle(y_label)
-    htemp.GetZaxis().SetTitle(z_label)
     htemp.GetXaxis().SetTitleOffset(1.0)
-    htemp.GetYaxis().SetTitleOffset(1.0)
-    htemp.GetZaxis().SetTitleOffset(1.0)
     htemp.GetXaxis().CenterTitle(True)
-    htemp.GetYaxis().CenterTitle(True)
-    htemp.GetZaxis().CenterTitle(True)
     htemp.GetXaxis().SetTitleSize(0.035)
-    htemp.GetYaxis().SetTitleSize(0.035)
-    htemp.GetZaxis().SetTitleSize(0.035)
     htemp.GetXaxis().SetLabelSize(0.035)
+
+    htemp.GetYaxis().SetTitle(y_label)
+    htemp.GetYaxis().SetTitleOffset(1.0)
+    htemp.GetYaxis().CenterTitle(True)
+    htemp.GetYaxis().SetTitleSize(0.035)
     htemp.GetYaxis().SetLabelSize(0.035)
-    htemp.GetZaxis().SetLabelSize(0.035)
+
+    if z_label is not None:
+        htemp.GetZaxis().SetTitle(z_label)
+        htemp.GetZaxis().SetTitleOffset(1.0)
+        htemp.GetZaxis().SetTitleSize(0.035)
+        htemp.GetZaxis().CenterTitle(True)
+        htemp.GetZaxis().SetLabelSize(0.035)
 
 def set_margins(canvas):
     canvas.SetRightMargin(0.15)
@@ -28,34 +32,12 @@ def set_margins(canvas):
     canvas.SetTopMargin(0.03)
     canvas.SetBottomMargin(0.1)
 
-def set_histogram(hist):
-    hist.SetMarkerStyle(20)
-    hist.SetMinimum(0)
-    hist.SetMaximum(0.6e-6)
-
-def draw_one_idc(vec_mean_one_idc, vec_fluc_one_idc, canvas):
-    h_mean = TH1F("mean", "mean 1D IDC", 201, -0.5, 200.5)
-    h_fluc = TH1F("fluc", "fluc 1D IDC", 201, -0.5, 200.5)
-    for i in range(0, len(vec_mean_one_idc)):
-        h_mean.SetBinContent(i + 1, vec_mean_one_idc)
-        h_fluc.SetBinContent(i + 1, vec_fluc_one_idc)
-
-    set_histogram(h_mean)
-    h_mean.Draw("P")
-    set_margins(canvas)
-    canvas.SaveAs("mean_1D_IDC_hist.png")
-
-    set_histogram(h_fluc)
-    h_fluc.Draw("P")
-    set_margins(canvas)
-    canvas.SaveAs("fluc_1D_IDC_hist.png")
-
 def draw_input(is_idc):
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
     f = TFile.Open("/mnt/temp/mkabus/idc-study-20210310/" +\
-                   "trees/treeInput_mean1.00_phi90_r17_z17.root","READ")
+                   "trees/treeInput_mean1.00_phi180_r33_z33.root","READ")
     t = f.Get("validation")
 
     t.SetMarkerStyle(kFullSquare)
@@ -113,9 +95,19 @@ def draw_input(is_idc):
         set_margins(c1)
         c1.SaveAs("r_z_meanCorrZ_colz_phi_sector0.png")
 
-        vec_mean_one_idc = t.GetBranch("mean1DIDC")
-        vec_fluc_one_idc = t.GetBranch("fluc1DIDC")
-        draw_one_idc(vec_mean_one_idc, vec_fluc_one_idc, c1)
+        t.Draw("mean1DIDC", "", "", 200, 0)
+        htemp = gPad.GetPrimitive("htemp")
+        htemp.SetMinimum(0)
+        htemp.SetMaximum(0.6e-6)
+        setup_frame("mean 1D IDC", "entries")
+        set_margins(c1)
+        c1.SaveAs("mean_1D_IDC.png")
+
+        t.Draw("fluc1DIDC", "", "", 200, 0)
+        setup_frame("fluc 1D IDC", "entries")
+        set_margins(c1)
+        c1.SaveAs("fluc_1D_IDC.png")
+
 
 def main():
     draw_input(is_idc=True)
