@@ -21,35 +21,76 @@ def setup_frame(x_label, y_label, z_label):
     htemp.GetYaxis().SetLabelSize(0.035)
     htemp.GetZaxis().SetLabelSize(0.035)
 
-def draw_input():
+def set_margins(canvas):
+    canvas.SetRightMargin(0.15)
+    canvas.SetLeftMargin(0.1)
+    canvas.SetTopMargin(0.03)
+    canvas.SetBottomMargin(0.1)
+
+def draw_input(is_idc):
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
-    f = TFile.Open("trees/treeInput_mean1.0_phi180_r65_z65.root","READ")
+    f = TFile.Open("/mnt/temp/mkabus/idc-study-20210310/trees/treeInput_mean1.00_phi90_r17_z17.root","READ")
     t = f.Get("validation")
 
     t.SetMarkerStyle(kFullSquare)
 
     c1 = TCanvas()
 
+    t.Draw("z:r:meanSC", "phi>0 && phi<3.14/9", "colz")
+    setup_frame("z (cm)", "r (cm)", "mean SC (fC/cm^3)")
+    set_margins(c1)
+    c1.SaveAs("z_r_meanSC_colz_phi_sector0.png")
+
     t.Draw("meanSC:r:phi", "z>0 && z<1", "profcolz")
     setup_frame("#varphi (rad)", "r (cm)", "mean SC (fC/cm^3)")
-    c1.SetRightMargin(0.15)
-    c1.SetLeftMargin(0.1)
-    c1.SetTopMargin(0.03)
-    c1.SetBottomMargin(0.1)
-    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_labelled_with_z.png")
+    set_margins(c1)
+    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1.png")
+
+    t.Draw("meanSC:phi:r", "z>0 && z<1", "colz")
+    setup_frame("r (cm)", "#varphi (rad)", "mean SC (fC/cm^3)")
+    set_margins(c1)
+    c1.SaveAs("meanSC_phi_r_colz_z_0-1.png")
 
     t.Draw("r:z:meanDistR", "phi>0 && phi<3.14/9", "colz")
-    setup_frame("z (cm)", "r (cm)", "mean distorsion dr (cm)")
-    c1.SetRightMargin(0.15)
-    c1.SetLeftMargin(0.1)
-    c1.SetTopMargin(0.03)
-    c1.SetBottomMargin(0.1)
-    c1.SaveAs("r_z_meanDistR_phi_sector0_labelled.png")
+    setup_frame("z (cm)", "r (cm)", "mean distortion dr (cm)")
+    set_margins(c1)
+    c1.SaveAs("r_z_meanDistR_colz_phi_sector0.png")
+
+    t.Draw("r:z:meanDistRPhi", "phi>0 && phi<3.14/9", "colz")
+    setup_frame("z (cm)", "r (cm)", "mean distortion drphi (cm)")
+    set_margins(c1)
+    c1.SaveAs("r_z_meanDistRPhi_colz_phi_sector0.png")
+
+    t.Draw("r:z:meanDistZ", "phi>0 && phi<3.14/9", "colz")
+    setup_frame("z (cm)", "r (cm)", "mean distortion dz (cm)")
+    set_margins(c1)
+    c1.SaveAs("r_z_meanDistZ_colz_phi_sector0.png")
+
+    t.Draw("z:r:flucSC", "phi>0 && phi<3.14/9", "colz")
+    setup_frame("z (cm)", "r (cm)", "SC distortion fluctuation (fC/cm^3)")
+    set_margins(c1)
+    c1.SaveAs("r_z_flucSC_colz_phi_sector0.png")
+
+    if is_idc:
+        t.Draw("r:z:meanCorrR", "phi>0 && phi<3.14/9", "colz")
+        setup_frame("z (cm)", "r (cm)", "mean correction dr (cm)")
+        set_margins(c1)
+        c1.SaveAs("r_z_meanCorrR_colz_phi_sector0.png")
+
+        t.Draw("r:z:meanCorrRPhi", "phi>0 && phi<3.14/9", "colz")
+        setup_frame("z (cm)", "r (cm)", "mean correction drphi (cm)")
+        set_margins(c1)
+        c1.SaveAs("r_z_meanCorrRPhi_colz_phi_sector0.png")
+
+        t.Draw("r:z:meanCorrZ", "phi>0 && phi<3.14/9", "colz")
+        setup_frame("z (cm)", "r (cm)", "mean correction dz (cm)")
+        set_margins(c1)
+        c1.SaveAs("r_z_meanCorrZ_colz_phi_sector0.png")
 
 def main():
-    draw_input()
+    draw_input(is_idc=True)
 
 if __name__ == "__main__":
     main()
