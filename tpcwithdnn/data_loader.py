@@ -93,12 +93,12 @@ def load_data(input_data, event_index, selopt_input, selopt_output):
 
     if selopt_input == 0:
         vec_mean_sc = vec_mean_sc[vec_z_pos >= 0]
-        vec_fluctuation_sc = vec_mean_sc - vec_random_sc[vec_z_pos >= 0]
+        vec_fluctuation_sc = vec_random_sc[vec_z_pos >= 0] - vec_mean_sc
     elif selopt_input == 1:
         vec_mean_sc = vec_mean_sc[vec_z_pos < 0]
-        vec_fluctuation_sc = vec_mean_sc - vec_random_sc[vec_z_pos < 0]
+        vec_fluctuation_sc = vec_random_sc[vec_z_pos < 0] - vec_mean_sc
     elif selopt_input == 2:
-        vec_fluctuation_sc = vec_mean_sc - vec_random_sc
+        vec_fluctuation_sc = vec_random_sc - vec_mean_sc
 
     # selopt_output == 0 selects only clusters with positive z position
     # selopt_output == 1 selects only clusters with negative z position
@@ -106,22 +106,22 @@ def load_data(input_data, event_index, selopt_input, selopt_output):
 
     if selopt_output == 0:
         vec_fluctuation_dist_r = \
-                vec_mean_dist_r[vec_z_pos >= 0] - vec_random_dist_r[vec_z_pos >= 0]
+                vec_random_dist_r[vec_z_pos >= 0] - vec_mean_dist_r[vec_z_pos >= 0]
         vec_fluctuation_dist_rphi = \
-                vec_mean_dist_rphi[vec_z_pos >= 0] - vec_random_dist_rphi[vec_z_pos >= 0]
+                vec_random_dist_rphi[vec_z_pos >= 0] - vec_mean_dist_rphi[vec_z_pos >= 0]
         vec_fluctuation_dist_z = \
-                vec_mean_dist_z[vec_z_pos >= 0] - vec_random_dist_z[vec_z_pos >= 0]
+                vec_random_dist_z[vec_z_pos >= 0] - vec_mean_dist_z[vec_z_pos >= 0]
     elif selopt_output == 1:
         vec_fluctuation_dist_r = \
-                vec_mean_dist_r[vec_z_pos < 0] - vec_random_dist_r[vec_z_pos < 0]
+                vec_random_dist_r[vec_z_pos < 0] - vec_mean_dist_r[vec_z_pos < 0]
         vec_fluctuation_dist_rphi = \
-                vec_mean_dist_rphi[vec_z_pos < 0] - vec_random_dist_rphi[vec_z_pos < 0]
+                vec_random_dist_rphi[vec_z_pos < 0] - vec_mean_dist_rphi[vec_z_pos < 0]
         vec_fluctuation_dist_z = \
-                vec_mean_dist_z[vec_z_pos < 0] - vec_random_dist_z[vec_z_pos < 0]
+                vec_random_dist_z[vec_z_pos < 0] - vec_mean_dist_z[vec_z_pos < 0]
     elif selopt_output == 2:
-        vec_fluctuation_dist_r = vec_mean_dist_r - vec_random_dist_r
-        vec_fluctuation_dist_rphi = vec_mean_dist_rphi - vec_random_dist_rphi
-        vec_fluctuation_dist_z = vec_mean_dist_z - vec_random_dist_z
+        vec_fluctuation_dist_r = vec_random_dist_r - vec_mean_dist_r
+        vec_fluctuation_dist_rphi = vec_random_dist_rphi - vec_mean_dist_rphi
+        vec_fluctuation_dist_z = vec_random_dist_z - vec_mean_dist_z
 
     return [vec_mean_sc, vec_fluctuation_sc, vec_fluctuation_dist_r,
             vec_fluctuation_dist_rphi, vec_fluctuation_dist_z]

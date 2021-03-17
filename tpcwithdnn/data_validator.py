@@ -142,7 +142,7 @@ class DataValidator:
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
         mat_rand_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
-        mat_fluc_dist = mat_mean_dist - mat_rand_dist
+        mat_fluc_dist = mat_random_dist - mat_mean_dist
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
@@ -150,7 +150,7 @@ class DataValidator:
         vec_index_mean[:] = imean
         vec_index = np.empty(vec_z_pos.size)
         vec_index[:] = irnd + 1000 * imean
-        vec_fluc_sc = vec_mean_sc - vec_random_sc
+        vec_fluc_sc = vec_random_sc - vec_mean_sc
         vec_delta_sc = np.empty(vec_z_pos.size)
         vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
