@@ -1,7 +1,7 @@
 # pylint: disable=too-many-statements
-from ROOT import TFile, TCanvas, TH1F # pylint: disable=import-error, no-name-in-module
+from ROOT import TFile, TCanvas # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle # pylint: disable=import-error, no-name-in-module
-from ROOT import kFullSquare, kFullCircle # pylint: disable=import-error, no-name-in-module
+from ROOT import kFullSquare # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT,  gPad  # pylint: disable=import-error, no-name-in-module
 
 def setup_frame(x_label, y_label, z_label=None):
@@ -32,30 +32,30 @@ def set_margins(canvas):
     canvas.SetTopMargin(0.03)
     canvas.SetBottomMargin(0.1)
 
-def draw_input(is_idc):
+def draw_input(draw_idc):
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
     f = TFile.Open("/mnt/temp/mkabus/idc-study-20210310/" +\
-                   "trees/treeInput_mean1.00_phi180_r33_z33.root","READ")
+                   "trees/treeInput_mean1.00_phi180_r65_z65.root","READ")
     t = f.Get("validation")
 
     t.SetMarkerStyle(kFullSquare)
 
     c1 = TCanvas()
 
-    t.Draw("z:r:meanSC", "phi>0 && phi<3.14/9", "colz")
+    t.Draw("r:z:meanSC", "phi>0 && phi<3.14/9", "colz")
     setup_frame("z (cm)", "r (cm)", "mean SC (fC/cm^3)")
     set_margins(c1)
-    c1.SaveAs("z_r_meanSC_colz_phi_sector0.png")
+    c1.SaveAs("r_z_meanSC_colz_phi_sector0.png")
 
-    t.Draw("meanSC:r:phi", "z>0 && z<1", "profcolz")
+    t.Draw("meanSC:r:phi>>htemp(20, 0., 6.3, 33, 83, 255, 20, 0., 0.4)", "z>0 && z<1", "profcolz")
     setup_frame("#varphi (rad)", "r (cm)", "mean SC (fC/cm^3)")
     set_margins(c1)
-    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1.png")
+    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_bins_20-33-20.png")
 
     t.Draw("meanSC:phi:r", "z>0 && z<1", "colz")
-    setup_frame("r (cm)", "#varphi (rad)", "mean SC (fC/cm^3)")
+    setup_frame("#varphi (rad)", "mean SC (fC/cm^3)", "r (cm)")
     set_margins(c1)
     c1.SaveAs("meanSC_phi_r_colz_z_0-1.png")
 
@@ -74,12 +74,12 @@ def draw_input(is_idc):
     set_margins(c1)
     c1.SaveAs("r_z_meanDistZ_colz_phi_sector0.png")
 
-    t.Draw("z:r:flucSC", "phi>0 && phi<3.14/9", "colz")
+    t.Draw("r:z:flucSC", "phi>0 && phi<3.14/9", "colz")
     setup_frame("z (cm)", "r (cm)", "SC distortion fluctuation (fC/cm^3)")
     set_margins(c1)
     c1.SaveAs("r_z_flucSC_colz_phi_sector0.png")
 
-    if is_idc:
+    if draw_idc:
         t.Draw("r:z:meanCorrR", "phi>0 && phi<3.14/9", "colz")
         setup_frame("z (cm)", "r (cm)", "mean correction dr (cm)")
         set_margins(c1)
@@ -110,7 +110,7 @@ def draw_input(is_idc):
 
 
 def main():
-    draw_input(is_idc=True)
+    draw_input(draw_idc=True)
 
 if __name__ == "__main__":
     main()
