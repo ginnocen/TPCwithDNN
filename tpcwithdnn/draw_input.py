@@ -49,10 +49,10 @@ def draw_input(draw_idc):
     set_margins(c1)
     c1.SaveAs("r_z_meanSC_colz_phi_sector0.png")
 
-    t.Draw("meanSC:r:phi>>htemp(20, 0., 6.3, 33, 83, 255, 20, 0., 0.4)", "z>0 && z<1", "profcolz")
+    t.Draw("meanSC:r:phi>>htemp(180, 0., 6.28, 33, 83, 255, 20, 0., 0.4)", "z>0 && z<1", "profcolz")
     setup_frame("#varphi (rad)", "r (cm)", "mean SC (fC/cm^3)")
     set_margins(c1)
-    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_bins_20-33-20.png")
+    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_bins_180-33-20.png")
 
     t.Draw("meanSC:phi:r", "z>0 && z<1", "colz")
     setup_frame("#varphi (rad)", "mean SC (fC/cm^3)", "r (cm)")
