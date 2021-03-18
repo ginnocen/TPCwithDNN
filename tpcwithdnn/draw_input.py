@@ -49,10 +49,10 @@ def draw_input(draw_idc):
     set_margins(c1)
     c1.SaveAs("r_z_meanSC_colz_phi_sector0.png")
 
-    t.Draw("meanSC:r:phi>>htemp(180, 0., 6.28, 33, 83, 255, 20, 0., 0.4)", "z>0 && z<1", "profcolz")
+    t.Draw("meanSC:r:phi>>htemp(180, 0., 6.28, 65, 83, 255, 20, 0., 0.4)", "z>0 && z<1", "profcolz")
     setup_frame("#varphi (rad)", "r (cm)", "mean SC (fC/cm^3)")
     set_margins(c1)
-    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_bins_180-33-20.png")
+    c1.SaveAs("meanSC_r_phi_profcolz_z_0-1_bins_180-65-20.png")
 
     t.Draw("meanSC:phi:r", "z>0 && z<1", "colz")
     setup_frame("#varphi (rad)", "mean SC (fC/cm^3)", "r (cm)")
@@ -74,10 +74,10 @@ def draw_input(draw_idc):
     set_margins(c1)
     c1.SaveAs("r_z_meanDistZ_colz_phi_sector0.png")
 
-    t.Draw("r:z:flucSC", "phi>0 && phi<3.14/9", "colz")
+    t.Draw("flucSC:r:z>>htemp(65, 0, 250, 65, 83, 255, 20, -0.02, 0.02)", "phi>0 && phi<3.14/9", "profcolz")
     setup_frame("z (cm)", "r (cm)", "SC distortion fluctuation (fC/cm^3)")
     set_margins(c1)
-    c1.SaveAs("r_z_flucSC_colz_phi_sector0.png")
+    c1.SaveAs("flucSC_r_z_profcolz_phi_sector0_bins_65-65-20.png")
 
     if draw_idc:
         t.Draw("r:z:meanCorrR", "phi>0 && phi<3.14/9", "colz")
