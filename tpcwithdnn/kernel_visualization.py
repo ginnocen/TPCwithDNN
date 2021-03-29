@@ -61,7 +61,7 @@ def get_full_charge_response(n_phi, n_r, n_z, model_files, input_dir, \
 
 
 def get_line_charge_response(n_phi, n_r, n_z, model_files, input_dir, i_phi, i_r, \
-                             input_sc_fluc, input_sc_mean, output_pred):
+                             input_sc_fluc, output_pred):
     # load model
     json_file = open("%s.json" % model_files, "r")
     loaded_model_json = json_file.read()
@@ -81,18 +81,19 @@ def get_line_charge_response(n_phi, n_r, n_z, model_files, input_dir, i_phi, i_r
 
     # load position arrays
     arr_r_pos, arr_phi_pos, arr_z_pos, \
-    _, _, \
+    arr_mean_sc, _, \
     _, _, \
     _, _, \
     _, _ = \
         load_data_original(input_dir, [0,0])
+    arr_mean_sc = arr_mean_sc[arr_z_pos>0]
     arr_r_pos = arr_r_pos[arr_z_pos>0]
     arr_phi_pos = arr_phi_pos[arr_z_pos>0]
     arr_z_pos = arr_z_pos[arr_z_pos>0]
 
     # define input densities, create data frame and fill with prediction
     input_single = np.zeros((1, n_phi, n_r, n_z, 2))
-    input_single[0, i_phi, i_r, :, 0] = input_sc_mean
+    input_single[0, :, :, :, 0] = arr_mean_sc.reshape(n_phi, n_r, n_z)
     input_single[0, i_phi, i_r, :, 1] = input_sc_fluc
     arr_mean_sc = input_single[0, :, :, :, 0].flatten()
     arr_fluc_sc = input_single[0, :, :, :, 1].flatten()
