@@ -34,8 +34,8 @@ class DataValidator:
         self.grid_z = data_param["grid_z"]
         self.grid_r = data_param["grid_r"]
 
-        self.selopt_input = data_param["selopt_input"]
-        self.selopt_output = data_param["selopt_output"]
+        self.input_z_range = data_param["input_z_range"]
+        self.output_z_range = data_param["output_z_range"]
         self.opt_train = data_param["opt_train"]
         self.opt_predout = data_param["opt_predout"]
         self.nameopt_predout = data_param["nameopt_predout"]
@@ -79,6 +79,10 @@ class DataValidator:
                 (self.suffix, self.opt_train[0], self.opt_train[1])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
+        self.suffix = "%s_input_z%.1f-%.1f" % \
+                (self.suffix, self.input_z_range[0], self.input_z_range[1])
+        self.suffix = "%s_output_z%.1f-%.1f" % \
+                (self.suffix, self.output_z_range[0], self.output_z_range[1])
         self.suffix_ds = "phi%d_r%d_z%d" % \
                 (self.grid_phi, self.grid_r, self.grid_z)
 
@@ -121,13 +125,7 @@ class DataValidator:
          vec_mean_dist_z, vec_rand_dist_z] = load_data_original(self.dirinput_val,
                                                                 [irnd, imean])
 
-        if self.selopt_input == 0:
-            vec_sel_z = vec_z_pos > 0
-        elif self.selopt_input == 1:
-            vec_sel_z = vec_z_pos < 0
-        elif self.selopt_input == 2:
-            vec_sel_z = vec_z_pos
-
+        vec_sel_z = (self.input_z_range[0] <= vec_z_pos) & (vec_z_pos < self.input_z_range[1])
         vec_z_pos = vec_z_pos[vec_sel_z]
         vec_r_pos = vec_r_pos[vec_sel_z]
         vec_phi_pos = vec_phi_pos[vec_sel_z]
@@ -198,7 +196,7 @@ class DataValidator:
         self.logger.info("DataValidator::create_data")
 
         vec_der_ref_mean_sc, mat_der_ref_mean_dist = \
-            load_data_derivatives_ref_mean(self.dirinput_val, self.selopt_input)
+            load_data_derivatives_ref_mean(self.dirinput_val, self.input_z_range)
 
         dist_names = np.array(self.nameopt_predout)[np.array(self.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",

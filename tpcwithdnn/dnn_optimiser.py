@@ -55,8 +55,8 @@ class DnnOptimiser:
         self.grid_z = data_param["grid_z"]
         self.grid_r = data_param["grid_r"]
 
-        self.selopt_input = data_param["selopt_input"]
-        self.selopt_output = data_param["selopt_output"]
+        self.input_z_range = data_param["input_z_range"]
+        self.output_z_range = data_param["output_z_range"]
         self.opt_train = data_param["opt_train"]
         self.opt_predout = data_param["opt_predout"]
         self.nameopt_predout = data_param["nameopt_predout"]
@@ -104,8 +104,8 @@ class DnnOptimiser:
                        'shuffle': self.shuffle,
                        'opt_train' : self.opt_train,
                        'opt_predout' : self.opt_predout,
-                       'selopt_input' : self.selopt_input,
-                       'selopt_output' : self.selopt_output,
+                       'input_z_range' : self.input_z_range,
+                       'output_z_range' : self.output_z_range,
                        'use_scaler': self.use_scaler}
 
         self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
@@ -115,6 +115,10 @@ class DnnOptimiser:
                 (self.suffix, self.opt_train[0], self.opt_train[1])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
+        self.suffix = "%s_input_z%.1f-%.1f" % \
+                (self.suffix, self.input_z_range[0], self.input_z_range[1])
+        self.suffix = "%s_output_z%.1f-%.1f" % \
+                (self.suffix, self.output_z_range[0], self.output_z_range[1])
         self.suffix_ds = "phi%d_r%d_z%d" % \
                 (self.grid_phi, self.grid_r, self.grid_z)
 
@@ -230,7 +234,7 @@ class DnnOptimiser:
         for iexperiment in self.partition['apply']:
             indexev = iexperiment
             inputs_, exp_outputs_ = load_train_apply(self.dirinput_apply, indexev,
-                                                     self.selopt_input, self.selopt_output,
+                                                     self.input_z_range, self.output_z_range,
                                                      self.grid_r, self.grid_phi, self.grid_z,
                                                      self.opt_train, self.opt_predout)
             inputs_single = np.empty((1, self.grid_phi, self.grid_r, self.grid_z, self.dim_input))

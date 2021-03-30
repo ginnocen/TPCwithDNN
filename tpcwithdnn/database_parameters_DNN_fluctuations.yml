@@ -18,8 +18,8 @@ DNN_fluctuations:
   grid_phi: 90
   grid_z: 17
   grid_r: 17
-  selopt_input: 0 # 0 is use to train distorsions only for positive z-values
-  selopt_output: 0 # 0 is use to predict distorsions only for positive z-values
+  input_z_range: [0, 251] # train for distortions with min <= z < max
+  output_z_range: [0, 251] # apply for distortions with min <= z < max
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
