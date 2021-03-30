@@ -56,13 +56,13 @@ class DataValidator:
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
-        self.dirinput_train = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_train = "%s/SC-%d-%d-%d" % \
                               (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_test = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_test = "%s/SC-%d-%d-%d" % \
                              (test_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_apply = "%s/SC-%d-%d-%d" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_val = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_val = "%s/SC-%d-%d-%d" % \
                             (data_param["dirinput_nobias"], self.grid_z, self.grid_r, self.grid_phi)
 
         # DNN config
@@ -219,6 +219,8 @@ class DataValidator:
 
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
+        else:
+            loaded_model = None
 
         for imean, mean_factor in zip([0, 9, 18], [1.0, 1.1, 0.9]):
             tree_filename = "%s/treeInput_mean%.1f_%s.root" \

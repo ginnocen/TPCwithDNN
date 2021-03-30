@@ -4,17 +4,17 @@ import random
 import numpy as np
 
 def load_data_original(input_data, event_index):
-    files = ["%sdata/Pos/0-vecRPos.npy" % input_data,
-             "%sdata/Pos/0-vecPhiPos.npy" % input_data,
-             "%sdata/Pos/0-vecZPos.npy" % input_data,
-             "%sdata/Mean/%d-vecMeanSC.npy" % (input_data, event_index[1]),
-             "%sdata/Random/%d-vecRandomSC.npy" % (input_data, event_index[0]),
-             "%sdata/Mean/%d-vecMeanDistR.npy" % (input_data, event_index[1]),
-             "%sdata/Random/%d-vecRandomDistR.npy" % (input_data, event_index[0]),
-             "%sdata/Mean/%d-vecMeanDistRPhi.npy" % (input_data, event_index[1]),
-             "%sdata/Random/%d-vecRandomDistRPhi.npy" % (input_data, event_index[0]),
-             "%sdata/Mean/%d-vecMeanDistZ.npy" % (input_data, event_index[1]),
-             "%sdata/Random/%d-vecRandomDistZ.npy" % (input_data, event_index[0])]
+    files = ["%s/data/Pos/0-vecRPos.npy" % input_data,
+             "%s/data/Pos/0-vecPhiPos.npy" % input_data,
+             "%s/data/Pos/0-vecZPos.npy" % input_data,
+             "%s/data/Mean/%d-vecMeanSC.npy" % (input_data, event_index[1]),
+             "%s/data/Random/%d-vecRandomSC.npy" % (input_data, event_index[0]),
+             "%s/data/Mean/%d-vecMeanDistR.npy" % (input_data, event_index[1]),
+             "%s/data/Random/%d-vecRandomDistR.npy" % (input_data, event_index[0]),
+             "%s/data/Mean/%d-vecMeanDistRPhi.npy" % (input_data, event_index[1]),
+             "%s/data/Random/%d-vecRandomDistRPhi.npy" % (input_data, event_index[0]),
+             "%s/data/Mean/%d-vecMeanDistZ.npy" % (input_data, event_index[1]),
+             "%s/data/Random/%d-vecRandomDistZ.npy" % (input_data, event_index[0])]
 
     return [np.load(f) for f in files]
 
@@ -27,9 +27,9 @@ def load_data_derivatives_ref_mean(inputdata, selopt):
     selopt == 1 selects only points with negative z position
     selopt == 2 uses all data with no selections
     """
-    z_pos_file = "%sdata/Pos/0-vecZPos.npy" % inputdata
-    ref_mean_sc_plus_file = "%sdata/Mean/9-vecMeanSC.npy" % inputdata
-    ref_mean_sc_minus_file = "%sdata/Mean/18-vecMeanSC.npy" % inputdata
+    z_pos_file = "%s/data/Pos/0-vecZPos.npy" % inputdata
+    ref_mean_sc_plus_file = "%s/data/Mean/9-vecMeanSC.npy" % inputdata
+    ref_mean_sc_minus_file = "%s/data/Mean/18-vecMeanSC.npy" % inputdata
 
     if selopt == 0:
         arr_sel_z = np.load(z_pos_file) > 0
@@ -42,16 +42,16 @@ def load_data_derivatives_ref_mean(inputdata, selopt):
                           np.load(ref_mean_sc_minus_file)[arr_sel_z]
 
     mat_der_ref_mean_dist = np.empty((3, arr_der_ref_mean_sc.size))
-    ref_mean_dist_r_plus_file = "%sdata/Mean/9-vecMeanDistR.npy" % inputdata
-    ref_mean_dist_r_minus_file = "%sdata/Mean/18-vecMeanDistR.npy" % inputdata
+    ref_mean_dist_r_plus_file = "%s/data/Mean/9-vecMeanDistR.npy" % inputdata
+    ref_mean_dist_r_minus_file = "%s/data/Mean/18-vecMeanDistR.npy" % inputdata
     mat_der_ref_mean_dist[0, :] = np.load(ref_mean_dist_r_plus_file)[arr_sel_z] \
                                                 - np.load(ref_mean_dist_r_minus_file)[arr_sel_z]
-    ref_mean_dist_rphi_plus_file = "%sdata/Mean/9-vecMeanDistRPhi.npy" % inputdata
-    ref_mean_dist_rphi_minus_file = "%sdata/Mean/18-vecMeanDistRPhi.npy" % inputdata
+    ref_mean_dist_rphi_plus_file = "%s/data/Mean/9-vecMeanDistRPhi.npy" % inputdata
+    ref_mean_dist_rphi_minus_file = "%s/data/Mean/18-vecMeanDistRPhi.npy" % inputdata
     mat_der_ref_mean_dist[1, :] = np.load(ref_mean_dist_rphi_plus_file)[arr_sel_z] - \
                                                 np.load(ref_mean_dist_rphi_minus_file)[arr_sel_z]
-    ref_mean_dist_z_plus_file = "%sdata/Mean/9-vecMeanDistZ.npy" % inputdata
-    ref_mean_dist_z_minus_file = "%sdata/Mean/18-vecMeanDistZ.npy" % inputdata
+    ref_mean_dist_z_plus_file = "%s/data/Mean/9-vecMeanDistZ.npy" % inputdata
+    ref_mean_dist_z_minus_file = "%s/data/Mean/18-vecMeanDistZ.npy" % inputdata
     mat_der_ref_mean_dist[2, :] = np.load(ref_mean_dist_z_plus_file)[arr_sel_z] \
                                                 - np.load(ref_mean_dist_z_minus_file)[arr_sel_z]
 

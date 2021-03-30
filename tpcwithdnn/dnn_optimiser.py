@@ -74,11 +74,11 @@ class DnnOptimiser:
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
-        self.dirinput_train = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_train = "%s/SC-%d-%d-%d" % \
                               (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_test = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_test = "%s/SC-%d-%d-%d" % \
                              (test_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_apply = "%s/SC-%d-%d-%d/" % \
+        self.dirinput_apply = "%s/SC-%d-%d-%d" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
 
         # DNN config
