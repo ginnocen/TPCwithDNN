@@ -36,8 +36,13 @@ def draw_input(draw_idc):
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
-    f = TFile.Open("/mnt/temp/mkabus/idc-study-20210310/" +\
-                   "trees/treeInput_mean1.00_phi180_r65_z65.root","READ")
+    if draw_idc:
+        dir_infix = "idc-study-20210310/trees"
+    else:
+        dir_infix = "old_input_trees"
+
+    f = TFile.Open("/mnt/temp/mkabus/%s/" % dir_infix +\
+                   "treeInput_mean1.00_phi180_r65_z65.root","READ")
     t = f.Get("validation")
 
     t.SetMarkerStyle(kFullSquare)
