@@ -1,6 +1,7 @@
 """
 main script for doing tpc calibration with dnn
 """
+# pylint: disable=no-member
 
 import sys
 import os
@@ -13,7 +14,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.dnn_optimiser import DnnOptimiser
-from tpcwithdnn.data_validator import DataValidator
+# from tpcwithdnn.data_validator import DataValidator
 from tpcwithdnn.idc_data_validator import IDCDataValidator
 
 ## optionally limit GPU memory usage

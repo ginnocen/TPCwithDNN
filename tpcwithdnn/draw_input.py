@@ -90,20 +90,21 @@ def draw_input(dirplots, draw_idc):
     c1.SaveAs("%s/r_z_meanDistZ_colz_phi_sector0.png" % dirplots)
 
     t.Draw("flucSC:r:z>>htemp(65, 0, 250, 65, 83, 255)", "phi>0 && phi<3.14/9", "profcolz")
-    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{#rho}_{SC} - #it{<#rho>}_{SC} (fC/cm^{3})", z_offset=1.5)
-    set_margins(c1, right=0.2)
+    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{#rho}_{SC} - #it{<#rho>}_{SC} (fC/cm^{3})",
+                z_offset=1.5)
+    set_margins(c1)
     c1.SaveAs("%s/flucSC_r_z_profcolz_phi_sector0.png" % dirplots)
 
     t.SetMarkerStyle(kDot)
 
-    t.Draw("meanSC:z>>htemp(65, 0, 250)", "", "profcolz")
-    setup_frame("#it{z} (cm)", "#it{<#rho>}_{SC} (fC/cm^{3})", y_offset=1.5)
-    set_margins(c1, right=0.05)
+    t.Draw("meanSC:z>>htemp(65, 0, 250, 20, 0.1, 0.15)", "", "profcolz")
+    setup_frame("#it{z} (cm)", "#it{<#rho>}_{SC} (fC/cm^{3})", y_offset=1.9)
+    set_margins(c1, right=0.02, left=0.15)
     c1.SaveAs("%s/meanSC_z_profcolz.png" % dirplots)
 
-    t.Draw("meanSC-flucSC:z>>htemp(65, 0, 250)", "", "profcolz")
+    t.Draw("meanSC-flucSC:z>>htemp(65, 0, 250, 20, 0.1, 0.2)", "", "profcolz")
     setup_frame("#it{z} (cm)", "#it{#rho}_{SC} (fC/cm^{3})", y_offset=1.5)
-    set_margins(c1, right=0.05)
+    set_margins(c1, right=0.02, left=0.15)
     c1.SaveAs("%s/randomSC_z_profcolz.png" % dirplots)
 
     t.SetMarkerStyle(kFullSquare)
@@ -131,7 +132,7 @@ def draw_input(dirplots, draw_idc):
 
 
 def main():
-    draw_input(dirplots="nov-val-plots-2", draw_idc=False)
+    draw_input(dirplots="idc-val-plots", draw_idc=True)
 
 if __name__ == "__main__":
     main()
