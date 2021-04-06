@@ -25,8 +25,8 @@ import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.common_settings import CommonSettings
 from tpcwithdnn.dnn_optimiser import DnnOptimiser
-# from tpcwithdnn.data_validator import DataValidator
-from tpcwithdnn.idc_data_validator import IDCDataValidator
+from tpcwithdnn.data_validator import DataValidator
+# from tpcwithdnn.idc_data_validator import IDCDataValidator
 
 ## optionally limit GPU memory usage
 if os.environ.get('TPCwithDNNSETMEMLIMIT'):
@@ -79,7 +79,7 @@ def main():
 
     myconfig = CommonSettings(db_parameters[case], case)
     myopt = DnnOptimiser(myconfig, case)
-    mydataval = IDCDataValidator(myconfig, case)
+    mydataval = DataValidator(myconfig, case)
 
     #if dotraining is True:
     #    checkmakedir(dirmodel)

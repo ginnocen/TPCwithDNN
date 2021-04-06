@@ -237,7 +237,7 @@ class DnnOptimiser:
         h_dist.GetXaxis().SetTitleOffset(1.2)
         h_dist.GetYaxis().SetTitleOffset(1.2)
         h_dist.Draw("colz")
-        txt1 = self.config.add_desc_to_canvas(0.18, 0.7, 0.3, 0.9, 0.04, True, False, True, False)
+        txt1 = self.add_desc_to_canvas(0.18, 0.7, 0.3, 0.9, 0.04, True, False, True, False)
         txt1.Draw()
         c2 = cev.cd(2)
         c2.SetMargin(0.12, 0.05, 0.12, 0.05)
@@ -249,7 +249,7 @@ class DnnOptimiser:
         h_deltas_vs_dist.GetXaxis().SetTitleOffset(1.2)
         h_deltas_vs_dist.GetYaxis().SetTitleOffset(1.2)
         h_deltas_vs_dist.ProjectionX().Draw()
-        txt2 = self.config.add_desc_to_canvas(0.18, 0.7, 0.3, 0.9, 0.04, True, False, True, False)
+        txt2 = self.add_desc_to_canvas(0.18, 0.7, 0.3, 0.9, 0.04, True, False, True, False)
         txt2.Draw()
         c3 = cev.cd(3)
         c3.SetMargin(0.12, 0.05, 0.12, 0.05)
@@ -262,7 +262,7 @@ class DnnOptimiser:
         h_deltas.GetXaxis().SetTitleOffset(1.2)
         h_deltas.GetYaxis().SetTitleOffset(1.5)
         h_deltas.Draw()
-        txt3 = self.config.add_desc_to_canvas(0.18, 0.7, 0.3, 0.9, 0.04, True, False, True, False)
+        txt3 = self.add_desc_to_canvas(0.18, 0.7, 0.3, 0.9, 0.04, True, False, True, False)
         txt3.Draw()
         c4 = cev.cd(4)
         c4.SetMargin(0.15, 0.05, 0.12, 0.05)
@@ -275,7 +275,7 @@ class DnnOptimiser:
         prof.GetXaxis().SetTitleOffset(1.2)
         prof.GetYaxis().SetTitleOffset(1.8)
         prof.Draw()
-        txt4 = self.config.add_desc_to_canvas(0.45, 0.7, 0.85, 0.9, 0.04, True, False, True, False)
+        txt4 = self.add_desc_to_canvas(0.45, 0.7, 0.85, 0.9, 0.04, True, False, True, False)
         txt4.Draw()
         #cev.cd(5)
         #h_deltas_vs_dist.GetXaxis().SetTitle("Numeric R distorsion (cm)")
@@ -303,7 +303,7 @@ class DnnOptimiser:
                                                           self.config.suffix))
                 profile_deltas_vs_dist_all_events = \
                     myfile.Get("%s_all_events_%s" % (self.profile_name, self.config.suffix))
-                self.config.plot_distorsion(h_dist_all_events, h_deltas_all_events,
+                self.plot_distorsion(h_dist_all_events, h_deltas_all_events,
                                      h_deltas_vs_dist_all_events,
                                      profile_deltas_vs_dist_all_events,
                                      self.config.suffix, opt_name)
@@ -316,7 +316,7 @@ class DnnOptimiser:
                     h_deltas = myfile.Get("%s_%s" % (self.h_deltas_name, h_suffix))
                     h_deltas_vs_dist = myfile.Get("%s_%s" % (self.h_deltas_vs_dist_name, h_suffix))
                     profile = myfile.Get("%s_%s" % (self.profile_name, h_suffix))
-                    self.config.plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, profile,
+                    self.plot_distorsion(h_dist, h_deltas, h_deltas_vs_dist, profile,
                                          h_suffix, opt_name)
                     counter = counter + 1
                     if counter > 100:
@@ -414,8 +414,7 @@ class DnnOptimiser:
                 x_label = "d#it{%s}_{true} (cm)" % var_label
                 y_label = "%s of d#it{%s}_{pred} - d#it{%s}_{true} (cm)" %\
                           (func_label, var_label, var_label)
-                canvas, frame, leg = self.config.setup_canvas(hist_name, opt_name,
-                                                              x_label, y_label)
+                canvas, frame, leg = self.setup_canvas(hist_name, opt_name, x_label, y_label)
 
                 for i, (train_events, _, _, _) in enumerate(events_counts):
                     filename = "%s/output_%s_nEv%d.root" % (self.config.dirval, self.config.suffix,

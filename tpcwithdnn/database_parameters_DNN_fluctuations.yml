@@ -1,7 +1,7 @@
 DNN_fluctuations:
   dirmodel: model_idc
   dirval: validation_idc
-  dirplots: plots
+  dirplots: plots_idc
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
@@ -9,8 +9,8 @@ DNN_fluctuations:
   train_bias: true
   test_bias: true
   apply_bias: false
-  diroutflattree: trees
-  dirouthistograms: histograms
+  diroutflattree: trees_idc
+  dirouthistograms: histograms_idc
   tree_events: 1000 # Number of events for validation (random events for nd_validation)
   use_partition: random # Whether the validator uses only the events from given partition
                         # 'random' is for choosing events randomly
