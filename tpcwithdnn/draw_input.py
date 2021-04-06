@@ -6,7 +6,7 @@ from ROOT import gStyle # pylint: disable=import-error, no-name-in-module
 from ROOT import kFullSquare, kDot # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT,  gPad  # pylint: disable=import-error, no-name-in-module
 
-def setup_frame(x_label, y_label, z_label=None, x_offset=1.0, y_offset=1.0, z_offset=1.0):
+def setup_frame(x_label, y_label, z_label=None, x_offset=1.0, y_offset=1.2, z_offset=1.2):
     htemp = gPad.GetPrimitive("htemp")
 
     htemp.GetXaxis().SetTitle(x_label)
@@ -34,19 +34,18 @@ def set_margins(canvas, right=0.15, left=0.1, top=0.03, bottom=0.1):
     canvas.SetTopMargin(top)
     canvas.SetBottomMargin(bottom)
 
-def draw_input(draw_idc):
+def draw_input(dirplots, draw_idc):
     gROOT.SetBatch()
     gStyle.SetOptStat(0)
     gStyle.SetOptTitle(0)
 
-    dirplots = "input-val-plots-2"
     if not os.path.isdir(dirplots):
         os.makedirs(dirplots)
 
     if draw_idc:
         dir_infix = "idc-study-202103/trees"
     else:
-        dir_infix = "old_input_trees"
+        dir_infix = "old-input-trees"
     f = TFile.Open("/mnt/temp/mkabus/%s/" % dir_infix +\
                    "treeInput_mean1.00_phi180_r65_z65.root","READ")
     t = f.Get("validation")
@@ -56,22 +55,22 @@ def draw_input(draw_idc):
     c1 = TCanvas()
 
     t.Draw("r:z:meanSC", "phi>0 && phi<3.14/9", "colz")
-    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{<#rho>}_{SC} (fC/cm^3)")
+    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{<#rho>}_{SC} (fC/cm^{3})")
     set_margins(c1)
     c1.SaveAs("%s/r_z_meanSC_colz_phi_sector0.png" % dirplots)
 
     t.Draw("meanSC-flucSC:r:z>>htemp(65, 0, 250, 65, 83, 255)", "eventId == 0", "profcolz")
-    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{#rho}_{SC} (fC/cm^3)")
+    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{#rho}_{SC} (fC/cm^{3})")
     set_margins(c1)
     c1.SaveAs("%s/r_z_randomSC_profcolz_phi_sector0.png" % dirplots)
 
     t.Draw("meanSC:r:phi>>htemp(180, 0., 6.28, 65, 83, 255)", "z>0 && z<1", "profcolz")
-    setup_frame("#it{#varphi} (rad)", "#it{r} (cm)", "#it{<#rho>}_{SC} (fC/cm^3)")
+    setup_frame("#it{#varphi} (rad)", "#it{r} (cm)", "#it{<#rho>}_{SC} (fC/cm^{3})")
     set_margins(c1)
     c1.SaveAs("%s/meanSC_r_phi_profcolz_z_0-1.png" % dirplots)
 
     t.Draw("meanSC:phi:r", "z>0 && z<1", "colz")
-    setup_frame("#it{#varphi} (rad)", "#it{<#rho>}_{SC} (fC/cm^3)", "#it{r} (cm)")
+    setup_frame("#it{#varphi} (rad)", "#it{<#rho>}_{SC} (fC/cm^{3})", "#it{r} (cm)")
     set_margins(c1)
     c1.SaveAs("%s/meanSC_phi_r_colz_z_0-1.png" % dirplots)
 
@@ -91,21 +90,23 @@ def draw_input(draw_idc):
     c1.SaveAs("%s/r_z_meanDistZ_colz_phi_sector0.png" % dirplots)
 
     t.Draw("flucSC:r:z>>htemp(65, 0, 250, 65, 83, 255)", "phi>0 && phi<3.14/9", "profcolz")
-    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{#rho}_{SC} - #it{<#rho>}_{SC} (fC/cm^3)")
-    set_margins(c1)
+    setup_frame("#it{z} (cm)", "#it{r} (cm)", "#it{#rho}_{SC} - #it{<#rho>}_{SC} (fC/cm^{3})", z_offset=1.5)
+    set_margins(c1, right=0.2)
     c1.SaveAs("%s/flucSC_r_z_profcolz_phi_sector0.png" % dirplots)
 
     t.SetMarkerStyle(kDot)
 
     t.Draw("meanSC:z>>htemp(65, 0, 250)", "", "profcolz")
-    setup_frame("#it{z} (cm)", "#it{<#rho>}_{SC} (fC/cm^3)")
-    set_margins(c1)
+    setup_frame("#it{z} (cm)", "#it{<#rho>}_{SC} (fC/cm^{3})", y_offset=1.5)
+    set_margins(c1, right=0.05)
     c1.SaveAs("%s/meanSC_z_profcolz.png" % dirplots)
 
     t.Draw("meanSC-flucSC:z>>htemp(65, 0, 250)", "", "profcolz")
-    setup_frame("#it{z} (cm)", "#it{#rho}_{SC} (fC/cm^3)")
-    set_margins(c1)
+    setup_frame("#it{z} (cm)", "#it{#rho}_{SC} (fC/cm^{3})", y_offset=1.5)
+    set_margins(c1, right=0.05)
     c1.SaveAs("%s/randomSC_z_profcolz.png" % dirplots)
+
+    t.SetMarkerStyle(kFullSquare)
 
     if draw_idc:
         t.Draw("r:z:meanCorrR", "phi>0 && phi<3.14/9", "colz")
@@ -123,14 +124,6 @@ def draw_input(draw_idc):
         set_margins(c1)
         c1.SaveAs("%s/r_z_meanCorrZ_colz_phi_sector0.png" % dirplots)
 
-        t.Draw("mean1DIDC", "", "", 200, 0)
-        htemp = gPad.GetPrimitive("htemp")
-        htemp.SetMinimum(0)
-        htemp.SetMaximum(0.6e-6)
-        setup_frame("mean 1D IDC", "entries")
-        set_margins(c1)
-        c1.SaveAs("%s/mean_1D_IDC.png" % dirplots)
-
         t.Draw("fluc1DIDC", "", "", 200, 0)
         setup_frame("fluc 1D IDC", "entries")
         set_margins(c1)
@@ -138,7 +131,7 @@ def draw_input(draw_idc):
 
 
 def main():
-    draw_input(draw_idc=True)
+    draw_input(dirplots="nov-val-plots-2", draw_idc=False)
 
 if __name__ == "__main__":
     main()
