@@ -25,6 +25,7 @@ import yaml
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
+from tpcwithdnn.common_settings import CommonSettings
 from tpcwithdnn.dnn_optimiser import DnnOptimiser
 # from tpcwithdnn.data_validator import DataValidator
 from tpcwithdnn.idc_data_validator import IDCDataValidator
@@ -78,8 +79,9 @@ def main():
     #if counter < 0:
     #    sys.exit()
 
-    myopt = DnnOptimiser(db_parameters[case], case)
-    mydataval = IDCDataValidator(db_parameters[case], case)
+    myconfig = CommonSettings(db_parameters[case], case)
+    myopt = DnnOptimiser(myconfig, case)
+    mydataval = IDCDataValidator(myconfig, case)
 
     #if dotraining is True:
     #    checkmakedir(dirmodel)
@@ -108,8 +110,7 @@ def main():
         ranges = {"train": [0, train_events],
                   "test": [train_events, train_events + test_events],
                   "apply": [train_events + test_events, total_events]}
-        myopt.set_ranges(ranges, total_events, train_events, test_events, apply_events)
-        mydataval.set_ranges(train_events)
+        myconfig.set_ranges(ranges, total_events, train_events, test_events, apply_events)
 
         if default["dotrain"] is True:
             myopt.train()

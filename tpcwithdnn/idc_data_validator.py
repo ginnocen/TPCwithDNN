@@ -2,118 +2,28 @@
 # pylint: disable=too-many-statements, too-many-instance-attributes
 # pylint: disable=fixme
 import os
-import matplotlib
 import numpy as np
 import pandas as pd
+from tensorflow.keras.models import model_from_json
 from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
 
-from tpcwithdnn.logger import get_logger
+from tpcwithdnn.data_validator import DataValidator
 from tpcwithdnn.data_loader import load_data_original_idc
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
+from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-matplotlib.use("Agg")
-
-class IDCDataValidator:
+class IDCDataValidator(DataValidator):
     # Class Attribute
     species = "IDC data validator"
 
-    def __init__(self, data_param, case):
-        self.logger = get_logger()
-        self.logger.info("IDCDataValidator::Init\nCase: %s", case)
-
-        # Dataset config
-        self.grid_phi = data_param["grid_phi"]
-        self.grid_z = data_param["grid_z"]
-        self.grid_r = data_param["grid_r"]
-
-        self.input_z_range = data_param["input_z_range"]
-        self.output_z_range = data_param["output_z_range"]
-        self.opt_train = data_param["opt_train"]
-        self.opt_predout = data_param["opt_predout"]
-        self.nameopt_predout = data_param["nameopt_predout"]
-        self.dim_input = sum(self.opt_train)
-        self.dim_output = sum(self.opt_predout)
-
-        self.validate_model = data_param["validate_model"]
-        self.use_scaler = data_param["use_scaler"]
-
-        # Directories
-        self.dirmodel = data_param["dirmodel"]
-        self.dirval = data_param["dirval"]
-        self.diroutflattree = data_param["diroutflattree"]
-        self.dirouthistograms = data_param["dirouthistograms"]
-        train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
-                    else data_param["dirinput_nobias"]
-        test_dir = data_param["dirinput_bias"] if data_param["test_bias"] \
-                    else data_param["dirinput_nobias"]
-        apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
-                    else data_param["dirinput_nobias"]
-        grid_str_dash = "%d-%d-%d" % (self.grid_z, self.grid_r, self.grid_phi)
-        grid_str = "%d_%d_%d" % (self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_train = "%s/SC-%s/%s" % \
-                              (train_dir, grid_str_dash, grid_str)
-        self.dirinput_test = "%s/SC-%s/%s" % \
-                             (test_dir, grid_str_dash, grid_str)
-        self.dirinput_apply = "%s/SC-%s/%s" % \
-                              (apply_dir, grid_str_dash, grid_str)
-        self.dirinput_val = "%s/SC-%s/%s" % \
-                            (data_param["dirinput_nobias"], grid_str_dash, grid_str)
-
-        # DNN config
-        self.filters = data_param["filters"]
-        self.pooling = data_param["pooling"]
-        self.depth = data_param["depth"]
-        self.batch_normalization = data_param["batch_normalization"]
-        self.dropout = data_param["dropout"]
-
-        self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
-                (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pooling,
-                 self.dropout, self.depth, self.batch_normalization, self.use_scaler)
-        self.suffix = "%s_useSCMean%d_useSCFluc%d" % \
-                (self.suffix, self.opt_train[0], self.opt_train[1])
-        self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
-                (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
-        self.suffix = "%s_input_z%.1f-%.1f" % \
-                (self.suffix, self.input_z_range[0], self.input_z_range[1])
-        self.suffix = "%s_output_z%.1f-%.1f" % \
-                (self.suffix, self.output_z_range[0], self.output_z_range[1])
-        self.suffix_ds = "phi%d_r%d_z%d" % \
-                (self.grid_phi, self.grid_r, self.grid_z)
-
-        self.logger.info("I am processing the configuration %s", self.suffix)
-        if self.dim_output > 1:
-            self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORSION. The sum of opt_predout == 1")
-        self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
-                         self.opt_train[0], self.opt_train[1])
-
-        # Parameters for getting input indices
-        self.maxrandomfiles = data_param["maxrandomfiles"]
-        self.train_events = 0
-        self.tree_events = data_param["tree_events"]
-        self.part_inds = None
-        self.use_partition = data_param["use_partition"]
-
-        if not os.path.isdir(self.diroutflattree):
-            os.makedirs(self.diroutflattree)
-        if not os.path.isdir("%s/%s" % (self.diroutflattree, self.suffix)):
-            os.makedirs("%s/%s" % (self.diroutflattree, self.suffix))
-        if not os.path.isdir("%s/%s" % (self.dirouthistograms, self.suffix)):
-            os.makedirs("%s/%s" % (self.dirouthistograms, self.suffix))
-
-    def set_ranges(self, train_events):
-        self.train_events = train_events
-
-        if self.use_partition != 'random':
-            events_file = "%s/events_%s_%s_nEv%d.csv" % (self.dirmodel, self.use_partition,
-                                                         self.suffix, self.train_events)
-            part_inds = np.genfromtxt(events_file, delimiter=",")
-            self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 5) | \
-                                         (part_inds[:,1] == 2)]
+    def __init__(self, config, case):
+        super().__init__(config, case)
+        self.config = config
+        self.config.logger.info("IDCDataValidator::Init\nCase: %s", case)
 
     # pylint: disable=too-many-locals
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
-                              mat_der_ref_mean_corr, tree_filename):
+                              mat_der_ref_mean_dist, loaded_model, tree_filename):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          mean_zero_idc, random_zero_idc,
          mean_one_idc, random_one_idc,
@@ -123,10 +33,11 @@ class IDCDataValidator:
          vec_mean_dist_z, vec_rand_dist_z,
          vec_mean_corr_r, vec_rand_corr_r,
          vec_mean_corr_rphi, vec_rand_corr_rphi,
-         vec_mean_corr_z, vec_rand_corr_z] = load_data_original_idc(self.dirinput_val,
+         vec_mean_corr_z, vec_rand_corr_z] = load_data_original_idc(self.config.dirinput_val,
                                                                     [irnd, imean])
 
-        vec_sel_z = (self.input_z_range[0] <= vec_z_pos) & (vec_z_pos < self.input_z_range[1])
+        vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
+                    (vec_z_pos < self.config.input_z_range[1])
         vec_z_pos = vec_z_pos[vec_sel_z]
         vec_r_pos = vec_r_pos[vec_sel_z]
         vec_phi_pos = vec_phi_pos[vec_sel_z]
@@ -204,56 +115,96 @@ class IDCDataValidator:
             df_single_map[column_names[15 + ind_dist * 5]] = mat_fluc_dist[ind_dist, :]
             df_single_map[column_names[16 + ind_dist * 5]] = mat_mean_dist[ind_dist, :]
             df_single_map[column_names[17 + ind_dist * 5]] = \
-                mat_der_ref_mean_corr[ind_dist, :]
+                mat_der_ref_mean_dist[ind_dist, :]
             df_single_map[column_names[18 + ind_dist * 5]] = mat_fluc_corr[ind_dist, :]
             df_single_map[column_names[19 + ind_dist * 5]] = mat_mean_corr[ind_dist, :]
+
+        # FIXME: Copied from old data validator, to be updated
+        if self.config.validate_model:
+            input_single = np.empty((1, self.config.grid_phi, self.config.grid_r,
+                                     self.config.grid_z, self.config.dim_input))
+            index_fill_input = 0
+            if self.config.opt_train[0] == 1:
+                input_single[0, :, :, :, index_fill_input] = \
+                    vec_mean_sc.reshape(self.config.grid_phi, self.config.grid_r,
+                                        self.config.grid_z)
+                index_fill_input = index_fill_input + 1
+            if self.config.opt_train[1] == 1:
+                input_single[0, :, :, :, index_fill_input] = \
+                    vec_fluc_sc.reshape(self.config.grid_phi, self.config.grid_r,
+                                        self.config.grid_z)
+
+            mat_fluc_dist_predict_group = loaded_model.predict(input_single)
+            mat_fluc_dist_predict = np.empty((self.config.dim_output, vec_fluc_sc.size))
+            for ind_dist in range(self.config.dim_output):
+                mat_fluc_dist_predict[ind_dist, :] = \
+                    mat_fluc_dist_predict_group[0, :, :, :, ind_dist].flatten()
+                df_single_map[column_names[19 + ind_dist]] = \
+                    mat_fluc_dist_predict[ind_dist, :]
 
         df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
-        self.logger.info("DataValidator::create_data")
+        self.config.logger.info("DataValidator::create_data")
 
         vec_der_ref_mean_sc, mat_der_ref_mean_corr = \
-            load_data_derivatives_ref_mean_idc(self.dirinput_val, self.input_z_range)
+            load_data_derivatives_ref_mean_idc(self.config.dirinput_val, self.config.input_z_range)
 
+        dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
                                  "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
                                  "fluc1DIDC", "mean1DIDC", "delta1DIDC",
                                  "fluc0DIDC", "mean0DIDC"])
-        for dist_name in self.nameopt_predout:
+        for dist_name in self.config.nameopt_predout:
             column_names = np.append(column_names, ["flucDist" + dist_name,
                                                     "meanDist" + dist_name,
                                                     "derRefMeanCorr" + dist_name,
                                                     "flucCorr" + dist_name,
                                                     "meanCorr" + dist_name])
+        if self.config.validate_model:
+            json_file = open("%s/model_%s_nEv%d.json" % \
+                             (self.config.dirmodel, self.config.suffix,
+                              self.config.train_events), "r")
+            loaded_model_json = json_file.read()
+            json_file.close()
+            loaded_model = \
+                model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
+            loaded_model.load_weights("%s/model_%s_nEv%d.h5" % \
+                                      (self.config.dirmodel, self.config.suffix,
+                                       self.config.train_events))
+
+            for dist_name in dist_names:
+                column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
+        else:
+            loaded_model = None
 
         for imean, mean_factor in zip([0, 2, 5], [1.0, 0.94, 1.06]):
             tree_filename = "%s/treeInput_mean%.2f_%s.root" \
-                            % (self.diroutflattree, mean_factor, self.suffix_ds)
+                            % (self.config.diroutflattree, mean_factor, self.config.suffix_ds)
 
             if os.path.isfile(tree_filename):
                 os.remove(tree_filename)
 
             counter = 0
-            if self.use_partition != 'random':
-                for ind_ev in self.part_inds:
+            if self.config.use_partition != 'random':
+                for ind_ev in self.config.part_inds:
                     if ind_ev[1] != imean:
                         continue
                     irnd = ind_ev[0]
-                    self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
+                    self.config.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_corr, tree_filename)
+                                               mat_der_ref_mean_corr, loaded_model, tree_filename)
                     counter = counter + 1
-                    if counter == self.tree_events:
+                    if counter == self.config.tree_events:
                         break
             else:
-                for irnd in range(self.maxrandomfiles):
-                    self.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
+                for irnd in range(self.config.maxrandomfiles):
+                    self.config.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_corr, tree_filename)
+                                               mat_der_ref_mean_corr, loaded_model, tree_filename)
                     counter = counter + 1
-                    if counter == self.tree_events:
+                    if counter == self.config.tree_events:
                         break
 
-            self.logger.info("Tree written in %s", tree_filename)
+            self.config.logger.info("Tree written in %s", tree_filename)
