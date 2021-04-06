@@ -112,7 +112,7 @@ def draw_model_perf():
     # rBinCenter > 200.0 && deltaSCBinCenter>0.04 && deltaSCBinCenter<0.057
     # deltaSCBinCenter > 0.06 && deltaSCBinCenter < 0.07
     delta_sc_str = "#int_{#it{r}, #it{#varphi}, #it{z}} " +\
-                   "#frac{#it{<#rho>}_{SC} - #it{#rho}_{SC}}{#it{<#rho>}_{SC}}"
+                   "#frac{#it{#rho}_{SC} - #it{<#rho>}_{SC}}{#it{<#rho>}_{SC}}"
     cuts = {"deltaSC": {"r_lim": (0.05, 0.07), "fsector_lim": (0.00, 0.05),
             "desc": lambda x: "%.2f < %s < %.2f" % (x[0], delta_sc_str, x[1])},
             "z": {"r_lim":(0.0, 5.0), "fsector_lim": (0.0, 5.0),
@@ -122,7 +122,7 @@ def draw_model_perf():
             "fsector": {"r_lim": (9.00, 9.05), "fsector_lim": (0.0, 20.0),
                         "desc": lambda x: "sector %d" % int(round(x[0]))},
             "phi": {"r_lim": (3.1, 2.9), "fsector_lim": (3.1, 2.9),
-                    "desc": lambda x: "%.2f < #it{#phi} < %.2f" % x}}
+                    "desc": lambda x: "%.2f < #it{#varphi} < %.2f" % x}}
     cut_fsector = "zBinCenter > %.2f && zBinCenter < %.2f" % cuts["z"]["fsector_lim"] +\
                   " && rBinCenter > %.2f && rBinCenter < %.2f" % cuts["r"]["fsector_lim"] +\
                   " && deltaSCBinCenter > %.2f && deltaSCBinCenter < %.2f" %\
