@@ -1,8 +1,6 @@
 """
 main script for doing tpc calibration with dnn
 """
-# pylint: disable=no-member
-
 import sys
 import os
 
