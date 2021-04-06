@@ -217,8 +217,6 @@ class DataValidator:
 
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
-        else:
-            loaded_model = None
 
         for imean, mean_factor in zip([0, 9, 18], [1.0, 1.1, 0.9]):
             tree_filename = "%s/treeInput_mean%.1f_%s.root" \

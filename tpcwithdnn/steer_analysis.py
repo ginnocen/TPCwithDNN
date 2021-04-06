@@ -5,11 +5,23 @@ main script for doing tpc calibration with dnn
 
 import sys
 import os
-import yaml
 
 # Needs to be set before any tensorflow import to suppress logging
 # pylint: disable=wrong-import-position
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
+
+# Set only once for full workflow
+SEED = 12345
+os.environ['PYTHONHASHSEED'] = str(SEED)
+import random
+random.seed(SEED)
+
+import numpy as np
+np.random.seed(SEED)
+import tensorflow as tf
+tf.random.set_seed(SEED)
+
+import yaml
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
@@ -19,7 +31,6 @@ from tpcwithdnn.idc_data_validator import IDCDataValidator
 
 ## optionally limit GPU memory usage
 if os.environ.get('TPCwithDNNSETMEMLIMIT'):
-    import tensorflow as tf
     gpus = tf.config.experimental.list_physical_devices('GPU')
     if gpus:
         try:

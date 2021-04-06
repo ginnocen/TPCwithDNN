@@ -1,21 +1,12 @@
 # pylint: disable=too-many-instance-attributes, too-many-statements, too-many-arguments, fixme
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=protected-access, too-many-locals, wrong-import-position
+# pylint: disable=protected-access, too-many-locals
 import os
 import datetime
-
-SEED = 12345
-os.environ['PYTHONHASHSEED'] = str(SEED)
-import random
-random.seed(SEED)
-
 import matplotlib
 import matplotlib.pyplot as plt
 
 import numpy as np
-np.random.seed(SEED)
-import tensorflow as tf
-tf.random.set_seed(SEED)
 
 from tensorflow.keras.callbacks import TensorBoard
 from tensorflow.keras.optimizers import Adam
