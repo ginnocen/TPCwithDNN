@@ -1,16 +1,16 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=too-many-statements, too-many-instance-attributes
+# pylint: disable=too-many-statements
 import os
 import gzip
 import pickle
 import math
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import model_from_json
 from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
+from tpcwithdnn.logger import get_logger
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 from tpcwithdnn.data_loader import load_data_original
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
@@ -18,9 +18,15 @@ from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
 class DataValidator:
     species = "data validator"
 
-    def __init__(self, config):
-        self.config = config
-        self.config.logger.info("DataValidator::Init")
+    def __init__(self):
+        logger = get_logger()
+        logger.info("DataValidator::Init")
+        self.model = None
+        self.config = None
+
+    def set_model(self, model):
+        self.model = model
+        self.config = model.config
 
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
@@ -115,6 +121,7 @@ class DataValidator:
                                                     "meanDist" + dist_name,
                                                     "derRefMeanDist" + dist_name])
         if self.config.validate_model:
+            from tensorflow.keras.models import model_from_json # pylint: disable=import-outside-toplevel
             json_file = open("%s/model_%s_nEv%d.json" % \
                              (self.config.dirmodel, self.config.suffix,
                               self.config.train_events), "r")
@@ -152,7 +159,7 @@ class DataValidator:
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
                                                mat_der_ref_mean_dist, loaded_model, tree_filename)
                     counter = counter + 1
-                    if counter == self.config.tree_events:
+                    if counter == self.config.val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
@@ -160,7 +167,7 @@ class DataValidator:
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
                                                mat_der_ref_mean_dist, loaded_model, tree_filename)
                     counter = counter + 1
-                    if counter == self.config.tree_events:
+                    if counter == self.config.val_events:
                         break
 
             self.config.logger.info("Tree written in %s", tree_filename)

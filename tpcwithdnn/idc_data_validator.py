@@ -4,9 +4,9 @@
 import os
 import numpy as np
 import pandas as pd
-from tensorflow.keras.models import model_from_json
 from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
 
+from tpcwithdnn.logger import get_logger
 from tpcwithdnn.data_validator import DataValidator
 from tpcwithdnn.data_loader import load_data_original_idc
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
@@ -16,10 +16,16 @@ class IDCDataValidator(DataValidator):
     # Class Attribute
     species = "IDC data validator"
 
-    def __init__(self, config, case):
-        super().__init__(config, case)
-        self.config = config
-        self.config.logger.info("IDCDataValidator::Init\nCase: %s", case)
+    def __init__(self):
+        super().__init__()
+        logger = get_logger()
+        logger.info("IDCDataValidator::Init")
+        self.model = None
+        self.config = None
+
+    def set_model(self, model):
+        self.model = model
+        self.config = model.config
 
     # pylint: disable=too-many-locals
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
@@ -163,6 +169,7 @@ class IDCDataValidator(DataValidator):
                                                     "flucCorr" + dist_name,
                                                     "meanCorr" + dist_name])
         if self.config.validate_model:
+            from tensorflow.keras.models import model_from_json # pylint: disable=import-outside-toplevel
             json_file = open("%s/model_%s_nEv%d.json" % \
                              (self.config.dirmodel, self.config.suffix,
                               self.config.train_events), "r")
@@ -196,7 +203,7 @@ class IDCDataValidator(DataValidator):
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
                                                mat_der_ref_mean_corr, loaded_model, tree_filename)
                     counter = counter + 1
-                    if counter == self.config.tree_events:
+                    if counter == self.config.val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
@@ -204,7 +211,7 @@ class IDCDataValidator(DataValidator):
                     self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
                                                mat_der_ref_mean_corr, loaded_model, tree_filename)
                     counter = counter + 1
-                    if counter == self.config.tree_events:
+                    if counter == self.config.val_events:
                         break
 
             self.config.logger.info("Tree written in %s", tree_filename)

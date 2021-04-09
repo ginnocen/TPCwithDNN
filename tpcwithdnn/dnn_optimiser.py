@@ -24,7 +24,7 @@ from tpcwithdnn.data_loader import load_train_apply
 matplotlib.use("Agg")
 
 class DnnOptimiser(Optimiser):
-    species = "dnnoptimiser"
+    species = "dnn optimiser"
 
     def __init__(self, config):
         super().__init__(config)

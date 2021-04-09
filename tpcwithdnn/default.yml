@@ -1,4 +1,3 @@
-case: DNN_fluctuations
 dotrain: false
 doapply: false
 doplot: false
