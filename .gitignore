@@ -35,11 +35,6 @@ dist/*
 *.app
 
 #input and output data
-machine_learning_hep/data/**/*.root
-machine_learning_hep/D0kINT7HighMultwithJets
-machine_learning_hep/LckINT7HighMultwithJets
-
-dataframes_*
 tpcwithdnn/plots/plots_*
 tpcwithdnn/validation/output_*
 tpcwithdnn/model/*.json
