@@ -77,9 +77,9 @@ def main():
     #if counter < 0:
     #    sys.exit()
 
-    myconfig = CommonSettings(db_parameters[case], case)
-    myopt = DnnOptimiser(myconfig, case)
-    mydataval = DataValidator(myconfig, case)
+    myconfig = CommonSettings(db_parameters[case])
+    myopt = DnnOptimiser(myconfig)
+    mydataval = DataValidator(myconfig)
 
     #if dotraining is True:
     #    checkmakedir(dirmodel)
@@ -117,7 +117,7 @@ def main():
         if default["doplot"] is True:
             myopt.plot()
         if default["dogrid"] is True:
-            myopt.gridsearch()
+            myopt.search_grid()
         if default["docreatevaldata"] is True:
             mydataval.create_data()
         if default["docreatepdfmaps"] is True:
@@ -138,8 +138,6 @@ def main():
 
     if default["doprofile"] is True:
         myopt.draw_profile(all_events_counts)
-        myopt.draw_std_dev(all_events_counts)
-        myopt.draw_mean_std_dev(all_events_counts)
 
     logger.info("Program finished.")
 

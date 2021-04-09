@@ -18,9 +18,9 @@ from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
 class DataValidator:
     species = "data validator"
 
-    def __init__(self, config, case):
+    def __init__(self, config):
         self.config = config
-        self.config.logger.info("DataValidator::Init\nCase: %s", case)
+        self.config.logger.info("DataValidator::Init")
 
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
@@ -128,6 +128,8 @@ class DataValidator:
 
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
+        else:
+            loaded_model = None
 
         for imean, mean_factor in zip([0, 9, 18], [1.0, 1.1, 0.9]):
             tree_filename = "%s/treeInput_mean%.1f_%s.root" \

@@ -12,9 +12,15 @@ from tpcwithdnn.logger import get_logger
 from tpcwithdnn.data_loader import get_event_mean_indices
 
 class CommonSettings:
-    def __init__(self, data_param, case):
+    h_dist_name = "h_dist"
+    h_deltas_name = "h_deltas"
+    h_deltas_vs_dist_name = "h_deltas_vs_dist"
+    profile_name = "profile_deltas_vs_dist"
+    h_std_dev_name = "h_std_dev"
+
+    def __init__(self, data_param):
         self.logger = get_logger()
-        self.logger.info("CommonSettings::Init\nCase: %s", case)
+        self.logger.info("CommonSettings::Init")
 
         # Dataset config
         self.grid_phi = data_param["grid_phi"]
