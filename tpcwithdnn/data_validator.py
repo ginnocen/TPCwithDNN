@@ -16,7 +16,7 @@ from tpcwithdnn.data_loader import load_data_original
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
 
 class DataValidator:
-    species = "data validator"
+    name = "data validator"
 
     def __init__(self):
         logger = get_logger()

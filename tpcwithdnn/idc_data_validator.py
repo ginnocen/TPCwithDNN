@@ -1,6 +1,5 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
-# pylint: disable=too-many-statements, too-many-instance-attributes
-# pylint: disable=fixme
+# pylint: disable=too-many-statements, fixme
 import os
 import numpy as np
 import pandas as pd
@@ -8,13 +7,12 @@ from root_pandas import to_root, read_root  # pylint: disable=import-error, unus
 
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.data_validator import DataValidator
-from tpcwithdnn.data_loader import load_data_original_idc
+from tpcwithdnn.data_loader import load_data_original_idc, filter_idc_data
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 
 class IDCDataValidator(DataValidator):
-    # Class Attribute
-    species = "IDC data validator"
+    name = "IDC data validator"
 
     def __init__(self):
         super().__init__()
@@ -31,15 +29,15 @@ class IDCDataValidator(DataValidator):
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
                               mat_der_ref_mean_dist, loaded_model, tree_filename):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
-         mean_zero_idc, random_zero_idc,
-         mean_one_idc, random_one_idc,
+         num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
+         vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
          vec_mean_sc, vec_random_sc,
-         vec_mean_dist_r, vec_rand_dist_r,
-         vec_mean_dist_rphi, vec_rand_dist_rphi,
-         vec_mean_dist_z, vec_rand_dist_z,
-         vec_mean_corr_r, vec_rand_corr_r,
-         vec_mean_corr_rphi, vec_rand_corr_rphi,
-         vec_mean_corr_z, vec_rand_corr_z] = load_data_original_idc(self.config.dirinput_val,
+         vec_mean_dist_r, vec_random_dist_r,
+         vec_mean_dist_rphi, vec_random_dist_rphi,
+         vec_mean_dist_z, vec_random_dist_z,
+         vec_mean_corr_r, vec_random_corr_r,
+         vec_mean_corr_rphi, vec_random_corr_rphi,
+         vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(self.config.dirinput_val,
                                                                     [irnd, imean])
 
         vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
@@ -52,31 +50,38 @@ class IDCDataValidator(DataValidator):
         vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
         vec_mean_dist_rphi = vec_mean_dist_rphi[vec_sel_z]
         vec_mean_dist_z = vec_mean_dist_z[vec_sel_z]
-        vec_rand_dist_r = vec_rand_dist_r[vec_sel_z]
-        vec_rand_dist_rphi = vec_rand_dist_rphi[vec_sel_z]
-        vec_rand_dist_z = vec_rand_dist_z[vec_sel_z]
+        vec_random_dist_r = vec_random_dist_r[vec_sel_z]
+        vec_random_dist_rphi = vec_random_dist_rphi[vec_sel_z]
+        vec_random_dist_z = vec_random_dist_z[vec_sel_z]
         vec_mean_corr_r = vec_mean_corr_r[vec_sel_z]
         vec_mean_corr_rphi = vec_mean_corr_rphi[vec_sel_z]
         vec_mean_corr_z = vec_mean_corr_z[vec_sel_z]
-        vec_rand_corr_r = vec_rand_corr_r[vec_sel_z]
-        vec_rand_corr_rphi = vec_rand_corr_rphi[vec_sel_z]
-        vec_rand_corr_z = vec_rand_corr_z[vec_sel_z]
+        vec_random_corr_r = vec_random_corr_r[vec_sel_z]
+        vec_random_corr_rphi = vec_random_corr_rphi[vec_sel_z]
+        vec_random_corr_z = vec_random_corr_z[vec_sel_z]
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
-        mat_rand_dist = np.array((vec_rand_dist_r, vec_rand_dist_rphi, vec_rand_dist_z))
-        mat_fluc_dist = mat_mean_dist - mat_rand_dist
+        mat_random_dist = np.array((vec_random_dist_r, vec_random_dist_rphi, vec_random_dist_z))
+        mat_fluc_dist = mat_mean_dist - mat_random_dist
 
         mat_mean_corr = np.array((vec_mean_corr_r, vec_mean_corr_rphi, vec_mean_corr_z))
-        mat_rand_corr = np.array((vec_rand_corr_r, vec_rand_corr_rphi, vec_rand_corr_z))
-        mat_fluc_corr = mat_mean_corr - mat_rand_corr
-
-        vec_mean_zero_idc = np.empty(vec_z_pos.size)
-        vec_mean_zero_idc[:] = mean_zero_idc
-        vec_random_zero_idc = np.empty(vec_z_pos.size)
-        vec_random_zero_idc[:] = random_zero_idc
+        mat_random_corr = np.array((vec_random_corr_r, vec_random_corr_rphi, vec_random_corr_z))
+        mat_fluc_corr = mat_mean_corr - mat_random_corr
 
         # TODO: How to save 1D IDCs together with the rest?
         # The arrays need to be of the same length as the other vectors.
+        data_a = (vec_mean_one_idc_a, vec_random_one_idc_a,
+                  num_mean_zero_idc_a, num_random_zero_idc_a)
+        data_c = (vec_mean_one_idc_c, vec_random_one_idc_c,
+                  num_mean_zero_idc_c, num_random_zero_idc_c)
+        mean_one_idc, random_one_idc, mean_zero_idc, random_zero_idc =\
+            filter_idc_data(data_a, data_c, self.config.input_z_range) # pylint: disable=unbalanced-tuple-unpacking
+
+        vec_mean_zero_idc = np.empty(vec_z_pos.size)
+        vec_mean_zero_idc[:] = np.tile(mean_zero_idc, vec_z_pos.size // mean_zero_idc.size)
+        vec_random_zero_idc = np.empty(vec_z_pos.size)
+        vec_random_zero_idc[:] = np.tile(random_zero_idc, vec_z_pos.size // mean_zero_idc.size)
+
         vec_mean_one_idc = np.empty(vec_z_pos.size)
         vec_mean_one_idc[:mean_one_idc.size] = mean_one_idc
         vec_mean_one_idc[mean_one_idc.size:] = 0.

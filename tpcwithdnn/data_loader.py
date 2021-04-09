@@ -1,38 +1,56 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring
-# pylint: disable=too-many-locals, too-many-arguments, fixme
+# pylint: disable=fixme
 import random
 import numpy as np
 
-def load_data_original_idc(input_data, event_index):
+from tpcwithdnn.logger import get_logger
+
+def load_data_original_idc(dirinput, event_index):
     """
     Load IDC data.
     """
     # TODO: How to load both A and C side data if both needed? Concatenate? Get average?
     mean_factors = [100, 97, 94, 91, 103, 106, 109]
     mean_factor = mean_factors[event_index[1]]
-    files = ["%s/Pos/vecRPos.npy" % input_data,
-             "%s/Pos/vecPhiPos.npy" % input_data,
-             "%s/Pos/vecZPos.npy" % input_data,
-             "%s/Mean/%d-%d-zeroDIDCAvgASide.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-zeroDIDCRndA.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-oneDIDCAvgASide.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-oneDIDCRndA.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanSC.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomSC.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanDistR.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomDistR.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanDistRPhi.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomDistRPhi.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanDistZ.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomDistZ.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanCorrR.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomCorrR.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanCorrRPhi.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomCorrRPhi.npy" % (input_data, event_index[0]),
-             "%s/Mean/%d-%d-vecMeanCorrZ.npy" % (input_data, event_index[1], mean_factor),
-             "%s/Random/%d-vecRandomCorrZ.npy" % (input_data, event_index[0])]
+    files = ["%s/Pos/vecRPos.npy" % dirinput,
+             "%s/Pos/vecPhiPos.npy" % dirinput,
+             "%s/Pos/vecZPos.npy" % dirinput,
+             "%s/Mean/%d-%d-numMeanZeroDIDCA.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Mean/%d-%d-numMeanZeroDIDCC.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-numRandomZeroDIDCA.npy" % (dirinput, event_index[0]),
+             "%s/Random/%d-numRandomZeroDIDCC.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanOneDIDCA.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Mean/%d-%d-vecMeanOneDIDCC.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomOneDIDCA.npy" % (dirinput, event_index[0]),
+             "%s/Random/%d-vecRandomOneDIDCC.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanSC.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanDistR.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanDistRPhi.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanDistZ.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanCorrR.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomCorrR.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanCorrRPhi.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomCorrRPhi.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%d-%d-vecMeanCorrZ.npy" % (dirinput, event_index[1], mean_factor),
+             "%s/Random/%d-vecRandomCorrZ.npy" % (dirinput, event_index[0])]
 
     return [np.load(f) for f in files]
+
+def filter_idc_data(data_a, data_c, z_range):
+    output_data = []
+    for data in data_a:
+        output_data.append([])
+    if z_range[1] > 0:
+        for ind, data in enumerate(data_a):
+            output_data[ind] = np.hstack((output_data[ind], data))
+    if z_range[0] < 0:
+        for ind, data in enumerate(data_c):
+            output_data[ind] = np.hstack((output_data[ind], data))
+    return tuple(output_data)
 
 def load_data_original(input_data, event_index):
     """
@@ -52,10 +70,10 @@ def load_data_original(input_data, event_index):
 
     return [np.load(f) for f in files]
 
-def load_data_derivatives_ref_mean_idc(inputdata, z_range):
-    z_pos_file = "%s/Pos/0-vecZPos.npy" % inputdata
-    ref_mean_sc_plus_file = "%s/Mean/5-106-vecMeanSC.npy" % inputdata
-    ref_mean_sc_minus_file = "%s/Mean/2-94-vecMeanSC.npy" % inputdata
+def load_data_derivatives_ref_mean_idc(dirinput, z_range):
+    z_pos_file = "%s/Pos/vecZPos.npy" % dirinput
+    ref_mean_sc_plus_file = "%s/Mean/5-106-vecMeanSC.npy" % dirinput
+    ref_mean_sc_minus_file = "%s/Mean/2-94-vecMeanSC.npy" % dirinput
 
     vec_z_pos = np.load(z_pos_file)
     vec_sel_z = (z_range[0] <= vec_z_pos) & (vec_z_pos < z_range[1])
@@ -64,16 +82,16 @@ def load_data_derivatives_ref_mean_idc(inputdata, z_range):
                           np.load(ref_mean_sc_minus_file)[vec_sel_z]
 
     mat_der_ref_mean_corr = np.empty((3, arr_der_ref_mean_sc.size))
-    ref_mean_corr_r_plus_file = "%s/Mean/5-106-vecMeanDistR.npy" % inputdata
-    ref_mean_corr_r_minus_file = "%s/Mean/2-94-vecMeanDistR.npy" % inputdata
+    ref_mean_corr_r_plus_file = "%s/Mean/5-106-vecMeanDistR.npy" % dirinput
+    ref_mean_corr_r_minus_file = "%s/Mean/2-94-vecMeanDistR.npy" % dirinput
     mat_der_ref_mean_corr[0, :] = np.load(ref_mean_corr_r_plus_file)[vec_sel_z] \
                                                 - np.load(ref_mean_corr_r_minus_file)[vec_sel_z]
-    ref_mean_corr_rphi_plus_file = "%s/Mean/5-106-vecMeanDistRPhi.npy" % inputdata
-    ref_mean_corr_rphi_minus_file = "%s/Mean/2-94-vecMeanDistRPhi.npy" % inputdata
+    ref_mean_corr_rphi_plus_file = "%s/Mean/5-106-vecMeanDistRPhi.npy" % dirinput
+    ref_mean_corr_rphi_minus_file = "%s/Mean/2-94-vecMeanDistRPhi.npy" % dirinput
     mat_der_ref_mean_corr[1, :] = np.load(ref_mean_corr_rphi_plus_file)[vec_sel_z] - \
                                                 np.load(ref_mean_corr_rphi_minus_file)[vec_sel_z]
-    ref_mean_corr_z_plus_file = "%s/Mean/5-106-vecMeanDistZ.npy" % inputdata
-    ref_mean_corr_z_minus_file = "%s/Mean/2-94-vecMeanDistZ.npy" % inputdata
+    ref_mean_corr_z_plus_file = "%s/Mean/5-106-vecMeanDistZ.npy" % dirinput
+    ref_mean_corr_z_minus_file = "%s/Mean/2-94-vecMeanDistZ.npy" % dirinput
     mat_der_ref_mean_corr[2, :] = np.load(ref_mean_corr_z_plus_file)[vec_sel_z] \
                                                 - np.load(ref_mean_corr_z_minus_file)[vec_sel_z]
 
@@ -105,6 +123,43 @@ def load_data_derivatives_ref_mean(inputdata, z_range):
                                                 - np.load(ref_mean_dist_z_minus_file)[vec_sel_z]
 
     return arr_der_ref_mean_sc, mat_der_ref_mean_dist
+
+
+def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_pred):
+    [_, _, vec_z_pos,
+     num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
+     vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
+     *_,
+     vec_mean_corr_r, vec_random_corr_r,
+     vec_mean_corr_rphi, vec_random_corr_rphi,
+     vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(dirinput, event_index)
+
+    vec_sel_out_z = (output_z_range[0] <= vec_z_pos) & (vec_z_pos < output_z_range[1])
+
+    data_a = (vec_random_one_idc_a - vec_mean_one_idc_a,
+              num_random_zero_idc_a - num_mean_zero_idc_a)
+    data_c = (vec_random_one_idc_c - vec_mean_one_idc_c,
+              num_random_zero_idc_c - num_mean_zero_idc_c)
+    vec_one_idc_fluc, num_zero_idc_fluc = filter_idc_data(data_a, data_c, input_z_range) # pylint: disable=unbalanced-tuple-unpacking
+
+    mat_mean_corr = (vec_mean_corr_r, vec_mean_corr_rphi, vec_mean_corr_z)
+    mat_random_corr = (vec_random_corr_r, vec_random_corr_rphi, vec_random_corr_z)
+    _, mat_der_ref_mean_corr = load_data_derivatives_ref_mean_idc(dirinput, input_z_range)
+
+    vec_mean_corr = []
+    vec_random_corr = []
+    vec_der_ref_mean_corr = []
+    for ind, (vec_mean, vec_random, vec_der_ref_mean) in \
+        enumerate(zip(mat_mean_corr, mat_random_corr, mat_der_ref_mean_corr)):
+        if opt_pred[ind] == 1:
+            vec_mean_corr = np.hstack((vec_mean_corr, vec_mean))
+            vec_random_corr = np.hstack((vec_random_corr, vec_random))
+            vec_der_ref_mean_corr = np.hstack((vec_der_ref_mean_corr, vec_der_ref_mean))
+
+    vec_exp_corr_fluc = vec_random_corr - vec_mean_corr
+    vec_exp_corr_fluc = vec_exp_corr_fluc[vec_sel_out_z]
+
+    return vec_one_idc_fluc, vec_der_ref_mean_corr, num_zero_idc_fluc, vec_exp_corr_fluc
 
 
 def load_data(input_data, event_index, input_z_range, output_z_range):
@@ -149,6 +204,26 @@ def load_data(input_data, event_index, input_z_range, output_z_range):
             vec_fluctuation_dist_rphi, vec_fluctuation_dist_z]
 
 
+def load_train_apply_idc(dirinput, event_index, input_z_range, output_z_range,
+                         opt_pred):
+
+    (vec_one_idc_fluc, vec_der_ref_mean_corr, num_zero_idc_fluc, exp_outputs) =\
+        load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_pred)
+
+    inputs = np.array([[*vec_one_idc_fluc, num_der, *num_zero_idc_fluc]
+                        for num_der in vec_der_ref_mean_corr])
+
+    dim_output = sum(opt_pred)
+    if dim_output > 1:
+        logger = get_logger()
+        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORSION. The sum of opt_predout == 1")
+
+    #print("DIMENSION INPUT TRAINING", inputs.shape)
+    #print("DIMENSION OUTPUT TRAINING", exp_outputs.shape)
+
+    return inputs, exp_outputs
+
+
 def load_train_apply(input_data, event_index, input_z_range, output_z_range,
                      grid_r, grid_rphi, grid_z, opt_train, opt_pred):
 
@@ -169,9 +244,10 @@ def load_train_apply(input_data, event_index, input_z_range, output_z_range,
         inputs[:, :, :, indexfillx] = \
                 vec_fluctuation_sc.reshape(grid_rphi, grid_r, grid_z)
 
-    if sum(opt_pred) > 1:
-        print("Multioutput not implemented yet!")
-        return 0
+    if dim_output > 1:
+        logger = get_logger()
+        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORSION. The sum of opt_predout == 1")
+
     flucs = np.array((vec_fluctuation_dist_r, vec_fluctuation_dist_rphi, vec_fluctuation_dist_z))
     sel_flucs = flucs[np.array(opt_pred) == 1]
     for ind, vec_fluctuation_dist in enumerate(sel_flucs):

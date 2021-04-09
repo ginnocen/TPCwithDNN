@@ -25,8 +25,8 @@ import yaml
 import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.common_settings import CommonSettings, XGBoostSettings, DNNSettings
-from tpcwithdnn.data_validator import DataValidator
-# from tpcwithdnn.idc_data_validator import IDCDataValidator
+# from tpcwithdnn.data_validator import DataValidator
+from tpcwithdnn.idc_data_validator import IDCDataValidator
 
 def setup_tf():
     # optionally limit GPU memory usage
@@ -44,22 +44,31 @@ def setup_tf():
 
 def init_models(config_parameters):
     models = []
-    # a singleton, so these settings will be available inside XGBoost and DNN settings
+    corr = None
     common_settings = CommonSettings(config_parameters["common"])
     if config_parameters["xgboost"]["active"] is True:
+        from tpcwithdnn.xgboost_optimiser import XGBoostOptimiser # pylint: disable=import-outside-toplevel
         config = XGBoostSettings(common_settings, config_parameters["xgboost"])
         config.params["random_state"] = SEED
-    # TODO: Add the correction function / class here
-    if config_parameters["corr"]["active"] is True:
-        pass
+        model = XGBoostOptimiser(config)
+        models.append(model)
     if config_parameters["dnn"]["active"] is True:
         setup_tf()
         from tpcwithdnn.dnn_optimiser import DnnOptimiser # pylint: disable=import-outside-toplevel
         config = DNNSettings(common_settings, config_parameters["dnn"])
         model = DnnOptimiser(config)
         models.append(model)
-    dataval = DataValidator()
-    return models, dataval
+    # TODO: Add the correction function / class here
+    if config_parameters["corr"]["active"] is True:
+        corr = None
+    dataval = IDCDataValidator()
+    return models, corr, dataval
+
+def get_events_counts(train_events, test_events, apply_events):
+    if len(train_events) != len(test_events) or \
+       len(train_events) != len(apply_events):
+        raise ValueError("Different number of ranges specified for train/test/apply")
+    return zip(train_events, test_events, apply_events)
 
 def run_model_and_val(model, dataval, default, config_parameters):
     dataval.set_model(model)
@@ -129,20 +138,16 @@ def main():
     #if dotesting is True:
     #    checkmakedir(dirval)
 
-    train_events = config_parameters["common"]["train_events"]
-    if len(train_events) != len(config_parameters["common"]["test_events"]) or \
-       len(train_events) != len(config_parameters["common"]["apply_events"]):
-        raise ValueError("Different number of ranges specified for train/test/apply")
-    events_counts = zip(train_events,
-                        config_parameters["common"]["test_events"],
-                        config_parameters["common"]["apply_events"])
+    models, corr, dataval = init_models(config_parameters)
+    events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
+                                       config_parameters[model.name]["test_events"],
+                                       config_parameters[model.name]["apply_events"])
+                        for model in models)
     max_available_events = config_parameters["common"]["max_events"]
 
-    models, dataval = init_models(config_parameters)
-
-    for model in models:
+    for model, model_events_counts in zip(models, events_counts):
         all_events_counts = []
-        for (train_events, test_events, apply_events) in events_counts:
+        for (train_events, test_events, apply_events) in model_events_counts:
             total_events = train_events + test_events + apply_events
             if total_events > max_available_events:
                 print("Too big number of events requested: %d available: %d" % \
@@ -157,6 +162,10 @@ def main():
             model.config.set_ranges(ranges, total_events, train_events, test_events, apply_events)
 
             run_model_and_val(model, dataval, default, config_parameters["common"])
+
+            # TODO: apply the correction and save in files
+            if corr is not None:
+                pass
 
         if default["doprofile"] is True:
             model.draw_profile(all_events_counts)

@@ -2,10 +2,10 @@ common:
   dirmodel: model_idc
   dirval: validation_idc
   dirplots: plots_idc
-  dirinput_bias: /data/tpcml/data_20200518/bias
-  dirinput_nobias: /data/tpcml/data_20200518/nobias
-  #dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
-  #dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
+  #dirinput_bias: /data/tpcml/data_20200518/bias
+  #dirinput_nobias: /data/tpcml/data_20200518/nobias
+  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
+  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
   train_bias: true
   test_bias: true
   apply_bias: false
@@ -27,14 +27,13 @@ common:
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
   maxrandomfiles: 1000 #this is the total number of random events generated
   range_mean_index: [0,6] # min and max index of mean SC configurations
-  # events for training (include a mix of SC config)
-  train_events: [5000] # 5000, 18000
-  test_events: [600] # 500, 1800
-  apply_events: [1400] # 7000, 7000
   max_events: 7000 # number of all available events
 
 xgboost:
-  active: False
+  active: True
+  train_events: [5000] # 5000, 18000
+  test_events: [600] # 500, 1800
+  apply_events: [1400] # 7000, 7000
   params:
     n_estimators: 100 # 850
     max_depth: 3
@@ -59,7 +58,10 @@ corr:
   active: False
 
 dnn:
-  active: True
+  active: False
+  train_events: [5000] # 5000, 18000
+  test_events: [600] # 500, 1800
+  apply_events: [1400] # 7000, 7000
   use_scaler: 0
   filters: 4
   pooling: 0

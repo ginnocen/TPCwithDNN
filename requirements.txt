@@ -11,3 +11,4 @@ pydot
 pylint
 notebook
 torch
+xgboost
