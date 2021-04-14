@@ -39,7 +39,7 @@ xgboost:
     max_depth: 3
     learning_rate: 1 #0.1
     objective: "reg:squarederror"
-    booster: "gbtree"
+    # booster: "gbtree" # it is overriden inside XGBRFRegressor
     tree_method: "gpu_hist"
     n_jobs: 10
     gamma: 0
