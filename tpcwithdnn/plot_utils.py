@@ -61,7 +61,7 @@ def fill_apply_tree_single_event(config, indexev, distortion_numeric_flat_m,
     prof.Write()
     fill_std_dev_apply_hist(h_deltas_vs_dist, config.h_std_dev_name, h_suffix)
 
-def get_apply_results_single_event(pred_outputs, exp_outputs, config, indexev):
+def get_apply_results_single_event(pred_outputs, exp_outputs):
     distortion_predict_group = pred_outputs
     distortion_predict_flat_m = distortion_predict_group.reshape(-1, 1)
     distortion_predict_flat_a = distortion_predict_group.flatten()
