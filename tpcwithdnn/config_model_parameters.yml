@@ -31,16 +31,16 @@ common:
 
 xgboost:
   active: True
-  train_events: [5000] # 5000, 18000
-  test_events: [600] # 500, 1800
-  apply_events: [1400] # 7000, 7000
+  train_events: [5000]
+  test_events: [600]
+  apply_events: [1400]
   params:
     n_estimators: 100 # 850
     max_depth: 3
     learning_rate: 1 #0.1
     objective: "reg:squarederror"
     booster: "gbtree"
-    tree_method: "auto" #"hist"
+    tree_method: "ghist" #"hist"
     n_jobs: 10
     gamma: 0
     min_child_weight: 1 #3

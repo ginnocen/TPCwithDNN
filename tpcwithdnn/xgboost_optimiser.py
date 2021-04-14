@@ -3,6 +3,7 @@ import pickle
 import numpy as np
 from xgboost import XGBRFRegressor
 
+from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
 import tpcwithdnn.plot_utils as plot_utils

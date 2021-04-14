@@ -11,6 +11,7 @@ from tensorflow.keras.metrics import RootMeanSquaredError
 from tensorflow.keras.models import model_from_json
 from tensorflow.keras.utils import plot_model
 
+from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
 import tpcwithdnn.plot_utils as plot_utils
@@ -98,8 +99,10 @@ class DnnOptimiser(Optimiser):
             distortion_numeric_flat_m, distortion_predict_flat_m, deltas_flat_a, deltas_flat_m =\
                 plot_utils.get_apply_results_single_event(distortion_predict_group,
                                                           exp_outputs_single)
-            fill_apply_tree_single_event(self.config, indexev, distortion_numeric_flat_m,
-                                         distortion_predict_flat_m, deltas_flat_a, deltas_flat_m)
+            plot_utils.fill_apply_tree_single_event(self.config, indexev,
+                                                    distortion_numeric_flat_m,
+                                                    distortion_predict_flat_m,
+                                                    deltas_flat_a, deltas_flat_m)
 
             fill_hist(h_dist_all_events, np.concatenate((distortion_numeric_flat_m, \
                                                          distortion_predict_flat_m), axis=1))
