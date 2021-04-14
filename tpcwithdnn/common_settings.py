@@ -19,6 +19,7 @@ class Singleton(type):
 
 class CommonSettings:
     __metaclass__ = Singleton # avoid re-creation of common settings
+    name = "common"
 
     h_dist_name = "h_dist"
     h_deltas_name = "h_deltas"
@@ -120,6 +121,8 @@ class CommonSettings:
 
 
 class DNNSettings:
+    name = "dnn"
+
     def __init__(self, common_settings, data_param):
         self.common_settings = common_settings
         self.logger.info("DNNSettings::Init")
@@ -185,16 +188,18 @@ class DNNSettings:
         self.set_ranges_(ranges, self.suffix, total_events, train_events, test_events, apply_events)
 
 class XGBoostSettings:
+    name = "xgboost"
+
     def __init__(self, common_settings, data_param):
         self.common_settings = common_settings
         self.logger.info("XGBoostSettings::Init")
 
         self.params = data_param["params"]
 
-        self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_obj-%s_tm-%s" % \
+        self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.params["n_estimators"],
                  self.params["max_depth"], self.params["learning_rate"],
-                 self.params["objective"], self.params["tree_method"])
+                 self.params["tree_method"])
         self.suffix = "%s_g%.2f_weight%.1f_d%.1f_sub%.2f" % \
                 (self.suffix, self.params["gamma"], self.params["min_child_weight"],
                  self.params["max_delta_step"], self.params["subsample"])
