@@ -1,6 +1,7 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 import pickle
-from xgboost import XGBClassifier, XGBRegressor, XGBRFRegressor
+import numpy as np
+from xgboost import XGBRFRegressor
 
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.data_loader import load_train_apply_idc
@@ -15,11 +16,11 @@ class XGBoostOptimiser(Optimiser):
 
     def train(self):
         self.config.logger.info("XGBoostOptimiser::train")
-        inputs, exp_outputs = get_train_apply_data_("train")
+        inputs, exp_outputs = self.get_train_apply_data_("train")
         self.model.fit(inputs, exp_outputs)
         self.save_model_(self.model)
 
-    def get_train_apply_data_(partition):
+    def get_train_apply_data_(self, partition):
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
@@ -29,10 +30,12 @@ class XGBoostOptimiser(Optimiser):
                                                        self.config.opt_predout)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
-        print("Different inputs: {} shape of first: {}".format(len(inputs), inputs[0].shape))
-        print("Different outputs: {} shape of first: {}".format(len(exp_outputs), exp_outputs[0].shape))
+        print("Different inputs: {} shape of first: {}"
+              .format(len(inputs), inputs[0].shape))
+        print("Different outputs: {} shape of first: {}"
+              .format(len(exp_outputs), exp_outputs[0].shape))
         inputs = np.concatenate(inputs)
-        exp_outputs = np.concatenate(exp.outputs)
+        exp_outputs = np.concatenate(exp_outputs)
         print("Inputs concatenated: {} outputs: {}".format(inputs.shape, exp_outputs.shape))
         return inputs, exp_outputs
 
@@ -48,8 +51,8 @@ class XGBoostOptimiser(Optimiser):
     def apply(self):
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
         self.load_model_()
-        inputs, exp_outputs = get_train_apply_data_("train")
-        pred_outputs = self.model.predict(inputs)
+        inputs, _ = self.get_train_apply_data_("apply")
+        self.model.predict(inputs)
         self.config.logger.info("Done apply")
 
     def load_model_(self):
