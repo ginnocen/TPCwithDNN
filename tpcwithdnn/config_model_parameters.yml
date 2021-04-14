@@ -4,8 +4,8 @@ common:
   dirplots: plots_idc
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
-  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
-  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210212/Distortions
+  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/Distortions
+  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210414/Distortions
   train_bias: true
   test_bias: true
   apply_bias: false
@@ -20,8 +20,8 @@ common:
   grid_phi: 90
   grid_z: 17
   grid_r: 17
-  input_z_range: [0, 251] # train for distortions with min <= z < max
-  output_z_range: [0, 251] # apply for distortions with min <= z < max
+  input_z_range: [0, 101] # train for distortions with min <= z < max
+  output_z_range: [0, 101] # apply for distortions with min <= z < max
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
@@ -31,16 +31,16 @@ common:
 
 xgboost:
   active: True
-  train_events: [5000]
-  test_events: [600]
-  apply_events: [1400]
+  train_events: [3000]
+  test_events: [0] # dummy for xgboost
+  apply_events: [1000]
   params:
     n_estimators: 100 # 850
     max_depth: 3
     learning_rate: 1 #0.1
     objective: "reg:squarederror"
     booster: "gbtree"
-    tree_method: "ghist" #"hist"
+    tree_method: "gpu_hist"
     n_jobs: 10
     gamma: 0
     min_child_weight: 1 #3
