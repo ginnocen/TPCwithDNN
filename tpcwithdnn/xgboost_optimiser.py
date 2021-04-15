@@ -16,7 +16,7 @@ class XGBoostOptimiser(Optimiser):
     def __init__(self, config):
         super().__init__(config)
         self.config.logger.info("XGBoostOptimiser::Init")
-        self.model = XGBRFRegressor(verbosity=1, n_gpus=0, **(self.config.params))
+        self.model = XGBRFRegressor(verbosity=1, n_gpus=1, **(self.config.params))
 
     def train(self):
         self.config.logger.info("XGBoostOptimiser::train")
