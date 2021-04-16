@@ -31,7 +31,7 @@ common:
 
 xgboost:
   active: True
-  train_events: [3000]
+  train_events: [1000]
   test_events: [0] # dummy for xgboost
   apply_events: [1000]
   params:
@@ -40,7 +40,8 @@ xgboost:
     learning_rate: 1 #0.1
     objective: "reg:squarederror"
     # booster: "gbtree" # it is overriden inside XGBRFRegressor
-    tree_method: "gpu_hist"
+    tree_method: "hist" #"gpu_hist"
+    n_gpus: 0
     n_jobs: 10
     gamma: 0
     min_child_weight: 1 #3
