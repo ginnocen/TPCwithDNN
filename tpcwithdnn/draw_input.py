@@ -97,12 +97,12 @@ def draw_input(dirplots, draw_idc):
 
     t.SetMarkerStyle(kDot)
 
-    t.Draw("meanSC:z>>htemp(65, 0, 250, 20, 0.1, 0.15)", "", "profcolz")
+    t.Draw("meanSC:z>>htemp(65, 0, 250, 20, 0.1, 0.12)", "", "profcolz")
     setup_frame("#it{z} (cm)", "#it{<#rho>}_{SC} (fC/cm^{3})", y_offset=1.9)
     set_margins(c1, right=0.02, left=0.15)
     c1.SaveAs("%s/meanSC_z_profcolz.png" % dirplots)
 
-    t.Draw("meanSC-flucSC:z>>htemp(65, 0, 250, 20, 0.1, 0.2)", "", "profcolz")
+    t.Draw("meanSC-flucSC:z>>htemp(65, 0, 250, 20, 0.1, 0.12)", "", "profcolz")
     setup_frame("#it{z} (cm)", "#it{#rho}_{SC} (fC/cm^{3})", y_offset=1.5)
     set_margins(c1, right=0.02, left=0.15)
     c1.SaveAs("%s/randomSC_z_profcolz.png" % dirplots)
@@ -130,8 +130,6 @@ def draw_input(dirplots, draw_idc):
         set_margins(c1)
         c1.SaveAs("%s/fluc_1D_IDC.png" % dirplots)
 
-        t.SetMarkerStyle(kDot)
-
         t.Draw("fluc0DIDC:flucCorrR", "fluc0DIDC!=0 && r<100 && z<50", "")
         setup_frame("0D IDC fluctuations", "d#it{r} - <d#it{r}> (cm)")
         set_margins(c1, right=0.05, top=0.05)
@@ -146,8 +144,6 @@ def draw_input(dirplots, draw_idc):
         setup_frame("0D IDC fluctuations", "d#it{z} - <d#it{z}> (cm)")
         set_margins(c1, right=0.05, top=0.05)
         c1.SaveAs("%s/flucCorrZ_fluc0DIDC.png" % dirplots)
-
-        t.SetMarkerStyle(kFullSquare)
 
 
 def main():
