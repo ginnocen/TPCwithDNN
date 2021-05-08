@@ -4,24 +4,24 @@ common:
   dirplots: plots_idc
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
-  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/Distortions
-  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210414/Distortions
+  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
+  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
   train_bias: true
   test_bias: true
   apply_bias: false
-  diroutflattree: trees_idc
-  dirouthistograms: histograms_idc
+  diroutflattree: /mnt/temp/mkabus/idc-20210508/trees
+  dirouthistograms: /mnt/temp/mkabus/idc-20210508/histograms
   val_events: 1000 # Number of events for validation (random events for nd_validation)
   use_partition: random # Whether the validator uses only the events from given partition
                         # 'random' is for choosing events randomly
   validate_model: false
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
-  grid_phi: 90
-  grid_z: 17
-  grid_r: 17
-  input_z_range: [0, 101] # train for distortions with min <= z < max
-  output_z_range: [0, 101] # apply for distortions with min <= z < max
+  grid_phi: 180
+  grid_z: 33
+  grid_r: 33
+  input_z_range: [0, 251] # train for distortions with min <= z < max
+  output_z_range: [0, 251] # apply for distortions with min <= z < max
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
   nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions

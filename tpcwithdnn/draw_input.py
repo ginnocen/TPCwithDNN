@@ -43,11 +43,11 @@ def draw_input(dirplots, draw_idc):
         os.makedirs(dirplots)
 
     if draw_idc:
-        dir_infix = "idc-study-202103/trees"
+        dir_infix = "idc-20210508/trees"
     else:
         dir_infix = "old-input-trees"
     f = TFile.Open("/mnt/temp/mkabus/%s/" % dir_infix +\
-                   "treeInput_mean1.00_phi180_r65_z65.root","READ")
+                   "treeInput_mean1.00_phi180_r33_z33.root","READ")
     t = f.Get("validation")
 
     t.SetMarkerStyle(kFullSquare)
@@ -151,7 +151,7 @@ def draw_input(dirplots, draw_idc):
 
 
 def main():
-    draw_input(dirplots="idc-val-plots", draw_idc=True)
+    draw_input(dirplots="idc-val-plots/april-idc/180-33-33/noDistortions", draw_idc=True)
 
 if __name__ == "__main__":
     main()
