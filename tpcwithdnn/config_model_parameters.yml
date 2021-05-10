@@ -17,9 +17,9 @@ common:
   validate_model: false
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
-  grid_phi: 180
-  grid_z: 33
-  grid_r: 33
+  grid_phi: 90
+  grid_z: 17
+  grid_r: 17
   input_z_range: [0, 251] # train for distortions with min <= z < max
   output_z_range: [0, 251] # apply for distortions with min <= z < max
   opt_train: [1, 1] #first position = meanSC, second = SCfluctuations

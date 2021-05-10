@@ -11,7 +11,6 @@ from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 from tpcwithdnn.data_loader import load_data_original
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
 
@@ -121,18 +120,7 @@ class DataValidator:
                                                     "meanDist" + dist_name,
                                                     "derRefMeanDist" + dist_name])
         if self.config.validate_model:
-            from tensorflow.keras.models import model_from_json # pylint: disable=import-outside-toplevel
-            json_file = open("%s/model_%s_nEv%d.json" % \
-                             (self.config.dirmodel, self.config.suffix,
-                              self.config.train_events), "r")
-            loaded_model_json = json_file.read()
-            json_file.close()
-            loaded_model = \
-                model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
-            loaded_model.load_weights("%s/model_%s_nEv%d.h5" % \
-                                      (self.config.dirmodel, self.config.suffix,
-                                       self.config.train_events))
-
+            loaded_model = self.model.load_model()
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
         else:
@@ -244,7 +232,7 @@ class DataValidator:
         Create nd histograms for given mean id
         mean_id: index of mean map. Only 0 (factor=1.0), 9 (factor=1.1) and 18 (factor=0.9) working.
         """
-        for var in self.config.get_pdf_map_variables_list():
+        for var in self.get_pdf_map_variables_list():
             self.create_nd_histogram(var, mean_id)
 
 
@@ -328,7 +316,7 @@ class DataValidator:
             df = read_root(input_file_name_0, columns="*Bin*")
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
-            for var in self.config.get_pdf_map_variables_list():
+            for var in self.get_pdf_map_variables_list():
                 input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
                     % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
                        self.config.train_events)

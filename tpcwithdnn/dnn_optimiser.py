@@ -67,11 +67,11 @@ class DnnOptimiser(Optimiser):
                         epochs=self.config.epochs, callbacks=[tensorboard_callback])
 
         self.plot_train_(his)
-        self.save_model_(model)
+        self.save_model(model)
 
     def apply(self):
         self.config.logger.info("DnnOptimiser::apply, input size: %d", self.config.dim_input)
-        loaded_model = self.load_model_()
+        loaded_model = self.load_model()
 
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
                             (self.config.dirval, self.config.suffix, self.config.train_events),
@@ -126,7 +126,7 @@ class DnnOptimiser(Optimiser):
     def search_grid(self):
         raise NotImplementedError("Search grid method not implemented yet")
 
-    def save_model_(self, model):
+    def save_model(self, model):
         model_json = model.to_json()
         with open("%s/model_%s_nEv%d.json" % (self.config.dirmodel, self.config.suffix,
                                               self.config.train_events), "w") \
@@ -136,7 +136,7 @@ class DnnOptimiser(Optimiser):
                                                      self.config.train_events))
         self.config.logger.info("Saved trained DNN model to disk")
 
-    def load_model_(self):
+    def load_model(self):
         with open("%s/model_%s_nEv%d.json" % \
                   (self.config.dirmodel, self.config.suffix, self.config.train_events), "r") as f:
             loaded_model_json = f.read()

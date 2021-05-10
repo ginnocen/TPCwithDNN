@@ -22,11 +22,11 @@ class XGBoostOptimiser(Optimiser):
         self.config.logger.info("XGBoostOptimiser::train")
         inputs, exp_outputs = self.get_train_apply_data_("train")
         self.model.fit(inputs, exp_outputs)
-        self.save_model_(self.model)
+        self.save_model(self.model)
 
     def apply(self):
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
-        self.load_model_()
+        self.load_model()
         inputs, exp_outputs = self.get_train_apply_data_("apply")
         pred_outputs = self.model.predict(inputs)
         self.plot_apply_(exp_outputs, pred_outputs)
@@ -35,7 +35,7 @@ class XGBoostOptimiser(Optimiser):
     def search_grid(self):
         raise NotImplementedError("Search grid method not implemented yet")
 
-    def save_model_(self, model):
+    def save_model(self, model):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d_snap.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
@@ -44,7 +44,7 @@ class XGBoostOptimiser(Optimiser):
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
         model.save_model(out_filename)
 
-    def load_model_(self):
+    def load_model(self):
         # Loading a snapshot
         #filename = "%s/xgbmodel_%s_nEv%d_snap.json" %\
         #        (self.config.dirmodel, self.config.suffix, self.config.train_events)
