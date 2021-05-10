@@ -35,12 +35,12 @@ xgboost:
   test_events: [0] # dummy for xgboost
   apply_events: [500]
   params:
-    n_estimators: 100 # 850
+    n_estimators: 100 # 850, 100 is better than 500
     max_depth: 3
-    learning_rate: 1 #0.1
+    learning_rate: 1 # 1 is better than 0.1 and 3.0
     objective: "reg:squarederror"
-    # booster: "gbtree" # it is overriden inside XGBRFRegressor
-    tree_method: "hist" #"gpu_hist"
+    booster: "gbtree"
+    tree_method: "hist"
     n_gpus: 0
     n_jobs: 10
     gamma: 0

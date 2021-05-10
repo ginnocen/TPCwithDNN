@@ -57,7 +57,7 @@ setup(
                      "keras==2.3.1", "PyYaml", "RootInteractive", "tensorflow>=2.4",
                      "pydot", "pylint", "notebook", "torch", "xgboost"],
 
-  python_requires='>=3.6, <3.7',
+  python_requires='>=3.6',
 
   # List additional groups of dependencies here (e.g. development
   # dependencies). You can install these using the following syntax,
