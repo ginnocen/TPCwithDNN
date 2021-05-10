@@ -11,11 +11,10 @@ from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.data_validator import DataValidator
-from tpcwithdnn.data_loader import load_data_original_idc, filter_idc_data
-from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc, load_event_idc
+from tpcwithdnn.data_loader import load_data_original_idc, filter_idc_data, mat_to_vec
+from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
 
-class IDCDataValidator(DataValidator):
+class IDCDataValidator():
     name = "IDC data validator"
     mean_ids = (0, 27, 36)
     mean_factors = (0, 1.06, 0.94)
@@ -33,7 +32,7 @@ class IDCDataValidator(DataValidator):
 
     # pylint: disable=too-many-locals
     def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
-                              mat_der_ref_mean_dist, loaded_model, tree_filename):
+                              mat_der_ref_mean_corr, loaded_model, tree_filename):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
          vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
@@ -85,15 +84,17 @@ class IDCDataValidator(DataValidator):
 
         vec_mean_zero_idc = np.empty(vec_z_pos.size)
         vec_mean_zero_idc[:] = np.tile(mean_zero_idc, vec_z_pos.size // mean_zero_idc.size)
-        vec_random_zero_idc = np.empty(vec_z_pos.size)
-        vec_random_zero_idc[:] = np.tile(random_zero_idc, vec_z_pos.size // mean_zero_idc.size)
+        vec_fluc_zero_idc = np.empty(vec_z_pos.size)
+        vec_fluc_zero_idc[:] = np.tile(random_zero_idc - mean_zero_idc,
+                                         vec_z_pos.size // mean_zero_idc.size)
 
         vec_mean_one_idc = np.empty(vec_z_pos.size)
         vec_mean_one_idc[:mean_one_idc.size] = mean_one_idc
         vec_mean_one_idc[mean_one_idc.size:] = 0.
-        vec_random_one_idc = np.empty(vec_z_pos.size)
-        vec_random_one_idc[:random_one_idc.size] = random_one_idc
-        vec_random_one_idc[random_one_idc.size:] = 0.
+        vec_fluc_one_idc = np.empty(vec_z_pos.size)
+        fluc_one_idc = random_one_idc - mean_one_idc
+        vec_fluc_one_idc[:random_one_idc.size] = fluc_one_idc
+        vec_fluc_one_idc[random_one_idc.size:] = 0.
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
@@ -106,10 +107,6 @@ class IDCDataValidator(DataValidator):
         vec_delta_sc = np.empty(vec_z_pos.size)
         vec_delta_sc[:] = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
-        vec_fluc_zero_idc = vec_mean_zero_idc - vec_random_zero_idc
-        vec_fluc_zero_idc[mean_zero_idc.size:] = 0.
-        vec_fluc_one_idc = vec_mean_one_idc - vec_random_one_idc
-        vec_fluc_one_idc[mean_one_idc.size:] = 0.
         vec_delta_one_idc = sum(vec_fluc_one_idc) / sum(vec_mean_one_idc)
 
         df_single_map = pd.DataFrame({column_names[0] : vec_index,
@@ -132,15 +129,15 @@ class IDCDataValidator(DataValidator):
             df_single_map[column_names[15 + ind_dist * 5]] = mat_fluc_dist[ind_dist, :]
             df_single_map[column_names[16 + ind_dist * 5]] = mat_mean_dist[ind_dist, :]
             df_single_map[column_names[17 + ind_dist * 5]] = \
-                mat_der_ref_mean_dist[ind_dist, :]
+                mat_der_ref_mean_corr[ind_dist, :]
             df_single_map[column_names[18 + ind_dist * 5]] = mat_fluc_corr[ind_dist, :]
             df_single_map[column_names[19 + ind_dist * 5]] = mat_mean_corr[ind_dist, :]
 
         if self.config.validate_model:
-            inputs_single, _ = load_event_idc(self.config.dirinput_train,
-                                              [irnd, imean], self.config.input_z_range,
-                                              self.config.output_z_range,
-                                              self.config.opt_predout)
+            fluc_zero_idc = random_zero_idc - mean_zero_idc
+            vec_der_ref_mean_corr = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr))
+            inputs_single = np.array([[*fluc_one_idc, num_der, *fluc_zero_idc]
+                                for num_der in vec_der_ref_mean_corr])
             df_single_map[column_names[30]] = loaded_model.predict(inputs_single)
 
         df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)

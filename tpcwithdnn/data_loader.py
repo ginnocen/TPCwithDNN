@@ -135,6 +135,10 @@ def load_data_derivatives_ref_mean(inputdata, z_range):
 
     return arr_der_ref_mean_sc, mat_der_ref_mean_dist
 
+def mat_to_vec(opt_pred, mat_tuple):
+    sel_opts = np.array(opt_pred) > 0
+    res = tuple(np.hstack(mat[sel_opts]) for mat in mat_tuple)
+    return res
 
 def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_pred):
     [_, _, vec_z_pos,
@@ -157,17 +161,8 @@ def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_
     mat_random_corr = (vec_random_corr_r, vec_random_corr_rphi, vec_random_corr_z)
     _, mat_der_ref_mean_corr = load_data_derivatives_ref_mean_idc(dirinput, input_z_range)
 
-    vec_mean_corr = []
-    vec_random_corr = []
-    vec_der_ref_mean_corr = []
-    for ind, (vec_mean, vec_random, vec_der_ref_mean) in \
-        enumerate(zip(mat_mean_corr, mat_random_corr, mat_der_ref_mean_corr)):
-        if opt_pred[ind] == 1:
-            vec_mean_corr = np.hstack((vec_mean_corr, vec_mean))
-            vec_random_corr = np.hstack((vec_random_corr, vec_random))
-            vec_der_ref_mean_corr = np.hstack((vec_der_ref_mean_corr, vec_der_ref_mean))
-
-    vec_exp_corr_fluc = vec_random_corr - vec_mean_corr
+    vec_exp_corr_fluc, vec_der_ref_mean_corr =\
+        mat_to_vec(opt_pred, (mat_random_corr - mat_mean_corr, mat_der_ref_mean_corr))
     vec_exp_corr_fluc = vec_exp_corr_fluc[vec_sel_out_z]
 
     return vec_one_idc_fluc, vec_der_ref_mean_corr, num_zero_idc_fluc, vec_exp_corr_fluc
