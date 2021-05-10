@@ -9,14 +9,17 @@ SCALES_CONST = [0, 3, -3, 6, -6]
 SCALES_LINEAR = [0, 3, -3]
 SCALES_PARABOLIC = [0, 3, -3]
 
+def get_mean_desc(mean_id):
+    s_const = SCALES_CONST[mean_id // 9]
+    s_lin = SCALES_LINEAR[(mean_id % 9) // 3]
+    s_para = SCALES_PARABOLIC[mean_id % 3]
+    return "%d-Const_%d_Lin_%d_Para_%d" % (mean_id, s_const, s_lin, s_para)
+
 def load_data_original_idc(dirinput, event_index):
     """
     Load IDC data.
     """
-    s_const = SCALES_CONST[event_index[1] // 9]
-    s_lin = SCALES_LINEAR[(event_index[1] % 9) // 3]
-    s_para = SCALES_PARABOLIC[event_index[1] % 3]
-    mean_prefix = "%d-Const_%d_Lin_%d_Para_%d" % (event_index[1], s_const, s_lin, s_para)
+    mean_prefix = get_mean_desc(event_index[1])
 
     files = ["%s/Pos/vecRPos.npy" % dirinput,
              "%s/Pos/vecPhiPos.npy" % dirinput,
@@ -212,8 +215,8 @@ def load_data(input_data, event_index, input_z_range, output_z_range):
             vec_fluctuation_dist_rphi, vec_fluctuation_dist_z]
 
 
-def load_train_apply_idc(dirinput, event_index, input_z_range, output_z_range,
-                         opt_pred):
+def load_event_idc(dirinput, event_index, input_z_range, output_z_range,
+                   opt_pred):
 
     (vec_one_idc_fluc, vec_der_ref_mean_corr, num_zero_idc_fluc, exp_outputs) =\
         load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_pred)
@@ -273,6 +276,7 @@ def get_event_mean_indices(maxrandomfiles, range_mean_index, ranges):
     for ievent in np.arange(maxrandomfiles):
         for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
             all_indices_events_means.append([ievent, imean])
+    # Equivalent to shuffling the data
     sel_indices_events_means = random.sample(all_indices_events_means, \
         maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
 
