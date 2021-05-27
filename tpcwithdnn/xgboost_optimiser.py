@@ -71,13 +71,16 @@ class XGBoostOptimiser(Optimiser):
         return pickle.load(open(filename, "rb"))
 
     def get_data_(self, partition):
+        downsample = self.config.downsample if partition == "train" else False
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
             inputs_single, exp_outputs_single = load_event_idc(self.config.dirinput_train,
                                                                indexev, self.config.input_z_range,
                                                                self.config.output_z_range,
-                                                               self.config.opt_predout)
+                                                               self.config.opt_predout,
+                                                               downsample,
+                                                               self.config.downsample_frac)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)

@@ -11,7 +11,8 @@ from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.data_loader import load_data_original_idc, filter_idc_data, mat_to_vec
+from tpcwithdnn.data_loader import load_data_original_idc
+from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coefs
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
 
 class IDCDataValidator():
@@ -136,11 +137,14 @@ class IDCDataValidator():
         if self.config.validate_model:
             fluc_zero_idc = random_zero_idc - mean_zero_idc
             vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
+            dft_coefs = get_fourier_coefs(fluc_one_idc)
             inputs = np.zeros((vec_der_ref_mean_corr.size,
-                               1 + fluc_one_idc.size + fluc_zero_idc.size))
-            inputs[:, 0] = vec_der_ref_mean_corr
-            inputs[:, 1:1+fluc_zero_idc.size] = fluc_zero_idc
-            inputs[:, -fluc_one_idc.size:] = fluc_one_idc
+                               4 + dft_coefs.size + fluc_zero_idc.size))
+            for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
+                inputs[:, ind] = pos
+            inputs[:, 3] = vec_der_ref_mean_corr
+            inputs[:, 4:4+fluc_zero_idc.size] = fluc_zero_idc
+            inputs[:, -dft_coefs.size:] = dft_coefs # pylint: disable=invalid-unary-operand-type
             df_single_map[column_names[30]] = loaded_model.predict(inputs)
 
         df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
