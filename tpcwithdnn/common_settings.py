@@ -197,6 +197,8 @@ class XGBoostSettings:
         self.logger.info("XGBoostSettings::Init")
 
         self.per_event_hists = False
+        self.plot_train = data_param["plot_train"]
+        self.train_plot_npoints = data_param["train_plot_npoints"]
 
         self.params = data_param["params"]
 

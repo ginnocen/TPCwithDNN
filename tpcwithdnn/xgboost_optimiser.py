@@ -3,7 +3,10 @@ from timeit import default_timer as timer
 
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 from xgboost import XGBRFRegressor
+
+from sklearn.metrics import mean_squared_error
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
@@ -25,6 +28,11 @@ class XGBoostOptimiser(Optimiser):
         inputs, exp_outputs = self.get_data_("train")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
         log_total_memory_usage("Memory usage after loading data")
+        if self.config.plot_train:
+            inputs_val, outputs_val = self.get_data_("validation")
+            log_memory_usage(((inputs_val, "Input val data"), (outputs_val, "Output val data")))
+            log_total_memory_usage("Memory usage after loading val data")
+            self.plot_train_(model, inputs, exp_outputs, inputs_val, outputs_val)
         start = timer()
         model.fit(inputs, exp_outputs)
         end = timer()
@@ -97,3 +105,41 @@ class XGBoostOptimiser(Optimiser):
                                            self.config.suffix, "all_events_")
 
         myfile.Close()
+
+    def plot_train_(self, model, x_train, y_train, x_val, y_val):
+        plt.figure()
+        train_errors, val_errors = [], []
+        data_size = len(x_train)
+        size_per_event = int(data_size / self.config.train_events)
+        step = int(data_size / self.config.train_plot_npoints)
+        checkpoints = np.arange(start=size_per_event, stop=data_size, step=step)
+        for ind, checkpoint in enumerate(checkpoints):
+            model.fit(x_train[:checkpoint], y_train[:checkpoint])
+            y_train_predict = model.predict(x_train[:checkpoint])
+            y_val_predict = model.predict(x_val)
+            train_errors.append(mean_squared_error(y_train_predict, y_train[:checkpoint]))
+            val_errors.append(mean_squared_error(y_val_predict, y_val))
+            if ind in (0, self.config.train_plot_npoints // 2, self.config.train_plot_npoints - 1):
+                self.plot_results_(y_train[:checkpoint], y_train_predict, "train-%d" % ind)
+                self.plot_results_(y_val, y_val_predict, "val-%d" % ind)
+        self.config.logger.info("Memory usage during plot train")
+        log_total_memory_usage()
+        plt.plot(checkpoints, np.sqrt(train_errors), ".", label="train")
+        plt.plot(checkpoints, np.sqrt(val_errors), ".", label="validation")
+        plt.ylim([0, np.amax(np.sqrt(val_errors)) * 2])
+        plt.title("Learning curve BDT")
+        plt.xlabel("Training set size")
+        plt.ylabel("RMSE")
+        plt.legend(loc="lower left")
+        plt.savefig("%s/learning_plot_%s_nEv%d.png" % (self.config.dirplots, self.config.suffix,
+                                                       self.config.train_events))
+        plt.clf()
+
+    def plot_results_(self, exp_outputs, pred_outputs, infix):
+        plt.figure()
+        plt.plot(exp_outputs, pred_outputs, ".")
+        plt.xlabel("Expected output")
+        plt.ylabel("Predicted output")
+        plt.savefig("%s/num-exp-%s_%s_nEv%d.png" % (self.config.dirplots, infix, self.config.suffix,
+                                                   self.config.train_events))
+        plt.clf()

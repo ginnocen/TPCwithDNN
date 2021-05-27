@@ -31,9 +31,11 @@ common:
 
 xgboost:
   active: True
-  train_events: [1000]
-  test_events: [0] # dummy for xgboost
-  apply_events: [500]
+  train_events: [200]
+  test_events: [100]
+  apply_events: [400]
+  plot_train: False
+  train_plot_npoints: 10
   params:
     n_estimators: 100 # 850, 100 is better than 500
     max_depth: 3
