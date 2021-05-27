@@ -31,8 +31,10 @@ def log_memory_usage(objects):
         size, mult = format_memory(get_memory_usage(obj))
         logger.info("%s memory usage: %d %sB", comment, size, mult)
 
-def log_total_memory_usage():
+def log_total_memory_usage(comment=None):
     logger = get_logger()
+    if comment is not None:
+        logger.info(comment)
     size, mult = format_memory(psutil.virtual_memory().available)
     logger.info("Free RAM: %d %sB", size, mult)
     size, mult = format_memory(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)

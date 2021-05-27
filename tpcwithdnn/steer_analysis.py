@@ -120,8 +120,7 @@ def main():
     logger = get_logger()
     logger.info("Starting TPC ML...")
 
-    logger.info("Initial memory usage")
-    log_total_memory_usage()
+    log_total_memory_usage("Initial memory usage")
 
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
     parser.add_argument("-c", "--config", dest="config_file", default="config_model_parameters.yml",
