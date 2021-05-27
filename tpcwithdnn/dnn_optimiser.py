@@ -117,6 +117,9 @@ class DnnOptimiser(Optimiser):
     def search_grid(self):
         raise NotImplementedError("Search grid method not implemented yet")
 
+    def bayes_optimise(self):
+        raise NotImplementedError("Bayes optimise method not implemented yet")
+
     def save_model(self, model):
         model_json = model.to_json()
         with open("%s/model_%s_nEv%d.json" % (self.config.dirmodel, self.config.suffix,

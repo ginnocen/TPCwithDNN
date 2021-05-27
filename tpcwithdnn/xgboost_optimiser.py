@@ -34,6 +34,9 @@ class XGBoostOptimiser(Optimiser):
     def search_grid(self):
         raise NotImplementedError("Search grid method not implemented yet")
 
+    def bayes_optimise(self):
+        raise NotImplementedError("Bayes optimise method not implemented yet")
+
     def save_model(self, model):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\

@@ -77,6 +77,8 @@ def run_model_and_val(model, dataval, default, config_parameters):
     dataval.set_model(model)
     if default["dotrain"] is True:
         model.train()
+    if default["dobayes"] is True:
+        model.bayes_optimise()
     if default["doapply"] is True:
         model.apply()
     if default["doplot"] is True:
