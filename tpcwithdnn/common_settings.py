@@ -114,8 +114,8 @@ class CommonSettings:
             np.savetxt(events_file, events_inds, delimiter=",", fmt="%d")
             if self.use_partition != "random" and part == self.use_partition:
                 part_inds = events_inds
-                self.part_inds = part_inds[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
-                                             (part_inds[:,1] == 18)]
+                self.part_inds = part_inds #[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
+                                           #  (part_inds[:,1] == 18)]
 
         self.logger.info("Processing %d events", self.total_events)
 

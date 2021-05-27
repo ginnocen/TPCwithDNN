@@ -146,26 +146,33 @@ def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_
      vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
      *_,
      vec_mean_corr_r, vec_random_corr_r,
-     vec_mean_corr_rphi, vec_random_corr_rphi,
+     vec_mean_corr_phi, vec_random_corr_phi,
      vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(dirinput, event_index)
 
     vec_sel_out_z = (output_z_range[0] <= vec_z_pos) & (vec_z_pos < output_z_range[1])
 
-    data_a = (vec_random_one_idc_a - vec_mean_one_idc_a,
-              num_random_zero_idc_a - num_mean_zero_idc_a)
-    data_c = (vec_random_one_idc_c - vec_mean_one_idc_c,
-              num_random_zero_idc_c - num_mean_zero_idc_c)
-    vec_one_idc_fluc, num_zero_idc_fluc = filter_idc_data(data_a, data_c, input_z_range) # pylint: disable=unbalanced-tuple-unpacking
+    vec_one_idc_fluc, num_zero_idc_fluc = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
+              (vec_random_one_idc_a - vec_mean_one_idc_a,
+               num_random_zero_idc_a - num_mean_zero_idc_a),
+              (vec_random_one_idc_c - vec_mean_one_idc_c,
+               num_random_zero_idc_c - num_mean_zero_idc_c), input_z_range)
 
-    mat_mean_corr = (vec_mean_corr_r, vec_mean_corr_rphi, vec_mean_corr_z)
-    mat_random_corr = (vec_random_corr_r, vec_random_corr_rphi, vec_random_corr_z)
+    mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
+                              vec_random_corr_phi - vec_mean_corr_phi,
+                              vec_random_corr_z - vec_mean_corr_z))
     _, mat_der_ref_mean_corr = load_data_derivatives_ref_mean_idc(dirinput, input_z_range)
 
     vec_exp_corr_fluc, vec_der_ref_mean_corr =\
-        mat_to_vec(opt_pred, (mat_random_corr - mat_mean_corr, mat_der_ref_mean_corr))
+        mat_to_vec(opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
     vec_exp_corr_fluc = vec_exp_corr_fluc[vec_sel_out_z]
 
-    return vec_one_idc_fluc, vec_der_ref_mean_corr, num_zero_idc_fluc, vec_exp_corr_fluc
+    inputs = np.zeros((vec_der_ref_mean_corr.size,
+                       1 + vec_one_idc_fluc.size + num_zero_idc_fluc.size))
+    inputs[:, 0] = vec_der_ref_mean_corr
+    inputs[:, 1:1+num_zero_idc_fluc.size] = num_zero_idc_fluc
+    inputs[:, -vec_one_idc_fluc.size:] = vec_one_idc_fluc
+
+    return inputs, vec_exp_corr_fluc
 
 
 def load_data(input_data, event_index, input_z_range, output_z_range):
@@ -213,11 +220,8 @@ def load_data(input_data, event_index, input_z_range, output_z_range):
 def load_event_idc(dirinput, event_index, input_z_range, output_z_range,
                    opt_pred):
 
-    (vec_one_idc_fluc, vec_der_ref_mean_corr, num_zero_idc_fluc, exp_outputs) =\
-        load_data_one_idc(dirinput, event_index, input_z_range, output_z_range, opt_pred)
-
-    inputs = np.array([[*vec_one_idc_fluc, num_der, *num_zero_idc_fluc]
-                        for num_der in vec_der_ref_mean_corr])
+    inputs, exp_outputs = load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
+                                            opt_pred)
 
     dim_output = sum(opt_pred)
     if dim_output > 1:
