@@ -9,6 +9,7 @@ RootInteractive
 tensorflow>=2.4.0
 pydot
 pylint
+psutil
 notebook
 torch
 xgboost

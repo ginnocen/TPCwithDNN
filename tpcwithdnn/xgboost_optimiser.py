@@ -1,4 +1,6 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+from timeit import default_timer as timer
+
 import pickle
 import numpy as np
 from xgboost import XGBRFRegressor
@@ -6,6 +8,7 @@ from xgboost import XGBRFRegressor
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
 import tpcwithdnn.plot_utils as plot_utils
+from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.data_loader import load_event_idc
 
@@ -15,19 +18,31 @@ class XGBoostOptimiser(Optimiser):
     def __init__(self, config):
         super().__init__(config)
         self.config.logger.info("XGBoostOptimiser::Init")
-        self.model = XGBRFRegressor(verbosity=1, **(self.config.params))
 
     def train(self):
         self.config.logger.info("XGBoostOptimiser::train")
+        model = XGBRFRegressor(verbosity=1, **(self.config.params))
         inputs, exp_outputs = self.get_data_("train")
-        self.model.fit(inputs, exp_outputs)
-        self.save_model(self.model)
+        log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
+        self.config.logger.info("Memory usage after loading data")
+        log_total_memory_usage()
+        start = timer()
+        model.fit(inputs, exp_outputs)
+        end = timer()
+        log_time(start, end, "actual train")
+        self.save_model(model)
 
     def apply(self):
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
-        self.load_model()
+        loaded_model = self.load_model()
         inputs, exp_outputs = self.get_data_("apply")
-        pred_outputs = self.model.predict(inputs)
+        log_memory_usage(((inputs, "Input apply data"), (exp_outputs, "Output apply data")))
+        self.config.logger.info("Memory usage after loading apply data")
+        log_total_memory_usage()
+        start = timer()
+        pred_outputs = loaded_model.predict(inputs)
+        end = timer()
+        log_time(start, end, "actual predict")
         self.plot_apply_(exp_outputs, pred_outputs)
         self.config.logger.info("Done apply")
 
@@ -47,7 +62,7 @@ class XGBoostOptimiser(Optimiser):
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        self.model = pickle.load(open(filename, "rb"))
+        return pickle.load(open(filename, "rb"))
 
     def get_data_(self, partition):
         inputs = []

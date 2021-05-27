@@ -2,8 +2,9 @@
 main script for doing tpc calibration with dnn
 """
 # pylint: disable=fixme
-import sys
 import os
+import argparse
+from timeit import default_timer as timer
 
 # Needs to be set before any tensorflow import to suppress logging
 # pylint: disable=wrong-import-position
@@ -27,6 +28,7 @@ import yaml
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
+from tpcwithdnn.debug_utils import log_time, log_total_memory_usage
 from tpcwithdnn.common_settings import CommonSettings, XGBoostSettings, DNNSettings
 # from tpcwithdnn.data_validator import DataValidator
 from tpcwithdnn.idc_data_validator import IDCDataValidator
@@ -43,7 +45,8 @@ def setup_tf():
                 # for gpu in gpus:
                 #     tf.config.experimental.set_memory_growth(gpu, True)
             except RuntimeError as e:
-                print(e)
+                logger = get_logger()
+                logger.error(e)
 
 def init_models(config_parameters):
     models = []
@@ -76,11 +79,20 @@ def get_events_counts(train_events, test_events, apply_events):
 def run_model_and_val(model, dataval, default, config_parameters):
     dataval.set_model(model)
     if default["dotrain"] is True:
+        start = timer()
         model.train()
+        end = timer()
+        log_time(start, end, "train")
     if default["dobayes"] is True:
+        start = timer()
         model.bayes_optimise()
+        end = timer()
+        log_time(start, end, "bayes")
     if default["doapply"] is True:
+        start = timer()
         model.apply()
+        end = timer()
+        log_time(start, end, "apply")
     if default["doplot"] is True:
         model.plot()
     if default["dogrid"] is True:
@@ -108,16 +120,22 @@ def main():
     logger = get_logger()
     logger.info("Starting TPC ML...")
 
-    if len(sys.argv) == 2:
-        default_file_name = sys.argv[1]
-        print("Using user specified steering options file: %s" % default_file_name)
-    else:
-        default_file_name = "default.yml"
+    logger.info("Initial memory usage")
+    log_total_memory_usage()
 
-    with open(default_file_name, 'r') as default_data:
-        default = yaml.safe_load(default_data)
-    with open("config_model_parameters.yml", 'r') as parameters_data:
-        config_parameters = yaml.safe_load(parameters_data)
+    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    parser.add_argument("-c", "--config", dest="config_file", default="config_model_parameters.yml",
+                        type=str, help="path to the *.yml configuration file")
+    parser.add_argument("-s", "--steer", dest="steer_file", default="default.yml",
+                        type=str, help="path to the *.yml steering file")
+    args = parser.parse_args()
+
+    logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
+
+    with open(args.steer_file, "r") as steer_data:
+        default = yaml.safe_load(steer_data)
+    with open(args.config_file, "r") as config_data:
+        config_parameters = yaml.safe_load(config_data)
 
     # FIXME: Do we need these commented lines anymore?
     #dirmodel = config_parameters["common"]["dirmodel"]
@@ -155,8 +173,8 @@ def main():
         for (train_events, test_events, apply_events) in model_events_counts:
             total_events = train_events + test_events + apply_events
             if total_events > max_available_events:
-                print("Too big number of events requested: %d available: %d" % \
-                      (total_events, max_available_events))
+                logger.warning("Too big number of events requested: %d available: %d",
+                               total_events, max_available_events)
                 continue
 
             all_events_counts.append((train_events, test_events, apply_events, total_events))
