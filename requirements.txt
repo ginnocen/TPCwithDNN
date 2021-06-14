@@ -13,3 +13,4 @@ psutil
 notebook
 torch
 xgboost
+uproot3

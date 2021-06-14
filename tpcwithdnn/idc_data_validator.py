@@ -1,16 +1,17 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=too-many-statements, fixme
 import os
+import shutil
 import gzip
 import pickle
 import math
 import numpy as np
 import pandas as pd
-from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
+from tpcwithdnn.utilities import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original_idc
 from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coefs
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
@@ -18,7 +19,7 @@ from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
 class IDCDataValidator():
     name = "IDC data validator"
     mean_ids = (0, 27, 36)
-    mean_factors = (0, 1.06, 0.94)
+    mean_factors = (1.00, 1.06, 0.94)
 
     def __init__(self):
         super().__init__()
@@ -32,8 +33,8 @@ class IDCDataValidator():
         self.config = model.config
 
     # pylint: disable=too-many-locals
-    def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
-                              mat_der_ref_mean_corr, loaded_model, tree_filename):
+    def create_data_for_event(self, index_mean_id, irnd, column_names, vec_der_ref_mean_sc,
+                              mat_der_ref_mean_corr, loaded_model, dir_name):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
          vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
@@ -43,8 +44,9 @@ class IDCDataValidator():
          vec_mean_dist_z, vec_random_dist_z,
          vec_mean_corr_r, vec_random_corr_r,
          vec_mean_corr_rphi, vec_random_corr_rphi,
-         vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(self.config.dirinput_val,
-                                                                    [irnd, imean])
+         vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(
+             self.config.dirinput_val,
+            [irnd, self.mean_ids[index_mean_id]])
 
         vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
                     (vec_z_pos < self.config.input_z_range[1])
@@ -100,9 +102,9 @@ class IDCDataValidator():
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
         vec_index_mean = np.empty(vec_z_pos.size)
-        vec_index_mean[:] = imean
+        vec_index_mean[:] = self.mean_ids[index_mean_id]
         vec_index = np.empty(vec_z_pos.size)
-        vec_index[:] = irnd + 1000 * imean
+        vec_index[:] = irnd + 1000 * self.mean_ids[index_mean_id]
 
         vec_fluc_sc = vec_mean_sc - vec_random_sc
         vec_delta_sc = np.empty(vec_z_pos.size)
@@ -147,7 +149,17 @@ class IDCDataValidator():
             inputs[:, -dft_coefs.size:] = dft_coefs # pylint: disable=invalid-unary-operand-type
             df_single_map[column_names[30]] = loaded_model.predict(inputs)
 
-        df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
+        tree_filename = "%s/%d/treeInput_mean%.2f_%s.root" \
+            % (dir_name, irnd, self.mean_factors[index_mean_id], self.config.suffix_ds)
+        if self.config.validate_model:
+            tree_filename = "%s/%d/treeValidation_mean%.2f_nEv%d.root" \
+                            % (dir_name, irnd, self.mean_factors[index_mean_id],
+                            self.config.train_events)
+
+        if not os.path.isdir("%s/%d" % (dir_name, irnd)):
+            os.makedirs("%s/%d" % (dir_name, irnd))
+
+        pandas_to_tree(df_single_map, tree_filename, 'validation')
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
@@ -177,39 +189,39 @@ class IDCDataValidator():
         else:
             loaded_model = None
 
-        for imean, mean_factor in zip(self.mean_ids, self.mean_factors):
-            tree_filename = "%s/treeInput_mean%.2f_%s.root" \
-                            % (self.config.diroutflattree, mean_factor, self.config.suffix_ds)
-            if self.config.validate_model:
-                tree_filename = "%s/%s/treeValidation_mean%.1f_nEv%d.root" \
-                                % (self.config.diroutflattree, self.config.suffix, mean_factor,
-                                   self.config.train_events)
+        dir_name = "%s/parts" % (self.config.diroutflattree)
+        if self.config.validate_model:
+            dir_name = "%s/%s/parts" % (self.config.diroutflattree, self.config.suffix)
+        if os.path.isdir(dir_name):
+            shutil.rmtree(dir_name)
 
-            if os.path.isfile(tree_filename):
-                os.remove(tree_filename)
-
+        for index_mean_id in range(0, len(self.mean_ids)):
             counter = 0
             if self.config.use_partition != 'random':
                 for ind_ev in self.config.part_inds:
-                    if ind_ev[1] != imean:
+                    if ind_ev[1] != self.mean_ids[index_mean_id]:
                         continue
                     irnd = ind_ev[0]
-                    self.config.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
-                    self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_corr, loaded_model, tree_filename)
+                    self.config.logger.info("processing event: %d [%d, %d]",
+                                            counter, self.mean_ids[index_mean_id], irnd)
+                    self.create_data_for_event(index_mean_id, irnd, column_names,
+                                               vec_der_ref_mean_sc, mat_der_ref_mean_corr,
+                                               loaded_model, dir_name)
                     counter = counter + 1
                     if counter == self.config.val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
-                    self.config.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
-                    self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_corr, loaded_model, tree_filename)
+                    self.config.logger.info("processing event: %d [%d, %d]",
+                                            counter, self.mean_ids[index_mean_id], irnd)
+                    self.create_data_for_event(index_mean_id, irnd, column_names,
+                                               vec_der_ref_mean_sc, mat_der_ref_mean_corr,
+                                               loaded_model, dir_name)
                     counter = counter + 1
                     if counter == self.config.val_events:
                         break
 
-            self.config.logger.info("Tree written in %s", tree_filename)
+        self.config.logger.info("Trees written in %s", dir_name)
 
     def get_pdf_map_variables_list(self):
         dist_names_list = np.array(self.config.nameopt_predout) \
@@ -245,10 +257,10 @@ class IDCDataValidator():
         else:
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
-        df_val = read_root("%s/%s/treeValidation_mean%.1f_nEv%d.root"
-                           % (self.config.diroutflattree, self.config.suffix, mean_factor,
-                              self.config.train_events),
-                           key='validation', columns=column_names)
+        df_val = tree_to_pandas("%s/%s/treeValidation_mean%.1f_nEv%d.root"
+                                % (self.config.diroutflattree, self.config.suffix, mean_factor,
+                                   self.config.train_events),
+                                'validation', column_names)
         if diff_index != -1:
             df_val[var] = \
                 df_val[var[:diff_index] + "Pred"] - df_val[var[:diff_index]]
@@ -319,9 +331,7 @@ class IDCDataValidator():
                   (0, histo['H'].shape[3], 1, 0),
                   (0, histo['H'].shape[4], 1, 0))
         df_pdf_map = makePdfMaps(histo, slices, dim_var)
-        # set the index name to retrieve the name of the variable of interest later
-        df_pdf_map.index.name = histo['name']
-        df_pdf_map.to_root(output_file_name, key=histo['name'], mode='w', store_index=True)
+        pandas_to_tree(df_pdf_map, output_file_name, histo['name'])
         self.config.logger.info("Pdf map %s written to %s.", histo['name'], output_file_name)
 
 
@@ -356,21 +366,21 @@ class IDCDataValidator():
             input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
                 % (self.config.diroutflattree, self.config.suffix, mean_factor,
                    self.config.train_events)
-            df = read_root(input_file_name_0, columns="*Bin*")
+            df = tree_to_pandas(input_file_name_0, 'flucSC', [".*Bin"])
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
             for var in self.get_pdf_map_variables_list():
                 input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
                     % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
                        self.config.train_events)
-                df_temp = read_root(input_file_name, ignore="*Bin*")
+                df_temp = tree_to_pandas(input_file_name, var, [".*"], [".*Bin"])
                 for col in list(df_temp.keys()):
                     df[var + '_' + col] = df_temp[col]
             df_merged = df_merged.append(df, ignore_index=True)
 
         output_file_name = "%s/%s/pdfmaps_nEv%d.root" \
             % (self.config.diroutflattree, self.config.suffix, self.config.train_events)
-        df_merged.to_root(output_file_name, key='pdfmaps', mode='w', store_index=False)
+        pandas_to_tree(df_merged, output_file_name, 'pdfmaps')
         self.config.logger.info("Pdf maps written to %s.", output_file_name)
 
     def merge_pdf_maps_meanid(self, mean_id):
