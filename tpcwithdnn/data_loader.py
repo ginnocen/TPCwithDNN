@@ -8,7 +8,7 @@ from tpcwithdnn.logger import get_logger
 SCALES_CONST = [0, 3, -3, 6, -6]
 SCALES_LINEAR = [0, 3, -3]
 SCALES_PARABOLIC = [0, 3, -3]
-NUM_FOURIER_COEFS = 20
+NUM_FOURIER_COEFFS = 40
 
 def get_mean_desc(mean_id):
     s_const = SCALES_CONST[mean_id // 9]
@@ -147,11 +147,32 @@ def downsample_data(data_size, downsample_frac):
         chosen[sel_ind] = True
     return chosen
 
-def get_fourier_coefs(vec_one_idc):
+def get_fourier_coeffs(vec_one_idc):
     dft = np.fft.fft(vec_one_idc)
-    dft_real = np.real(dft)
-    dft_imag = np.imag(dft)
-    return np.concatenate((dft_real[:NUM_FOURIER_COEFS], dft_imag[:NUM_FOURIER_COEFS]))
+    dft_real = np.real(dft)[:NUM_FOURIER_COEFFS]
+    dft_imag = np.imag(dft)[:NUM_FOURIER_COEFFS]
+
+    return np.concatenate((dft_real, dft_imag))
+
+
+def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
+                                  vec_der_ref_mean_corr, fluc_zero_idc, dft_coeffs):
+    inputs = np.zeros((vec_der_ref_mean_corr.size,
+                       4 + fluc_zero_idc.size + dft_coeffs.size))
+    for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
+        inputs[:, ind] = pos
+    inputs[:, 3] = vec_der_ref_mean_corr
+    inputs[:, 4:4+fluc_zero_idc.size] = fluc_zero_idc
+    inputs[:, -dft_coeffs.size:] = dft_coeffs  # pylint: disable=invalid-unary-operand-type
+    return inputs
+
+
+def get_input_names_oned_idc():
+    input_names = ['r', 'phi', 'z', 'der_corr_r', 'fluc_0d_idc']
+    input_names = input_names + ['c_real%d' % i for i in range(0, NUM_FOURIER_COEFFS)] + \
+        ['c_imag%d' % i for i in range(0, NUM_FOURIER_COEFFS)]
+    return input_names
+
 
 def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
                       opt_pred, downsample, downsample_frac):
@@ -176,7 +197,7 @@ def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
                num_random_zero_idc_a - num_mean_zero_idc_a),
               (vec_random_one_idc_c - vec_mean_one_idc_c,
                num_random_zero_idc_c - num_mean_zero_idc_c), input_z_range)
-    dft_coefs = get_fourier_coefs(vec_one_idc_fluc)
+    dft_coeffs = get_fourier_coeffs(vec_one_idc_fluc)
 
     mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
                               vec_random_corr_phi - vec_mean_corr_phi,
@@ -187,13 +208,9 @@ def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
         mat_to_vec(opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
     vec_exp_corr_fluc = vec_exp_corr_fluc[vec_sel_out_z]
 
-    inputs = np.zeros((vec_der_ref_mean_corr.size,
-                       4 + dft_coefs.size + num_zero_idc_fluc.size))
-    for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
-        inputs[:, ind] = pos[vec_sel_in_z]
-    inputs[:, 3] = vec_der_ref_mean_corr
-    inputs[:, 4:4+num_zero_idc_fluc.size] = num_zero_idc_fluc
-    inputs[:, -dft_coefs.size:] = dft_coefs # pylint: disable=invalid-unary-operand-type
+    inputs = get_input_oned_idc_single_map(vec_r_pos[vec_sel_in_z], vec_phi_pos[vec_sel_in_z],
+                                           vec_z_pos[vec_sel_in_z], vec_der_ref_mean_corr,
+                                           num_zero_idc_fluc, dft_coeffs)
 
     return inputs, vec_exp_corr_fluc
 
