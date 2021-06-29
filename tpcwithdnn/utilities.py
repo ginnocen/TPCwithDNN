@@ -19,7 +19,7 @@ def pandas_to_tree(data, file_name, tree_name):
     branch_dict = {data.columns[i]: data.dtypes[i]
                    for i in range(0, len(data.columns))}
     with uproot3.recreate(file_name) as file_output:
-        file_output[tree_name] = uproot3.newtree(branch_dict)
+        file_output[tree_name] = uproot3.newtree(branches=branch_dict, title=tree_name)
         file_output[tree_name].extend({data.columns[i]:
                                        data[data.columns[i]].to_numpy()
                                        for i in range(0, len(data.columns))})

@@ -81,16 +81,44 @@ class XGBoostOptimiser(Optimiser):
                                        list(score_weight.values())[indices_weight[i]]),
                       file=file_name)
 
-        xgboost.plot_importance(model, importance_type='total_gain', xlabel='total_gain',
-                                max_num_features=40, grid=False, show_values=False, height=0.8)
+        font_size = 5
+        num_features = 40
+        xgboost.plot_importance(model, importance_type='total_gain', xlabel='total_gain', log=True,
+                                max_num_features=num_features, grid=False, show_values=False,
+                                height=0.5)
+        plt.yticks(fontsize=font_size)
+        plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
+        for i in range(num_features):
+            plt.text(list(score_total_gain.values())[indices_total_gain[i]],
+                     num_features - 1 - 11 / num_features - i,
+                     str("%.f" % list(score_total_gain.values())[indices_total_gain[i]]),
+                     fontsize=font_size)
         plt.savefig("%s/figImportances_TotalGain_%s_nEv%d.pdf" %
                     (self.config.dirplots, self.config.suffix, self.config.train_events))
-        xgboost.plot_importance(model, importance_type='gain', xlabel='gain',
-                                max_num_features=40, grid=False, show_values=False, height=0.8)
+
+        xgboost.plot_importance(model, importance_type='gain', xlabel='gain', log=True,
+                                max_num_features=num_features, grid=False, show_values=False,
+                                height=0.5)
+        plt.yticks(fontsize=font_size)
+        plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
+        for i in range(num_features):
+            plt.text(list(score_gain.values())[indices_gain[i]],
+                     num_features - 1 - 11 / num_features - i,
+                     str("%.2f" % list(score_gain.values())[indices_gain[i]]),
+                     fontsize=font_size)
         plt.savefig("%s/figImportances_Gain_%s_nEv%d.pdf" %
                     (self.config.dirplots, self.config.suffix, self.config.train_events))
-        xgboost.plot_importance(model, importance_type='weight', xlabel='weight',
-                                max_num_features=40, grid=False, show_values=False, height=0.8)
+
+        xgboost.plot_importance(model, importance_type='weight', xlabel='weight', log=True,
+                                max_num_features=num_features, grid=False, show_values=False,
+                                height=0.5)
+        plt.yticks(fontsize=font_size)
+        plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
+        for i in range(num_features):
+            plt.text(list(score_weight.values())[indices_weight[i]],
+                     num_features - 1 - 11 / num_features - i,
+                     str("%.f" % list(score_weight.values())[indices_weight[i]]),
+                     fontsize=font_size)
         plt.savefig("%s/figImportances_Weight_%s_nEv%d.pdf" %
                     (self.config.dirplots, self.config.suffix, self.config.train_events))
 

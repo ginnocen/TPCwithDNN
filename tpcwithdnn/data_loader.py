@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring
 # pylint: disable=fixme
+import scipy.constants
 import random
 import numpy as np
 
@@ -9,6 +10,7 @@ SCALES_CONST = [0, 3, -3, 6, -6]
 SCALES_LINEAR = [0, 3, -3]
 SCALES_PARABOLIC = [0, 3, -3]
 NUM_FOURIER_COEFFS = 40
+NELE_PER_ADC = 670
 
 def get_mean_desc(mean_id):
     s_const = SCALES_CONST[mean_id // 9]
@@ -51,15 +53,23 @@ def load_data_original_idc(dirinput, event_index):
     return [np.load(f) for f in files]
 
 def filter_idc_data(data_a, data_c, z_range):
+    # TODO: Getter and application of Fourier coefficients need to be modified to handle both A and
+    # C side at the same time
+    if z_range[0] < 0 and z_range[1] > 0:
+        logger = get_logger()
+        logger.fatal("Framework not yet fully prepared to use data from both A and C side at once.")
+
     output_data = []
     for data in data_a:
         output_data.append([])
     if z_range[1] > 0:
         for ind, data in enumerate(data_a):
-            output_data[ind] = np.hstack((output_data[ind], data))
+            output_data[ind] = np.hstack((output_data[ind],
+                                          data / (scipy.constants.e * NELE_PER_ADC))) # C -> ADC
     if z_range[0] < 0:
         for ind, data in enumerate(data_c):
-            output_data[ind] = np.hstack((output_data[ind], data))
+            output_data[ind] = np.hstack((output_data[ind],
+                                          data / (scipy.constants.e * NELE_PER_ADC))) # C -> ADC
     return tuple(output_data)
 
 def load_data_original(input_data, event_index):
@@ -81,8 +91,8 @@ def load_data_original(input_data, event_index):
     return [np.load(f) for f in files]
 
 def load_data_derivatives_ref_mean_idc(dirinput, vec_sel_z):
-    mean_plus_prefix = "27-Const_6_Lin_0_Para_0"
-    mean_minus_prefix = "36-Const_-6_Lin_0_Para_0"
+    mean_plus_prefix = "9-Const_3_Lin_0_Para_0"
+    mean_minus_prefix = "18-Const_-3_Lin_0_Para_0"
     ref_mean_sc_plus_file = "%s/Mean/%s-vecMeanSC.npy" % (dirinput, mean_plus_prefix)
     ref_mean_sc_minus_file = "%s/Mean/%s-vecMeanSC.npy" % (dirinput, mean_minus_prefix)
 
@@ -133,6 +143,10 @@ def load_data_derivatives_ref_mean(inputdata, z_range):
     return arr_der_ref_mean_sc, mat_der_ref_mean_dist
 
 def mat_to_vec(opt_pred, mat_tuple):
+    if sum(opt_pred) > 1:
+        logger = get_logger()
+        logger.fatal("Framework not yet fully prepared for more than one distortion direction.")
+
     sel_opts = np.array(opt_pred) > 0
     res = tuple(np.hstack(mat[sel_opts]) for mat in mat_tuple)
     return res
@@ -156,19 +170,19 @@ def get_fourier_coeffs(vec_one_idc):
 
 
 def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                  vec_der_ref_mean_corr, fluc_zero_idc, dft_coeffs):
+                                  vec_der_ref_mean_corr, dft_coeffs):
     inputs = np.zeros((vec_der_ref_mean_corr.size,
-                       4 + fluc_zero_idc.size + dft_coeffs.size))
+                       4 + dft_coeffs.size))
     for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
         inputs[:, ind] = pos
     inputs[:, 3] = vec_der_ref_mean_corr
-    inputs[:, 4:4+fluc_zero_idc.size] = fluc_zero_idc
     inputs[:, -dft_coeffs.size:] = dft_coeffs  # pylint: disable=invalid-unary-operand-type
     return inputs
 
 
 def get_input_names_oned_idc():
-    input_names = ['r', 'phi', 'z', 'der_corr_r', 'fluc_0d_idc']
+    # input_names = ['r', 'phi', 'z', 'der_corr_r', 'fluc_0d_idc']
+    input_names = ['r', 'phi', 'z', 'der_corr_r']
     input_names = input_names + ['c_real%d' % i for i in range(0, NUM_FOURIER_COEFFS)] + \
         ['c_imag%d' % i for i in range(0, NUM_FOURIER_COEFFS)]
     return input_names
@@ -177,13 +191,14 @@ def get_input_names_oned_idc():
 def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
                       opt_pred, downsample, downsample_frac):
     [vec_r_pos, vec_phi_pos, vec_z_pos,
-     num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
+     _, _, _, _,
      vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
      *_,
      vec_mean_corr_r, vec_random_corr_r,
      vec_mean_corr_phi, vec_random_corr_phi,
      vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(dirinput, event_index)
 
+    # TODO: why not put z selection at the very beginning in load_data_original_idc?
     vec_sel_out_z = (output_z_range[0] <= vec_z_pos) & (vec_z_pos < output_z_range[1])
     vec_sel_in_z = (input_z_range[0] <= vec_z_pos) & (vec_z_pos < input_z_range[1])
 
@@ -192,11 +207,9 @@ def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
         vec_sel_in_z = vec_sel_in_z & chosen_points
         vec_sel_out_z = vec_sel_out_z & chosen_points
 
-    vec_one_idc_fluc, num_zero_idc_fluc = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
-              (vec_random_one_idc_a - vec_mean_one_idc_a,
-               num_random_zero_idc_a - num_mean_zero_idc_a),
-              (vec_random_one_idc_c - vec_mean_one_idc_c,
-               num_random_zero_idc_c - num_mean_zero_idc_c), input_z_range)
+    vec_one_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
+              (vec_random_one_idc_a - vec_mean_one_idc_a, ),
+              (vec_random_one_idc_c - vec_mean_one_idc_c, ), input_z_range)
     dft_coeffs = get_fourier_coeffs(vec_one_idc_fluc)
 
     mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
@@ -206,11 +219,13 @@ def load_data_one_idc(dirinput, event_index, input_z_range, output_z_range,
 
     vec_exp_corr_fluc, vec_der_ref_mean_corr =\
         mat_to_vec(opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
+    # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
+    # distortion direction
     vec_exp_corr_fluc = vec_exp_corr_fluc[vec_sel_out_z]
 
     inputs = get_input_oned_idc_single_map(vec_r_pos[vec_sel_in_z], vec_phi_pos[vec_sel_in_z],
                                            vec_z_pos[vec_sel_in_z], vec_der_ref_mean_corr,
-                                           num_zero_idc_fluc, dft_coeffs)
+                                           dft_coeffs)
 
     return inputs, vec_exp_corr_fluc
 
