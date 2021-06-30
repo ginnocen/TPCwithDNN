@@ -8,7 +8,7 @@ import math
 from array import array
 import numpy as np
 import pandas as pd
-import ROOT
+import ROOT  # pylint: disable=import-error
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
@@ -16,7 +16,6 @@ from tpcwithdnn.logger import get_logger
 from tpcwithdnn.utilities import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original_idc, get_input_oned_idc_single_map
 from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coeffs
-from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
 
 class IDCDataValidator():
     name = "IDC data validator"
@@ -35,40 +34,21 @@ class IDCDataValidator():
         self.config = model.config
 
     # pylint: disable=too-many-locals
-    def create_data_for_event(self, index_mean_id, irnd, column_names, vec_der_ref_mean_sc,
-                              mat_der_ref_mean_corr, loaded_model, dir_name):
+    def create_data_for_event(self, index_mean_id, irnd, column_names, loaded_model, dir_name):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
-         num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
-         vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
          vec_mean_sc, vec_random_sc,
          vec_mean_dist_r, vec_random_dist_r,
          vec_mean_dist_rphi, vec_random_dist_rphi,
          vec_mean_dist_z, vec_random_dist_z,
          vec_mean_corr_r, vec_random_corr_r,
          vec_mean_corr_rphi, vec_random_corr_rphi,
-         vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(
-             self.config.dirinput_val,
-            [irnd, self.mean_ids[index_mean_id]])
-
-        vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
-                    (vec_z_pos < self.config.input_z_range[1])
-        vec_z_pos = vec_z_pos[vec_sel_z]
-        vec_r_pos = vec_r_pos[vec_sel_z]
-        vec_phi_pos = vec_phi_pos[vec_sel_z]
-        vec_mean_sc = vec_mean_sc[vec_sel_z]
-        vec_random_sc = vec_random_sc[vec_sel_z]
-        vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
-        vec_mean_dist_rphi = vec_mean_dist_rphi[vec_sel_z]
-        vec_mean_dist_z = vec_mean_dist_z[vec_sel_z]
-        vec_random_dist_r = vec_random_dist_r[vec_sel_z]
-        vec_random_dist_rphi = vec_random_dist_rphi[vec_sel_z]
-        vec_random_dist_z = vec_random_dist_z[vec_sel_z]
-        vec_mean_corr_r = vec_mean_corr_r[vec_sel_z]
-        vec_mean_corr_rphi = vec_mean_corr_rphi[vec_sel_z]
-        vec_mean_corr_z = vec_mean_corr_z[vec_sel_z]
-        vec_random_corr_r = vec_random_corr_r[vec_sel_z]
-        vec_random_corr_rphi = vec_random_corr_rphi[vec_sel_z]
-        vec_random_corr_z = vec_random_corr_z[vec_sel_z]
+         vec_mean_corr_z, vec_random_corr_z,
+         vec_der_ref_mean_sc, mat_der_ref_mean_corr,
+         num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
+         vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c] = \
+            load_data_original_idc(self.config.dirinput_val,
+                                   [irnd, self.mean_ids[index_mean_id]],
+                                   self.config.input_z_range)
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
         mat_random_dist = np.array((vec_random_dist_r, vec_random_dist_rphi, vec_random_dist_z))
@@ -156,12 +136,6 @@ class IDCDataValidator():
     def create_data(self):
         self.config.logger.info("DataValidator::create_data")
 
-        vec_z_pos = np.load("%s/Pos/vecZPos.npy" % self.config.dirinput_val)
-        vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
-                       (vec_z_pos < self.config.input_z_range[1])
-        vec_der_ref_mean_sc, mat_der_ref_mean_corr = \
-            load_data_derivatives_ref_mean_idc(self.config.dirinput_val, vec_sel_z)
-
         dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
                                  "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
@@ -203,7 +177,7 @@ class IDCDataValidator():
         tree_idc.Branch('mean1DIDC', std_vec_mean_one_idc)
         tree_idc.Branch('coeffs', std_vec_fourier_coeffs)
 
-        for index_mean_id in range(0, len(self.mean_ids)):
+        for index_mean_id, _ in enumerate(self.mean_ids):
             counter = 0
             index_mean[0] = self.mean_ids[index_mean_id]
 
@@ -216,7 +190,6 @@ class IDCDataValidator():
                                             counter, self.mean_ids[index_mean_id], irnd)
                     vec_fluc_one_idc, vec_mean_one_idc, dft_coeffs = \
                         self.create_data_for_event(index_mean_id, irnd, column_names,
-                                                   vec_der_ref_mean_sc, mat_der_ref_mean_corr,
                                                    loaded_model, dir_name)
 
                     # fill IDC tree
@@ -241,8 +214,7 @@ class IDCDataValidator():
                                             counter, self.mean_ids[index_mean_id], irnd)
                     vec_fluc_one_idc, vec_mean_one_idc, dft_coeffs = \
                         self.create_data_for_event(index_mean_id, irnd, column_names,
-                                               vec_der_ref_mean_sc, mat_der_ref_mean_corr,
-                                               loaded_model, dir_name)
+                                                   loaded_model, dir_name)
 
                     # fill IDC tree
                     std_vec_fluc_one_idc.resize(0)

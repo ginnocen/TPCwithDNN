@@ -141,7 +141,6 @@ class XGBoostOptimiser(Optimiser):
         for indexev in self.config.partition[partition]:
             inputs_single, exp_outputs_single = load_event_idc(self.config.dirinput_train,
                                                                indexev, self.config.input_z_range,
-                                                               self.config.output_z_range,
                                                                self.config.opt_predout,
                                                                downsample,
                                                                self.config.downsample_frac)

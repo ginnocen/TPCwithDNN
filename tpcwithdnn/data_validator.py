@@ -146,7 +146,7 @@ class DataValidator:
         if os.path.isdir(dir_name):
             shutil.rmtree(dir_name)
 
-        for index_mean_id in range(0, len(self.mean_ids)):
+        for index_mean_id, _ in enumerate(self.mean_ids):
             counter = 0
             if self.config.use_partition != 'random':
                 for ind_ev in self.config.part_inds:
