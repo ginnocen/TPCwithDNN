@@ -2,6 +2,7 @@
 main script for doing tpc calibration with dnn
 """
 # pylint: disable=fixme
+# pylint: disable=too-many-statements
 import os
 import argparse
 from timeit import default_timer as timer
@@ -127,6 +128,22 @@ def main():
                         type=str, help="path to the *.yml configuration file")
     parser.add_argument("-s", "--steer", dest="steer_file", default="default.yml",
                         type=str, help="path to the *.yml steering file")
+    parser.add_argument("--dotrain", action='store_true', default=argparse.SUPPRESS,
+                        help="Perform the training")
+    parser.add_argument("--docreateinputdata", action='store_true', default=argparse.SUPPRESS,
+                        help="Create input data trees")
+    parser.add_argument("--docreatevaldata", action='store_true', default=argparse.SUPPRESS,
+                        help="Create validation data trees")
+    parser.add_argument("--ntrain1d", dest='train_events_oned', type=int, default=argparse.SUPPRESS,
+                        help="Set custom number of training events")
+    parser.add_argument("--nval", dest='val_events', type=int, default=argparse.SUPPRESS,
+                        help="Set custom number of validation events")
+    parser.add_argument("--frac", dest='downsample_fraction', type=float, default=argparse.SUPPRESS,
+                        help="Set downsampling fraction if --downsample is set")
+    parser.add_argument("--nestimators", dest='n_estimators', type=int, default=argparse.SUPPRESS,
+                        help="Set the number of trees for xgboost models")
+    parser.add_argument("--maxdepth", dest='max_depth', type=int, default=argparse.SUPPRESS,
+                        help="Set maximum depth of trees for xgboost models")
     args = parser.parse_args()
 
     logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
@@ -135,6 +152,26 @@ def main():
         default = yaml.safe_load(steer_data)
     with open(args.config_file, "r") as config_data:
         config_parameters = yaml.safe_load(config_data)
+
+    logger.info("Arguments provided: %s", str(args))
+    if "dotrain" in args:
+        default['dotrain'] = True
+    if "train_events_oned" in args:
+        config_parameters['xgboost']['train_events'] = [args.train_events_oned]
+    if "docreateinputdata" in args or "docreatevaldata" in args:
+        default['docreatevaldata'] = True
+        config_parameters['common']['validate_model'] = False
+    if "docreatevaldata" in args:
+        config_parameters['common']['validate_model'] = True
+    if "val_events" in args:
+        config_parameters['common']['val_events'] = args.val_events
+    if "downsample_fraction" in args:
+        config_parameters['xgboost']['downsample'] = True
+        config_parameters['xgboost']['downsample_fraction'] = args.downsample_fraction
+    if "n_estimators" in args:
+        config_parameters['xgboost']['params']['n_estimators'] = args.n_estimators
+    if "max_depth" in args:
+        config_parameters['xgboost']['params']['max_depth'] = args.max_depth
 
     # FIXME: Do we need these commented lines anymore?
     #dirmodel = config_parameters["common"]["dirmodel"]
