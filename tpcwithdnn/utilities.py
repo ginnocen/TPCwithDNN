@@ -1,4 +1,5 @@
 # pylint: disable=pointless-string-statement
+import re
 import pandas as pd
 import uproot3
 from RootInteractive.Tools.aliTreePlayer import LoadTrees, tree2Panda
@@ -24,7 +25,7 @@ def pandas_to_tree(data, file_name, tree_name):
                                        for i in range(0, len(data.columns))})
 
 
-def tree_to_pandas(file_name, tree_name, columns, exclude_columns=[]):  # pylint: disable=dangerous-default-value
+def tree_to_pandas_ri(file_name, tree_name, columns, exclude_columns=[]):  # pylint: disable=dangerous-default-value
     """
         Parameters
         ----------
@@ -68,4 +69,31 @@ def tree_to_pandas(file_name, tree_name, columns, exclude_columns=[]):  # pylint
         data = pd.concat([data, df_tmp], ignore_index=True)
         first_entry = first_entry + max_rows_pandas - 1
 
+    return data
+
+
+def tree_to_pandas(file_name, tree_name, columns, exclude_columns=""):  # pylint: disable=dangerous-default-value
+    """
+        Parameters
+        ----------
+        file_name : str
+            Path to root file
+        tree_name : str
+            Name of TTree
+        columns: sequence of str
+            Names of branches or aliases to be read. Can also use wildcards like ["*"]
+            for all branches or ["*fluc*"] for all branches containing the string "fluc".
+        exclude_columns: str
+            Regular expression of columns to be ignored, e.g. ".*Id".
+
+        Returns
+        --------
+        pandas.DataFrame
+            Data frame with specified columns
+    """
+    with uproot3.open(file_name) as file:
+        data = file[tree_name].pandas.df(columns)
+    if exclude_columns != "":
+        data = data.filter([col for col in data.columns
+                            if not re.compile(exclude_columns).match(col)])
     return data
