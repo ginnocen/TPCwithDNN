@@ -25,7 +25,7 @@ def pandas_to_tree(data, file_name, tree_name):
                                        for i in range(0, len(data.columns))})
 
 
-def tree_to_pandas_ri(file_name, tree_name, columns, exclude_columns=[]):  # pylint: disable=dangerous-default-value
+def tree_to_pandas_ri(file_name, tree_name, columns, exclude_columns=[], **kwargs):  # pylint: disable=dangerous-default-value
     """
         Parameters
         ----------
@@ -65,14 +65,14 @@ def tree_to_pandas_ri(file_name, tree_name, columns, exclude_columns=[]):  # pyl
     exclude_columns.append("%s*" % tree_name)
     while first_entry < n_entries:
         df_tmp = tree2Panda(tree, columns, "", exclude=exclude_columns,
-                            nEntries=max_rows_pandas - 1, firstEntry=first_entry)
+                            nEntries=max_rows_pandas - 1, firstEntry=first_entry, **kwargs)
         data = pd.concat([data, df_tmp], ignore_index=True)
         first_entry = first_entry + max_rows_pandas - 1
 
     return data
 
 
-def tree_to_pandas(file_name, tree_name, columns, exclude_columns=""):  # pylint: disable=dangerous-default-value
+def tree_to_pandas(file_name, tree_name, columns, exclude_columns="", **kwargs):  # pylint: disable=dangerous-default-value
     """
         Parameters
         ----------
@@ -92,7 +92,7 @@ def tree_to_pandas(file_name, tree_name, columns, exclude_columns=""):  # pylint
             Data frame with specified columns
     """
     with uproot3.open(file_name) as file:
-        data = file[tree_name].pandas.df(columns)
+        data = file[tree_name].pandas.df(columns, **kwargs)
     if exclude_columns != "":
         data = data.filter([col for col in data.columns
                             if not re.compile(exclude_columns).match(col)])
