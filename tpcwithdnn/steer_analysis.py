@@ -1,8 +1,7 @@
 """
 main script for doing tpc calibration with dnn
 """
-# pylint: disable=fixme
-# pylint: disable=too-many-statements
+# pylint: disable=fixme, too-many-statements, too-many-branches
 import os
 import argparse
 from timeit import default_timer as timer

@@ -11,7 +11,7 @@ import xgboost
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
-import tpcwithdnn.plot_utils as plot_utils
+from tpcwithdnn import plot_utils
 from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.data_loader import load_event_idc, get_input_names_oned_idc
@@ -125,14 +125,17 @@ class XGBoostOptimiser(Optimiser):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        pickle.dump(model, open(out_filename, "wb"), protocol=4)
+        with open(out_filename, "wb") as out_file:
+            pickle.dump(model, out_file, protocol=4)
 
 
     def load_model(self):
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        return pickle.load(open(filename, "rb"))
+        with open(filename, "rb") as file:
+            model = pickle.load(file)
+        return model
 
     def get_data_(self, partition):
         downsample = self.config.downsample if partition != "validation" else False
