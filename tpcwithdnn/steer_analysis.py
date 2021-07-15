@@ -24,6 +24,9 @@ tf.random.set_seed(SEED)
 import matplotlib
 matplotlib.use("Agg")
 
+from ROOT import PyConfig
+PyConfig.IgnoreCommandLineOptions = True
+
 import yaml
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
