@@ -2,6 +2,8 @@ common:
   dirmodel: model_idc
   dirapply: validation_idc
   dirplots: plots_idc
+  dirtree: /mnt/temp/mkabus/idc-20210508/trees
+  dirhist: /mnt/temp/mkabus/idc-20210508/histograms
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
@@ -9,8 +11,6 @@ common:
   train_bias: true
   test_bias: true
   apply_bias: false
-  diroutflattree: /mnt/temp/mkabus/idc-20210508/trees
-  dirouthistograms: /mnt/temp/mkabus/idc-20210508/histograms
   val_events: 1000 # Number of events for validation (random events for nd_validation)
   use_partition: random # Whether the validator uses only the events from given partition
                         # 'random' is for choosing events randomly

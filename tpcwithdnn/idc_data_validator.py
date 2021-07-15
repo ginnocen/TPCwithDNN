@@ -153,15 +153,15 @@ class IDCDataValidator():
         else:
             loaded_model = None
 
-        dir_name = "%s/parts" % (self.config.diroutflattree)
+        dir_name = "%s/parts" % (self.config.dirtree)
         if self.config.validate_model:
-            dir_name = "%s/%s/parts" % (self.config.diroutflattree, self.config.suffix)
+            dir_name = "%s/%s/parts" % (self.config.dirtree, self.config.suffix)
         if os.path.isdir(dir_name):
             shutil.rmtree(dir_name)
 
         # define IDC tree
         name_file_idc = "%s/treeIDCs_%s.root" \
-            % (self.config.diroutflattree, self.config.suffix_ds)
+            % (self.config.dirtree, self.config.suffix_ds)
         file_idc = ROOT.TFile(name_file_idc, "recreate")
         tree_idc = ROOT.TTree("idc", "idc")
         index_random = array('I', [0])
@@ -273,7 +273,7 @@ class IDCDataValidator():
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
         df_val = tree_to_pandas("%s/%s/treeValidation_mean%.1f_nEv%d.root"
-                                % (self.config.diroutflattree, self.config.suffix, mean_factor,
+                                % (self.config.dirtree, self.config.suffix, mean_factor,
                                    self.config.train_events),
                                 'validation', column_names)
         if diff_index != -1:
@@ -294,7 +294,7 @@ class IDCDataValidator():
                        "40,0,250," + \
                        "%d,%.4f,%.4f)" % (10, df_val['deltaSC'].min(), df_val['deltaSC'].max())
         output_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
-            % (self.config.dirouthistograms, self.config.suffix, var, mean_factor,
+            % (self.config.dirhist, self.config.suffix, var, mean_factor,
                self.config.train_events)
         with gzip.open(output_file_name, 'wb') as output_file:
             pickle.dump(makeHistogram(df_val, histo_string), output_file)
@@ -330,13 +330,13 @@ class IDCDataValidator():
         mean_factor = self.get_mean_factor_(mean_id)
 
         input_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
-            % (self.config.dirouthistograms, self.config.suffix, var, mean_factor,
+            % (self.config.dirhist, self.config.suffix, var, mean_factor,
                self.config.train_events)
         with gzip.open(input_file_name, 'rb') as input_file:
             histo = pickle.load(input_file)
 
         output_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
-            % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
+            % (self.config.dirtree, self.config.suffix, var, mean_factor,
                self.config.train_events)
         dim_var = 0
         # slices: (start_bin, stop_bin, step, grouping) for each histogram dimension
@@ -379,14 +379,14 @@ class IDCDataValidator():
         df_merged = pd.DataFrame()
         for mean_factor in mean_factors:
             input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
-                % (self.config.diroutflattree, self.config.suffix, mean_factor,
+                % (self.config.dirtree, self.config.suffix, mean_factor,
                    self.config.train_events)
             df = tree_to_pandas(input_file_name_0, 'flucSC', "*Bin*")
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
             for var in self.get_pdf_map_variables_list():
                 input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
-                    % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
+                    % (self.config.dirtree, self.config.suffix, var, mean_factor,
                        self.config.train_events)
                 df_temp = tree_to_pandas(input_file_name, var, "*", ".*Bin")
                 for col in list(df_temp.keys()):
@@ -394,7 +394,7 @@ class IDCDataValidator():
             df_merged = df_merged.append(df, ignore_index=True)
 
         output_file_name = "%s/%s/pdfmaps_nEv%d.root" \
-            % (self.config.diroutflattree, self.config.suffix, self.config.train_events)
+            % (self.config.dirtree, self.config.suffix, self.config.train_events)
         pandas_to_tree(df_merged, output_file_name, 'pdfmaps')
         self.config.logger.info("Pdf maps written to %s.", output_file_name)
 
