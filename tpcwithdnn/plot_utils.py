@@ -97,7 +97,7 @@ def plot(config):
     sel_opts_names = sel_opts_names[sel_opts == 1]
     for opt_name in sel_opts_names:
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                            (config.dirval, config.suffix,
+                            (config.dirapply, config.suffix,
                              config.train_events), "open")
         h_dist_all_events = myfile.Get("%s_all_events_%s" % (config.h_dist_name,
                                                              config.suffix))
@@ -272,7 +272,7 @@ def draw_multievent_hist(config, events_counts, func_label, hist_name, source_hi
 
         # TODO: Clean these codes
         for i, (train_events, _, _, _) in enumerate(events_counts):
-            filename = "%s/output_%s_nEv%d.root" % (config.dirval, config.suffix, train_events)
+            filename = "%s/output_%s_nEv%d.root" % (config.dirapply, config.suffix, train_events)
             config.logger.info("Reading %s...", filename)
 
             root_file = TFile.Open(filename, "read")

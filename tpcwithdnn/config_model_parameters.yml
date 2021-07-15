@@ -1,6 +1,6 @@
 common:
   dirmodel: model_idc
-  dirval: validation_idc
+  dirapply: validation_idc
   dirplots: plots_idc
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias

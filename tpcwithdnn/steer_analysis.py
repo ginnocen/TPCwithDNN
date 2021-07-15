@@ -172,30 +172,6 @@ def main():
     if "max_depth" in args:
         config_parameters['xgboost']['params']['max_depth'] = args.max_depth
 
-    # FIXME: Do we need these commented lines anymore?
-    #dirmodel = config_parameters["common"]["dirmodel"]
-    #dirval = config_parameters["common"]["dirval"]
-    #dirinput = config_parameters["common"]["dirinput"]
-
-    # NOTE
-    # checkdir and checkmakedir not yet implemented. Was previously used from
-    # machine_learning_hep package but is now the only thing required from there.
-    # Easy to adapt an implementation like that to avoid heavy dependency
-    # on machine_learning_hep
-
-    #counter = 0
-    #if dotraining is True:
-    #    counter = counter + checkdir(dirmodel)
-    #if dotesting is True:
-    #    counter = counter + checkdir(dirval)
-    #if counter < 0:
-    #    sys.exit()
-
-    #if dotraining is True:
-    #    checkmakedir(dirmodel)
-    #if dotesting is True:
-    #    checkmakedir(dirval)
-
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
                                        config_parameters[model.name]["test_events"],

@@ -51,7 +51,7 @@ class CommonSettings:
 
         # Directories
         self.dirmodel = data_param["dirmodel"]
-        self.dirval = data_param["dirval"]
+        self.dirapply = data_param["dirapply"]
         self.dirplots = data_param["dirplots"]
         self.diroutflattree = data_param["diroutflattree"]
         self.dirouthistograms = data_param["dirouthistograms"]
@@ -72,8 +72,8 @@ class CommonSettings:
 
         if not os.path.isdir(self.dirmodel):
             os.makedirs(self.dirmodel)
-        if not os.path.isdir(self.dirval):
-            os.makedirs(self.dirval)
+        if not os.path.isdir(self.dirapply):
+            os.makedirs(self.dirapply)
         if not os.path.isdir(self.dirplots):
             os.makedirs(self.dirplots)
         if not os.path.isdir(self.diroutflattree):

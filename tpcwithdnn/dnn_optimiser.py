@@ -70,7 +70,7 @@ class DnnOptimiser(Optimiser):
         loaded_model = self.load_model()
 
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                            (self.config.dirval, self.config.suffix, self.config.train_events),
+                            (self.config.dirapply, self.config.suffix, self.config.train_events),
                             "recreate")
         h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events =\
                 plot_utils.create_apply_histos(self.config, self.config.suffix, infix="all_events_")
