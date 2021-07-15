@@ -97,7 +97,7 @@ def run_model_and_val(model, dataval, default, config_parameters):
         model.plot()
     if default["dogrid"] is True:
         model.search_grid()
-    if default["docreatevaldata"] is True:
+    if default["docreatendvaldata"] is True:
         dataval.create_data()
     if default["docreatepdfmaps"] is True:
         dataval.create_nd_histograms()
