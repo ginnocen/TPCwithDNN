@@ -148,7 +148,7 @@ class DataValidator:
 
         for index_mean_id, mean_id in enumerate(self.mean_ids):
             counter = 0
-            if self.config.use_partition != 'random':
+            if self.config.nd_val_partition != 'random':
                 for ind_ev in self.config.part_inds:
                     if ind_ev[1] != mean_id:
                         continue
@@ -159,7 +159,7 @@ class DataValidator:
                                                vec_der_ref_mean_sc, mat_der_ref_mean_dist,
                                                loaded_model, dir_name)
                     counter = counter + 1
-                    if counter == self.config.val_events:
+                    if counter == self.config.nd_val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
@@ -169,7 +169,7 @@ class DataValidator:
                                                vec_der_ref_mean_sc, mat_der_ref_mean_dist,
                                                loaded_model, dir_name)
                     counter = counter + 1
-                    if counter == self.config.val_events:
+                    if counter == self.config.nd_val_events:
                         break
 
             self.config.logger.info("Trees written in %s", dir_name)

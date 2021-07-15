@@ -85,9 +85,9 @@ class CommonSettings:
 
         # Parameters for getting input indices
         self.maxrandomfiles = data_param["maxrandomfiles"]
-        self.val_events = data_param["val_events"]
+        self.nd_val_events = data_param["nd_val_events"]
         self.part_inds = None
-        self.use_partition = data_param["use_partition"]
+        self.nd_val_partition = data_param["nd_val_partition"]
         self.range_mean_index = data_param["range_mean_index"]
         self.indices_events_means = None
         self.partition = None
@@ -111,7 +111,7 @@ class CommonSettings:
             events_file = "%s/events_%s_%s_nEv%d.csv" % \
                           (self.dirmodel, part, suffix, self.train_events)
             np.savetxt(events_file, events_inds, delimiter=",", fmt="%d")
-            if self.use_partition != "random" and part == self.use_partition:
+            if self.nd_val_partition != "random" and part == self.nd_val_partition:
                 part_inds = events_inds
                 self.part_inds = part_inds #[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
                                            #  (part_inds[:,1] == 18)]

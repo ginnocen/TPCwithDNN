@@ -11,20 +11,20 @@ common:
   train_bias: true
   validation_bias: true
   apply_bias: false
-  val_events: 1000 # Number of events for validation (random events for nd_validation)
-  use_partition: random # Whether the validator uses only the events from given partition
-                        # 'random' is for choosing events randomly
-  validate_model: false
+  nd_val_events: 1000 # Number of events for validation (random events for nd_validation)
+  nd_val_partition: random # Whether the validator uses only the events from given partition
+                           # 'random' is for choosing events randomly
+  nd_validate_model: false
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
   grid_phi: 90
   grid_z: 17
   grid_r: 17
   z_range: [0, 251] # train for distortions with min <= z < max
-  opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
-  opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
-  nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
-  maxrandomfiles: 1000 #this is the total number of random events generated
+  opt_train: [1, 1] # first position = meanSC, second = SCfluctuations
+  opt_predout: [1, 0, 0] # R, Rphi, z output distorsion predictions
+  nameopt_predout: [R, RPhi, Z] # R, RPhi, Z output distorsion predictions
+  maxrandomfiles: 1000 # this is the total number of random events generated
   range_mean_index: [0, 44] # min and max index of mean SC configurations
   max_events: 45000 # number of all available events
 

@@ -180,7 +180,7 @@ class IDCDataValidator():
             counter = 0
             index_mean[0] = self.mean_ids[index_mean_id]
 
-            if self.config.use_partition != 'random':
+            if self.config.nd_val_partition != 'random':
                 for ind_ev in self.config.part_inds:
                     if ind_ev[1] != self.mean_ids[index_mean_id]:
                         continue
@@ -205,7 +205,7 @@ class IDCDataValidator():
                     tree_idc.Fill()
 
                     counter = counter + 1
-                    if counter == self.config.val_events:
+                    if counter == self.config.nd_val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
@@ -229,7 +229,7 @@ class IDCDataValidator():
                     tree_idc.Fill()
 
                     counter = counter + 1
-                    if counter == self.config.val_events:
+                    if counter == self.config.nd_val_events:
                         break
 
         tree_idc.Write()
