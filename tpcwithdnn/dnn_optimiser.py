@@ -38,7 +38,7 @@ class DnnOptimiser(Optimiser):
         model = u_net((self.config.grid_phi, self.config.grid_r, self.config.grid_z,
                        self.config.dim_input),
                       depth=self.config.depth, batchnorm=self.config.batch_normalization,
-                      pool_type=self.config.pooling, start_channels=self.config.filters,
+                      pool_type=self.config.pool_type, start_channels=self.config.filters,
                       dropout=self.config.dropout)
         if self.config.metrics == "root_mean_squared_error":
             metrics = RootMeanSquaredError()

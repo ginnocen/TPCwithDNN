@@ -132,7 +132,7 @@ class DNNSettings:
 
         # DNN config
         self.filters = data_param["filters"]
-        self.pooling = data_param["pooling"]
+        self.pool_type = data_param["pool_type"]
         self.depth = data_param["depth"]
         self.batch_normalization = data_param["batch_normalization"]
         self.dropout = data_param["dropout"]
@@ -159,8 +159,9 @@ class DNNSettings:
                        'use_scaler': self.use_scaler}
 
         self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
-                (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pooling,
-                 self.dropout, self.depth, self.batch_normalization, self.use_scaler)
+                (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pool_type,
+                 self.dropout, self.depth, 1 if self.batch_normalization else 0,
+                 1 if self.use_scaler else 0)
         self.suffix = "%s_useSCMean%d_useSCFluc%d" % \
                 (self.suffix, self.opt_train[0], self.opt_train[1])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \

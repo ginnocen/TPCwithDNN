@@ -33,9 +33,9 @@ xgboost:
   train_events: [200]
   validation_events: [100]
   apply_events: [400]
-  downsample: False
+  downsample: false
   downsample_fraction: 0.2
-  plot_train: False
+  plot_train: false
   train_plot_npoints: 10
   params:
     n_estimators: 100 # 850, 100 is better than 500
@@ -59,18 +59,18 @@ xgboost:
     base_score: 0.5
 
 corr:
-  active: False
+  active: false
 
 dnn:
-  active: False
+  active: false
   train_events: [5000] # 5000, 18000
   validation_events: [600] # 500, 1800
   apply_events: [1400] # 7000, 7000
-  use_scaler: 0
+  use_scaler: false
   filters: 4
-  pooling: 0
+  pool_type: "max" # max, avg, conv
   depth: 4
-  batch_normalization: 0
+  batch_normalization: false
   dropout: 0.0
   batch_size: 27
   shuffle: false

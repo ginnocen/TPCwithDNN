@@ -22,11 +22,11 @@ def level_block(m, dim, depth, inc_rate, activation, dropout, batchnorm, pool_ty
                 upconv, residual):
     if depth > 0:
         n = conv_block(m, dim, activation, batchnorm, residual)
-        if pool_type == 0:
+        if pool_type == "max":
             m = MaxPooling3D(pool_size=(2, 2, 2))(n)
-        elif pool_type == 1:
+        elif pool_type == "avg":
             m = AveragePooling3D(pool_size=(2, 2, 2))(n)
-        else:
+        else: # pool_type == "conv"
             Conv3D(dim, 3, strides=2, padding='same')(n)
 
         m = level_block(m, int(inc_rate*dim), depth-1, inc_rate, activation, dropout, batchnorm,
@@ -52,7 +52,7 @@ def level_block(m, dim, depth, inc_rate, activation, dropout, batchnorm, pool_ty
     return m
 
 def u_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation="relu", dropout=0.2,
-          batchnorm=False, pool_type=0, upconv=True, residual=False):
+          batchnorm=False, pool_type="max", upconv=True, residual=False):
     i = Input(shape=input_shape)
     output = level_block(i, start_channels, depth, inc_rate, activation, dropout, batchnorm,
                          pool_type, upconv, residual)
@@ -61,7 +61,7 @@ def u_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation="relu
 
 #pylint:disable=unused-argument
 def simple_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation="relu",
-               dropout=0.2, batchnorm=False, pool_type=0, upconv=True, residual=False):
+               dropout=0.2, batchnorm=False, pool_type="max", upconv=True, residual=False):
     print("SimpleNet is just an attempt. Be patient :)")
     print("the input data size is", input_shape)
     myinput = Input(shape=input_shape)
