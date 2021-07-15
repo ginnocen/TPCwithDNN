@@ -46,7 +46,7 @@ class IDCDataValidator():
          vec_der_ref_mean_sc, mat_der_ref_mean_corr,
          num_mean_zerod_idc_a, num_mean_zerod_idc_c, num_random_zerod_idc_a, num_random_zerod_idc_c,
          vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
-            load_data_original_idc(self.config.dirinput_val,
+            load_data_original_idc(self.config.dirinput_nd_val,
                                    [irnd, self.mean_ids[index_mean_id]],
                                    self.config.z_range)
 
@@ -135,7 +135,6 @@ class IDCDataValidator():
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
         self.config.logger.info("DataValidator::create_data")
-
         dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
                                  "flucSC", "meanSC", "deltaSC", "derRefMeanSC",

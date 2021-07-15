@@ -57,18 +57,18 @@ class CommonSettings:
         self.dirhist = data_param["dirhist"]
         train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
                     else data_param["dirinput_nobias"]
-        test_dir = data_param["dirinput_bias"] if data_param["test_bias"] \
+        val_dir = data_param["dirinput_bias"] if data_param["validation_bias"] \
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
         self.dirinput_train = "%s/SC-%d-%d-%d" % \
                               (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_test = "%s/SC-%d-%d-%d" % \
-                             (test_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_val = "%s/SC-%d-%d-%d" % \
+                             (val_dir, self.grid_z, self.grid_r, self.grid_phi)
         self.dirinput_apply = "%s/SC-%d-%d-%d" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_val = "%s/SC-%d-%d-%d" % \
-                            (data_param["dirinput_nobias"], self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
+                               self.grid_z, self.grid_r, self.grid_phi)
 
         if not os.path.isdir(self.dirmodel):
             os.makedirs(self.dirmodel)
@@ -93,13 +93,13 @@ class CommonSettings:
         self.partition = None
         self.total_events = 0
         self.train_events = 0
-        self.test_events = 0
+        self.val_events = 0
         self.apply_events = 0
 
-    def set_ranges_(self, ranges, suffix, total_events, train_events, test_events, apply_events):
+    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
         self.total_events = total_events
         self.train_events = train_events
-        self.test_events = test_events
+        self.val_events = val_events
         self.apply_events = apply_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
@@ -182,8 +182,8 @@ class DNNSettings:
         except AttributeError as attr_err:
             raise AttributeError("'DNNSettings' object has no attribute '%s'" % name) from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, test_events, apply_events)
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
 
 class XGBoostSettings:
     name = "xgboost"
@@ -233,5 +233,5 @@ class XGBoostSettings:
             raise AttributeError("'XGBoostSettings' object has no attribute '%s'" % name) \
                 from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, test_events, apply_events)
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)

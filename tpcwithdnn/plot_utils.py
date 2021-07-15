@@ -243,7 +243,7 @@ def add_desc_to_canvas(config, xmin, ymin, xmax, ymax, size, content):
             txt1.AddText("inputs: #it{#rho}_{SC} - <#it{#rho}_{SC}>")
     if content["add_events"]:
         txt1.AddText("#it{N}_{ev}^{training} = %d" % config.train_events)
-        # txt1.AddText("#it{N}_{ev}^{validation} = %d" % config.test_events)
+        # txt1.AddText("#it{N}_{ev}^{validation} = %d" % config.val_events)
         # txt1.AddText("#it{N}_{ev}^{apply} = %d" % config.apply_events)
     if config.name == "dnn":
         txt1.AddText("%d epochs" % config.epochs)

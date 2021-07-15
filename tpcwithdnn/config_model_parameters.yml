@@ -9,7 +9,7 @@ common:
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
   dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
   train_bias: true
-  test_bias: true
+  validation_bias: true
   apply_bias: false
   val_events: 1000 # Number of events for validation (random events for nd_validation)
   use_partition: random # Whether the validator uses only the events from given partition
@@ -31,7 +31,7 @@ common:
 xgboost:
   active: True
   train_events: [200]
-  test_events: [100]
+  validation_events: [100]
   apply_events: [400]
   downsample: False
   downsample_fraction: 0.2
@@ -64,7 +64,7 @@ corr:
 dnn:
   active: False
   train_events: [5000] # 5000, 18000
-  test_events: [600] # 500, 1800
+  validation_events: [600] # 500, 1800
   apply_events: [1400] # 7000, 7000
   use_scaler: 0
   filters: 4
