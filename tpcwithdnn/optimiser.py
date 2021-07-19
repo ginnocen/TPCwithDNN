@@ -1,7 +1,7 @@
 """Common optimiser interface, as used in steer_analysis.py"""
 # pylint: disable=missing-function-docstring, missing-class-docstring
 
-import tpcwithdnn.plot_utils as plot_utils
+from tpcwithdnn import plot_utils
 
 class Optimiser:
     def __init__(self, config):

@@ -12,7 +12,7 @@ from tensorflow.keras.utils import plot_model
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
-import tpcwithdnn.plot_utils as plot_utils
+from tpcwithdnn import plot_utils
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 from tpcwithdnn.fluctuation_data_generator import FluctuationDataGenerator
