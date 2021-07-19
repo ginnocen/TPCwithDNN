@@ -146,15 +146,15 @@ class DataValidator:
         if os.path.isdir(dir_name):
             shutil.rmtree(dir_name)
 
-        for index_mean_id, _ in enumerate(self.mean_ids):
+        for index_mean_id, mean_id in enumerate(self.mean_ids):
             counter = 0
             if self.config.use_partition != 'random':
                 for ind_ev in self.config.part_inds:
-                    if ind_ev[1] != self.mean_ids[index_mean_id]:
+                    if ind_ev[1] != mean_id:
                         continue
                     irnd = ind_ev[0]
                     self.config.logger.info("processing event: %d [%d, %d]",
-                                            counter, self.mean_ids[index_mean_id], irnd)
+                                            counter, mean_id, irnd)
                     self.create_data_for_event(index_mean_id, irnd, column_names,
                                                vec_der_ref_mean_sc, mat_der_ref_mean_dist,
                                                loaded_model, dir_name)
@@ -164,7 +164,7 @@ class DataValidator:
             else:
                 for irnd in range(self.config.maxrandomfiles):
                     self.config.logger.info("processing event: %d [%d, %d]",
-                                            counter, self.mean_ids[index_mean_id], irnd)
+                                            counter, mean_id, irnd)
                     self.create_data_for_event(index_mean_id, irnd, column_names,
                                                vec_der_ref_mean_sc, mat_der_ref_mean_dist,
                                                loaded_model, dir_name)

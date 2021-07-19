@@ -44,8 +44,8 @@ class IDCDataValidator():
          vec_mean_corr_rphi, vec_random_corr_rphi,
          vec_mean_corr_z, vec_random_corr_z,
          vec_der_ref_mean_sc, mat_der_ref_mean_corr,
-         num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
-         vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c] = \
+         num_mean_zerod_idc_a, num_mean_zerod_idc_c, num_random_zerod_idc_a, num_random_zerod_idc_c,
+         vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
             load_data_original_idc(self.config.dirinput_val,
                                    [irnd, self.mean_ids[index_mean_id]],
                                    self.config.input_z_range)
@@ -60,15 +60,15 @@ class IDCDataValidator():
 
         # TODO:
         # Proper format of position-dependent and independent data when both A and C side data used
-        data_a = (vec_mean_one_idc_a, vec_random_one_idc_a,
-                  num_mean_zero_idc_a, num_random_zero_idc_a)
-        data_c = (vec_mean_one_idc_c, vec_random_one_idc_c,
-                  num_mean_zero_idc_c, num_random_zero_idc_c)
-        vec_mean_one_idc, vec_random_one_idc, num_mean_zero_idc, num_random_zero_idc =\
+        data_a = (vec_mean_oned_idc_a, vec_random_oned_idc_a,
+                  num_mean_zerod_idc_a, num_random_zerod_idc_a)
+        data_c = (vec_mean_oned_idc_c, vec_random_oned_idc_c,
+                  num_mean_zerod_idc_c, num_random_zerod_idc_c)
+        vec_mean_oned_idc, vec_random_oned_idc, num_mean_zerod_idc, num_random_zerod_idc =\
             filter_idc_data(data_a, data_c, self.config.input_z_range) # pylint: disable=unbalanced-tuple-unpacking
-        vec_fluc_one_idc = vec_random_one_idc - vec_mean_one_idc
-        num_fluc_zero_idc = num_random_zero_idc - num_mean_zero_idc
-        dft_coeffs = get_fourier_coeffs(vec_fluc_one_idc)
+        vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
+        num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
+        dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc)
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
@@ -91,9 +91,9 @@ class IDCDataValidator():
                                       column_names[8]: np.tile((vec_delta_sc),
                                                                vec_z_pos.size).astype('float32'),
                                       column_names[9]: vec_der_ref_mean_sc.astype('float32'),
-                                      column_names[10]: np.tile((num_fluc_zero_idc),
+                                      column_names[10]: np.tile((num_fluc_zerod_idc),
                                                                 vec_z_pos.size).astype('float32'),
-                                      column_names[11]: np.tile((num_mean_zero_idc),
+                                      column_names[11]: np.tile((num_mean_zerod_idc),
                                                                 vec_z_pos.size).astype('float32'),
                                       column_names[12]: np.tile((dft_coeffs[0]),
                                                                 vec_z_pos.size).astype('float32')})
@@ -130,7 +130,7 @@ class IDCDataValidator():
 
         pandas_to_tree(df_single_map, tree_filename, 'validation')
 
-        return (vec_fluc_one_idc, vec_mean_one_idc, dft_coeffs)
+        return (vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs)
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
@@ -167,14 +167,14 @@ class IDCDataValidator():
         index_random = array('I', [0])
         index_mean = array('I', [0])
         index = array('I', [0])
-        std_vec_fluc_one_idc = ROOT.std.vector('float')()
-        std_vec_mean_one_idc = ROOT.std.vector('float')()
+        std_vec_fluc_oned_idc = ROOT.std.vector('float')()
+        std_vec_mean_oned_idc = ROOT.std.vector('float')()
         std_vec_fourier_coeffs = ROOT.std.vector('float')()
         tree_idc.Branch(column_names[0], index, '%s/i' % (column_names[0]))
         tree_idc.Branch(column_names[1], index_mean, '%s/i' % (column_names[1]))
         tree_idc.Branch(column_names[2], index_random, '%s/i' % (column_names[2]))
-        tree_idc.Branch('fluc1DIDC', std_vec_fluc_one_idc)
-        tree_idc.Branch('mean1DIDC', std_vec_mean_one_idc)
+        tree_idc.Branch('fluc1DIDC', std_vec_fluc_oned_idc)
+        tree_idc.Branch('mean1DIDC', std_vec_mean_oned_idc)
         tree_idc.Branch('coeffs', std_vec_fourier_coeffs)
 
         for index_mean_id, _ in enumerate(self.mean_ids):
@@ -188,19 +188,19 @@ class IDCDataValidator():
                     irnd = ind_ev[0]
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, self.mean_ids[index_mean_id], irnd)
-                    vec_fluc_one_idc, vec_mean_one_idc, dft_coeffs = \
+                    vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
                         self.create_data_for_event(index_mean_id, irnd, column_names,
                                                    loaded_model, dir_name)
 
                     # fill IDC tree
-                    std_vec_fluc_one_idc.resize(0)
-                    std_vec_mean_one_idc.resize(0)
+                    std_vec_fluc_oned_idc.resize(0)
+                    std_vec_mean_oned_idc.resize(0)
                     std_vec_fourier_coeffs.resize(0)
                     index_random[0] = irnd
                     index[0] = irnd + 1000 * self.mean_ids[index_mean_id]
-                    for val_fluc, val_mean in np.nditer([vec_fluc_one_idc, vec_mean_one_idc]):
-                        std_vec_fluc_one_idc.push_back(val_fluc)
-                        std_vec_mean_one_idc.push_back(val_mean)
+                    for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
+                        std_vec_fluc_oned_idc.push_back(val_fluc)
+                        std_vec_mean_oned_idc.push_back(val_mean)
                     for val_coeff in dft_coeffs:
                         std_vec_fourier_coeffs.push_back(val_coeff)
                     tree_idc.Fill()
@@ -212,19 +212,19 @@ class IDCDataValidator():
                 for irnd in range(self.config.maxrandomfiles):
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, self.mean_ids[index_mean_id], irnd)
-                    vec_fluc_one_idc, vec_mean_one_idc, dft_coeffs = \
+                    vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
                         self.create_data_for_event(index_mean_id, irnd, column_names,
                                                    loaded_model, dir_name)
 
                     # fill IDC tree
-                    std_vec_fluc_one_idc.resize(0)
-                    std_vec_mean_one_idc.resize(0)
+                    std_vec_fluc_oned_idc.resize(0)
+                    std_vec_mean_oned_idc.resize(0)
                     std_vec_fourier_coeffs.resize(0)
                     index_random[0] = irnd
                     index[0] = irnd + 1000 * self.mean_ids[index_mean_id]
-                    for val_fluc, val_mean in np.nditer([vec_fluc_one_idc, vec_mean_one_idc]):
-                        std_vec_fluc_one_idc.push_back(val_fluc)
-                        std_vec_mean_one_idc.push_back(val_mean)
+                    for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
+                        std_vec_fluc_oned_idc.push_back(val_fluc)
+                        std_vec_mean_oned_idc.push_back(val_mean)
                     for val_coeff in dft_coeffs:
                         std_vec_fourier_coeffs.push_back(val_coeff)
                     tree_idc.Fill()

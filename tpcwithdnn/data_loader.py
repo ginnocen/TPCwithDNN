@@ -165,8 +165,8 @@ def downsample_data(data_size, downsample_frac):
         chosen[sel_ind] = True
     return chosen
 
-def get_fourier_coeffs(vec_one_idc):
-    dft = np.fft.fft(vec_one_idc)
+def get_fourier_coeffs(vec_oned_idc):
+    dft = np.fft.fft(vec_oned_idc)
     dft_real = np.real(dft)[:NUM_FOURIER_COEFFS]
     dft_imag = np.imag(dft)[:NUM_FOURIER_COEFFS]
 
@@ -192,7 +192,7 @@ def get_input_names_oned_idc():
     return input_names
 
 
-def load_data_one_idc(dirinput, event_index, input_z_range,
+def load_data_oned_idc(dirinput, event_index, input_z_range,
                       opt_pred, downsample, downsample_frac):
     [vec_r_pos, vec_phi_pos, vec_z_pos,
      *_,
@@ -201,17 +201,14 @@ def load_data_one_idc(dirinput, event_index, input_z_range,
      vec_mean_corr_z, vec_random_corr_z,
      _, mat_der_ref_mean_corr,
      _, _, _, _,
-     vec_mean_one_idc_a, vec_mean_one_idc_c,
-     vec_random_one_idc_a, vec_random_one_idc_c] = load_data_original_idc(dirinput, event_index,
+     vec_mean_oned_idc_a, vec_mean_oned_idc_c,
+     vec_random_oned_idc_a, vec_random_oned_idc_c] = load_data_original_idc(dirinput, event_index,
                                                                   input_z_range)
 
-    if downsample:
-        chosen_points = downsample_data(len(vec_z_pos), downsample_frac)
-
-    vec_one_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
-              (vec_random_one_idc_a - vec_mean_one_idc_a, ),
-              (vec_random_one_idc_c - vec_mean_one_idc_c, ), input_z_range)
-    dft_coeffs = get_fourier_coeffs(vec_one_idc_fluc)
+    vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
+              (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
+              (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), input_z_range)
+    dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc)
 
     mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
                               vec_random_corr_phi - vec_mean_corr_phi,
@@ -221,11 +218,16 @@ def load_data_one_idc(dirinput, event_index, input_z_range,
         mat_to_vec(opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
     # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
     # distortion direction
-    vec_exp_corr_fluc = vec_exp_corr_fluc[chosen_points]
+    if downsample:
+        chosen_points = downsample_data(len(vec_z_pos), downsample_frac)
+        vec_r_pos = vec_r_pos[chosen_points]
+        vec_phi_pos = vec_phi_pos[chosen_points]
+        vec_z_pos = vec_z_pos[chosen_points]
+        vec_der_ref_mean_corr = vec_der_ref_mean_corr[chosen_points]
+        vec_exp_corr_fluc = vec_exp_corr_fluc[chosen_points]
 
-    inputs = get_input_oned_idc_single_map(vec_r_pos[chosen_points], vec_phi_pos[chosen_points],
-                                           vec_z_pos[chosen_points],
-                                           vec_der_ref_mean_corr[chosen_points], dft_coeffs)
+    inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
+                                           vec_der_ref_mean_corr, dft_coeffs)
 
     return inputs, vec_exp_corr_fluc
 
@@ -274,7 +276,7 @@ def load_data(input_data, event_index, input_z_range):
 def load_event_idc(dirinput, event_index, input_z_range,
                    opt_pred, downsample, downsample_frac):
 
-    inputs, exp_outputs = load_data_one_idc(dirinput, event_index, input_z_range,
+    inputs, exp_outputs = load_data_oned_idc(dirinput, event_index, input_z_range,
                                             opt_pred, downsample, downsample_frac)
 
     dim_output = sum(opt_pred)
