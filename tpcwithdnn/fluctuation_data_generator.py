@@ -10,7 +10,7 @@ from tpcwithdnn.data_loader import load_train_apply
 class FluctuationDataGenerator(tensorflow.keras.utils.Sequence):
 
     def __init__(self, list_ids, phi_slice, r_row, z_col, batch_size, shuffle,
-                 opt_train, opt_predout, input_z_range, data_dir,
+                 opt_train, opt_predout, z_range, data_dir,
                  use_scaler):
         self.list_ids = list_ids
         self.phi_slice = phi_slice
@@ -23,7 +23,7 @@ class FluctuationDataGenerator(tensorflow.keras.utils.Sequence):
         self.opt_predout = opt_predout
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
-        self.input_z_range = input_z_range
+        self.z_range = z_range
         self.data_dir = data_dir
         self.use_scaler = use_scaler
 
@@ -57,7 +57,7 @@ class FluctuationDataGenerator(tensorflow.keras.utils.Sequence):
         for i, id_num in enumerate(list_ids_temp):
             # Store
             inputs_i, exp_outputs_i = load_train_apply(self.data_dir, id_num,
-                                                       self.input_z_range,
+                                                       self.z_range,
                                                        self.r_row, self.phi_slice, self.z_col,
                                                        self.opt_train, self.opt_predout)
             inputs[i, :, :, :, :] = inputs_i

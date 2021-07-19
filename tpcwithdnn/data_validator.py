@@ -40,8 +40,8 @@ class DataValidator:
              self.config.dirinput_val,
             [irnd, self.mean_ids[index_mean_id]])
 
-        vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
-                    (vec_z_pos < self.config.input_z_range[1])
+        vec_sel_z = (self.config.z_range[0] <= vec_z_pos) &\
+                    (vec_z_pos < self.config.z_range[1])
         vec_z_pos = vec_z_pos[vec_sel_z]
         vec_r_pos = vec_r_pos[vec_sel_z]
         vec_phi_pos = vec_phi_pos[vec_sel_z]
@@ -124,7 +124,7 @@ class DataValidator:
         self.config.logger.info("DataValidator::create_data")
 
         vec_der_ref_mean_sc, mat_der_ref_mean_dist = \
-            load_data_derivatives_ref_mean(self.config.dirinput_val, self.config.input_z_range)
+            load_data_derivatives_ref_mean(self.config.dirinput_val, self.config.z_range)
 
         dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",

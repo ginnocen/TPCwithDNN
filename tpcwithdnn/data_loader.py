@@ -19,7 +19,7 @@ def get_mean_desc(mean_id):
     return "%d-Const_%d_Lin_%d_Para_%d" % (mean_id, s_const, s_lin, s_para)
 
 
-def load_data_original_idc(dirinput, event_index, input_z_range):
+def load_data_original_idc(dirinput, event_index, z_range):
     """
     Load IDC data.
     """
@@ -52,7 +52,7 @@ def load_data_original_idc(dirinput, event_index, input_z_range):
              "%s/Random/%d-vecRandomOneDIDCC.npy" % (dirinput, event_index[0])]
 
     vec_z_pos_tmp = np.load(files[2])
-    vec_sel_in_z = (input_z_range[0] <= vec_z_pos_tmp) & (vec_z_pos_tmp < input_z_range[1])
+    vec_sel_in_z = (z_range[0] <= vec_z_pos_tmp) & (vec_z_pos_tmp < z_range[1])
 
     mean_plus_prefix = "9-Const_3_Lin_0_Para_0"
     mean_minus_prefix = "18-Const_-3_Lin_0_Para_0"
@@ -192,7 +192,7 @@ def get_input_names_oned_idc():
     return input_names
 
 
-def load_data_oned_idc(dirinput, event_index, input_z_range,
+def load_data_oned_idc(dirinput, event_index, z_range,
                       opt_pred, downsample, downsample_frac):
     [vec_r_pos, vec_phi_pos, vec_z_pos,
      *_,
@@ -203,11 +203,11 @@ def load_data_oned_idc(dirinput, event_index, input_z_range,
      _, _, _, _,
      vec_mean_oned_idc_a, vec_mean_oned_idc_c,
      vec_random_oned_idc_a, vec_random_oned_idc_c] = load_data_original_idc(dirinput, event_index,
-                                                                  input_z_range)
+                                                                  z_range)
 
     vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
               (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
-              (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), input_z_range)
+              (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), z_range)
     dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc)
 
     mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
@@ -232,7 +232,7 @@ def load_data_oned_idc(dirinput, event_index, input_z_range,
     return inputs, vec_exp_corr_fluc
 
 
-def load_data(input_data, event_index, input_z_range):
+def load_data(input_data, event_index, z_range):
 
     """ Here we define the functionalties to load the files from the input
     directory which is set in the database. Here below the description of
@@ -259,7 +259,7 @@ def load_data(input_data, event_index, input_z_range):
      vec_mean_dist_rphi, vec_random_dist_rphi,
      vec_mean_dist_z, vec_random_dist_z] = load_data_original(input_data, event_index)
 
-    vec_sel_in_z = (input_z_range[0] <= vec_z_pos) & (vec_z_pos < input_z_range[1])
+    vec_sel_in_z = (z_range[0] <= vec_z_pos) & (vec_z_pos < z_range[1])
 
     vec_mean_sc = vec_mean_sc[vec_sel_in_z]
     vec_fluctuation_sc = vec_random_sc[vec_sel_in_z] - vec_mean_sc
@@ -273,10 +273,10 @@ def load_data(input_data, event_index, input_z_range):
             vec_fluctuation_dist_rphi, vec_fluctuation_dist_z]
 
 
-def load_event_idc(dirinput, event_index, input_z_range,
+def load_event_idc(dirinput, event_index, z_range,
                    opt_pred, downsample, downsample_frac):
 
-    inputs, exp_outputs = load_data_oned_idc(dirinput, event_index, input_z_range,
+    inputs, exp_outputs = load_data_oned_idc(dirinput, event_index, z_range,
                                             opt_pred, downsample, downsample_frac)
 
     dim_output = sum(opt_pred)
@@ -290,12 +290,12 @@ def load_event_idc(dirinput, event_index, input_z_range,
     return inputs, exp_outputs
 
 
-def load_train_apply(input_data, event_index, input_z_range,
+def load_train_apply(input_data, event_index, z_range,
                      grid_r, grid_rphi, grid_z, opt_train, opt_pred):
 
     [vec_mean_sc, vec_fluctuation_sc, vec_fluctuation_dist_r,
      vec_fluctuation_dist_rphi, vec_fluctuation_dist_z] = \
-        load_data(input_data, event_index, input_z_range)
+        load_data(input_data, event_index, z_range)
     dim_input = sum(opt_train)
     dim_output = sum(opt_pred)
     inputs = np.empty((grid_rphi, grid_r, grid_z, dim_input))

@@ -48,7 +48,7 @@ class IDCDataValidator():
          vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
             load_data_original_idc(self.config.dirinput_val,
                                    [irnd, self.mean_ids[index_mean_id]],
-                                   self.config.input_z_range)
+                                   self.config.z_range)
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
         mat_random_dist = np.array((vec_random_dist_r, vec_random_dist_rphi, vec_random_dist_z))
@@ -65,7 +65,7 @@ class IDCDataValidator():
         data_c = (vec_mean_oned_idc_c, vec_random_oned_idc_c,
                   num_mean_zerod_idc_c, num_random_zerod_idc_c)
         vec_mean_oned_idc, vec_random_oned_idc, num_mean_zerod_idc, num_random_zerod_idc =\
-            filter_idc_data(data_a, data_c, self.config.input_z_range) # pylint: disable=unbalanced-tuple-unpacking
+            filter_idc_data(data_a, data_c, self.config.z_range) # pylint: disable=unbalanced-tuple-unpacking
         vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
         num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
         dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc)

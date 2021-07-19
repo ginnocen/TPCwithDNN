@@ -35,7 +35,7 @@ class CommonSettings:
         self.grid_z = data_param["grid_z"]
         self.grid_r = data_param["grid_r"]
 
-        self.input_z_range = data_param["input_z_range"]
+        self.z_range = data_param["z_range"]
         self.opt_train = data_param["opt_train"]
         self.opt_predout = data_param["opt_predout"]
         self.nameopt_predout = data_param["nameopt_predout"]
@@ -155,7 +155,7 @@ class DNNSettings:
                        'shuffle': self.shuffle,
                        'opt_train' : self.opt_train,
                        'opt_predout' : self.opt_predout,
-                       'input_z_range' : self.input_z_range,
+                       'z_range' : self.z_range,
                        'use_scaler': self.use_scaler}
 
         self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
@@ -166,7 +166,7 @@ class DNNSettings:
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
-                (self.suffix, self.input_z_range[0], self.input_z_range[1])
+                (self.suffix, self.z_range[0], self.z_range[1])
 
         if not os.path.isdir("%s/%s" % (self.diroutflattree, self.suffix)):
             os.makedirs("%s/%s" % (self.diroutflattree, self.suffix))
@@ -216,7 +216,7 @@ class XGBoostSettings:
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
-                (self.suffix, self.input_z_range[0], self.input_z_range[1])
+                (self.suffix, self.z_range[0], self.z_range[1])
 
         if not os.path.isdir("%s/%s" % (self.diroutflattree, self.suffix)):
             os.makedirs("%s/%s" % (self.diroutflattree, self.suffix))
