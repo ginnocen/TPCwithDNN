@@ -77,8 +77,7 @@ class DnnOptimiser(Optimiser):
 
         for indexev in self.config.partition['apply']:
             inputs_, exp_outputs_ = load_train_apply(self.config.dirinput_apply, indexev,
-                                                     self.config.input_z_range,
-                                                     self.config.output_z_range,
+                                                     self.config.z_range,
                                                      self.config.grid_r, self.config.grid_phi,
                                                      self.config.grid_z,
                                                      self.config.opt_train,

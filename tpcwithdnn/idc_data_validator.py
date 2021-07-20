@@ -1,24 +1,26 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=too-many-statements, fixme
 import os
+import shutil
 import gzip
 import pickle
 import math
+from array import array
 import numpy as np
 import pandas as pd
-from root_pandas import to_root, read_root  # pylint: disable=import-error, unused-import
+import ROOT  # pylint: disable=import-error
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.data_loader import load_data_original_idc
-from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coefs
-from tpcwithdnn.data_loader import load_data_derivatives_ref_mean_idc
+from tpcwithdnn.utilities import pandas_to_tree, tree_to_pandas
+from tpcwithdnn.data_loader import load_data_original_idc, get_input_oned_idc_single_map
+from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coeffs
 
 class IDCDataValidator():
     name = "IDC data validator"
-    mean_ids = (0, 27, 36)
-    mean_factors = (0, 1.06, 0.94)
+    mean_ids = (0, 9, 18, 27, 36)
+    mean_factors = (1.00, 1.03, 0.97, 1.06, 0.94)
 
     def __init__(self):
         super().__init__()
@@ -32,130 +34,112 @@ class IDCDataValidator():
         self.config = model.config
 
     # pylint: disable=too-many-locals
-    def create_data_for_event(self, imean, irnd, column_names, vec_der_ref_mean_sc,
-                              mat_der_ref_mean_corr, loaded_model, tree_filename):
+    def create_data_for_event(self, index_mean_id, irnd, column_names, loaded_model, dir_name):
         [vec_r_pos, vec_phi_pos, vec_z_pos,
-         num_mean_zero_idc_a, num_mean_zero_idc_c, num_random_zero_idc_a, num_random_zero_idc_c,
-         vec_mean_one_idc_a, vec_mean_one_idc_c, vec_random_one_idc_a, vec_random_one_idc_c,
          vec_mean_sc, vec_random_sc,
          vec_mean_dist_r, vec_random_dist_r,
          vec_mean_dist_rphi, vec_random_dist_rphi,
          vec_mean_dist_z, vec_random_dist_z,
          vec_mean_corr_r, vec_random_corr_r,
          vec_mean_corr_rphi, vec_random_corr_rphi,
-         vec_mean_corr_z, vec_random_corr_z] = load_data_original_idc(self.config.dirinput_val,
-                                                                    [irnd, imean])
-
-        vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
-                    (vec_z_pos < self.config.input_z_range[1])
-        vec_z_pos = vec_z_pos[vec_sel_z]
-        vec_r_pos = vec_r_pos[vec_sel_z]
-        vec_phi_pos = vec_phi_pos[vec_sel_z]
-        vec_mean_sc = vec_mean_sc[vec_sel_z]
-        vec_random_sc = vec_random_sc[vec_sel_z]
-        vec_mean_dist_r = vec_mean_dist_r[vec_sel_z]
-        vec_mean_dist_rphi = vec_mean_dist_rphi[vec_sel_z]
-        vec_mean_dist_z = vec_mean_dist_z[vec_sel_z]
-        vec_random_dist_r = vec_random_dist_r[vec_sel_z]
-        vec_random_dist_rphi = vec_random_dist_rphi[vec_sel_z]
-        vec_random_dist_z = vec_random_dist_z[vec_sel_z]
-        vec_mean_corr_r = vec_mean_corr_r[vec_sel_z]
-        vec_mean_corr_rphi = vec_mean_corr_rphi[vec_sel_z]
-        vec_mean_corr_z = vec_mean_corr_z[vec_sel_z]
-        vec_random_corr_r = vec_random_corr_r[vec_sel_z]
-        vec_random_corr_rphi = vec_random_corr_rphi[vec_sel_z]
-        vec_random_corr_z = vec_random_corr_z[vec_sel_z]
+         vec_mean_corr_z, vec_random_corr_z,
+         vec_der_ref_mean_sc, mat_der_ref_mean_corr,
+         num_mean_zerod_idc_a, num_mean_zerod_idc_c, num_random_zerod_idc_a, num_random_zerod_idc_c,
+         vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
+            load_data_original_idc(self.config.dirinput_val,
+                                   [irnd, self.mean_ids[index_mean_id]],
+                                   self.config.z_range)
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
         mat_random_dist = np.array((vec_random_dist_r, vec_random_dist_rphi, vec_random_dist_z))
-        mat_fluc_dist = mat_mean_dist - mat_random_dist
+        mat_fluc_dist = mat_random_dist - mat_mean_dist
 
         mat_mean_corr = np.array((vec_mean_corr_r, vec_mean_corr_rphi, vec_mean_corr_z))
         mat_random_corr = np.array((vec_random_corr_r, vec_random_corr_rphi, vec_random_corr_z))
-        mat_fluc_corr = mat_mean_corr - mat_random_corr
+        mat_fluc_corr = mat_random_corr - mat_mean_corr
 
-        # TODO: How to save 1D IDCs together with the rest?
-        # The arrays need to be of the same length as the other vectors.
-        data_a = (vec_mean_one_idc_a, vec_random_one_idc_a,
-                  num_mean_zero_idc_a, num_random_zero_idc_a)
-        data_c = (vec_mean_one_idc_c, vec_random_one_idc_c,
-                  num_mean_zero_idc_c, num_random_zero_idc_c)
-        mean_one_idc, random_one_idc, mean_zero_idc, random_zero_idc =\
-            filter_idc_data(data_a, data_c, self.config.input_z_range) # pylint: disable=unbalanced-tuple-unpacking
+        # TODO:
+        # Proper format of position-dependent and independent data when both A and C side data used
+        data_a = (vec_mean_oned_idc_a, vec_random_oned_idc_a,
+                  num_mean_zerod_idc_a, num_random_zerod_idc_a)
+        data_c = (vec_mean_oned_idc_c, vec_random_oned_idc_c,
+                  num_mean_zerod_idc_c, num_random_zerod_idc_c)
+        vec_mean_oned_idc, vec_random_oned_idc, num_mean_zerod_idc, num_random_zerod_idc =\
+            filter_idc_data(data_a, data_c, self.config.z_range) # pylint: disable=unbalanced-tuple-unpacking
+        vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
+        num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
+        dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc)
 
-        vec_mean_zero_idc = np.empty(vec_z_pos.size)
-        vec_mean_zero_idc[:] = np.tile(mean_zero_idc, vec_z_pos.size // mean_zero_idc.size)
-        vec_fluc_zero_idc = np.empty(vec_z_pos.size)
-        vec_fluc_zero_idc[:] = np.tile(random_zero_idc - mean_zero_idc,
-                                         vec_z_pos.size // mean_zero_idc.size)
+        vec_index_random = np.empty(vec_z_pos.size)
+        vec_index_random[:] = irnd
+        vec_index_mean = np.empty(vec_z_pos.size)
+        vec_index_mean[:] = self.mean_ids[index_mean_id]
+        vec_index = np.empty(vec_z_pos.size)
+        vec_index[:] = irnd + 1000 * self.mean_ids[index_mean_id]
 
-        vec_mean_one_idc = np.empty(vec_z_pos.size)
-        vec_mean_one_idc[:mean_one_idc.size] = mean_one_idc
-        vec_mean_one_idc[mean_one_idc.size:] = 0.
-        vec_fluc_one_idc = np.empty(vec_z_pos.size)
-        fluc_one_idc = random_one_idc - mean_one_idc
-        vec_fluc_one_idc[:random_one_idc.size] = fluc_one_idc
-        vec_fluc_one_idc[random_one_idc.size:] = 0.
+        vec_fluc_sc = vec_random_sc - vec_mean_sc
+        vec_delta_sc = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
-        vec_fluc_sc = vec_mean_sc - vec_random_sc
-        delta_sc = sum(vec_fluc_sc) / sum(vec_mean_sc)
+        df_single_map = pd.DataFrame({column_names[0]: vec_index.astype('int32'),
+                                      column_names[1]: vec_index_mean.astype('int32'),
+                                      column_names[2]: vec_index_random.astype('int32'),
+                                      column_names[3]: vec_r_pos.astype('float32'),
+                                      column_names[4]: vec_phi_pos.astype('float32'),
+                                      column_names[5]: vec_z_pos.astype('float32'),
+                                      column_names[6]: vec_fluc_sc.astype('float32'),
+                                      column_names[7]: vec_mean_sc.astype('float32'),
+                                      column_names[8]: np.tile((vec_delta_sc),
+                                                               vec_z_pos.size).astype('float32'),
+                                      column_names[9]: vec_der_ref_mean_sc.astype('float32'),
+                                      column_names[10]: np.tile((num_fluc_zerod_idc),
+                                                                vec_z_pos.size).astype('float32'),
+                                      column_names[11]: np.tile((num_mean_zerod_idc),
+                                                                vec_z_pos.size).astype('float32'),
+                                      column_names[12]: np.tile((dft_coeffs[0]),
+                                                                vec_z_pos.size).astype('float32')})
 
-        delta_one_idc = sum(vec_fluc_one_idc) / sum(vec_mean_one_idc)
-
-        df_single_map = pd.DataFrame({column_names[0] : irnd + 1000 * imean,
-                                      column_names[1] : imean,
-                                      column_names[2] : irnd,
-                                      column_names[3] : vec_r_pos,
-                                      column_names[4] : vec_phi_pos,
-                                      column_names[5] : vec_z_pos,
-                                      column_names[6] : vec_fluc_sc,
-                                      column_names[7] : vec_mean_sc,
-                                      column_names[8] : delta_sc,
-                                      column_names[9] : vec_der_ref_mean_sc,
-                                      column_names[10] : vec_fluc_one_idc,
-                                      column_names[11] : vec_mean_one_idc,
-                                      column_names[12] : delta_one_idc,
-                                      column_names[13] : vec_fluc_zero_idc,
-                                      column_names[14] : vec_mean_zero_idc})
-
-        for ind_dist in range(3):
-            df_single_map[column_names[15 + ind_dist * 5]] = mat_fluc_dist[ind_dist, :]
-            df_single_map[column_names[16 + ind_dist * 5]] = mat_mean_dist[ind_dist, :]
-            df_single_map[column_names[17 + ind_dist * 5]] = \
-                mat_der_ref_mean_corr[ind_dist, :]
-            df_single_map[column_names[18 + ind_dist * 5]] = mat_fluc_corr[ind_dist, :]
-            df_single_map[column_names[19 + ind_dist * 5]] = mat_mean_corr[ind_dist, :]
+        n_col_tmp = len(df_single_map.columns)
+        for ind_dist in range(len(self.config.nameopt_predout)):
+            df_single_map[column_names[n_col_tmp + ind_dist * 5]] = \
+                mat_fluc_dist[ind_dist, :].astype('float32')
+            df_single_map[column_names[n_col_tmp + 1 + ind_dist * 5]] = \
+                mat_mean_dist[ind_dist, :].astype('float32')
+            df_single_map[column_names[n_col_tmp + 2 + ind_dist * 5]] = \
+                mat_der_ref_mean_corr[ind_dist, :].astype('float32')
+            df_single_map[column_names[n_col_tmp + 3 + ind_dist * 5]] = \
+                mat_fluc_corr[ind_dist, :].astype('float32')
+            df_single_map[column_names[n_col_tmp + 4 + ind_dist * 5]] = \
+                mat_mean_corr[ind_dist, :].astype('float32')
 
         if self.config.validate_model:
-            fluc_zero_idc = random_zero_idc - mean_zero_idc
             vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
-            dft_coefs = get_fourier_coefs(fluc_one_idc)
-            inputs = np.zeros((vec_der_ref_mean_corr.size,
-                               4 + dft_coefs.size + fluc_zero_idc.size))
-            for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
-                inputs[:, ind] = pos
-            inputs[:, 3] = vec_der_ref_mean_corr
-            inputs[:, 4:4+fluc_zero_idc.size] = fluc_zero_idc
-            inputs[:, -dft_coefs.size:] = dft_coefs # pylint: disable=invalid-unary-operand-type
-            df_single_map[column_names[30]] = loaded_model.predict(inputs)
+            inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
+                                                   vec_der_ref_mean_corr, dft_coeffs)
+            df_single_map[column_names[len(df_single_map.columns)]] = \
+                loaded_model.predict(inputs).astype('float32')
 
-        df_single_map.to_root(tree_filename, key="validation", mode="a", store_index=False)
+        tree_filename = "%s/%d/treeInput_mean%.2f_%s.root" \
+            % (dir_name, irnd, self.mean_factors[index_mean_id], self.config.suffix_ds)
+        if self.config.validate_model:
+            tree_filename = "%s/%d/treeValidation_mean%.2f_nEv%d.root" \
+                            % (dir_name, irnd, self.mean_factors[index_mean_id],
+                            self.config.train_events)
+
+        if not os.path.isdir("%s/%d" % (dir_name, irnd)):
+            os.makedirs("%s/%d" % (dir_name, irnd))
+
+        pandas_to_tree(df_single_map, tree_filename, 'validation')
+
+        return (vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs)
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
         self.config.logger.info("DataValidator::create_data")
 
-        vec_z_pos = np.load("%s/Pos/vecZPos.npy" % self.config.dirinput_val)
-        vec_sel_z = (self.config.input_z_range[0] <= vec_z_pos) &\
-                       (vec_z_pos < self.config.input_z_range[1])
-        vec_der_ref_mean_sc, mat_der_ref_mean_corr = \
-            load_data_derivatives_ref_mean_idc(self.config.dirinput_val, vec_sel_z)
-
         dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
                                  "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
-                                 "fluc1DIDC", "mean1DIDC", "delta1DIDC",
-                                 "fluc0DIDC", "mean0DIDC"])
+                                 "fluc0DIDC", "mean0DIDC", "c0"])
         for dist_name in self.config.nameopt_predout:
             column_names = np.append(column_names, ["flucDist" + dist_name,
                                                     "meanDist" + dist_name,
@@ -165,43 +149,94 @@ class IDCDataValidator():
         if self.config.validate_model:
             loaded_model = self.model.load_model()
             for dist_name in dist_names:
-                column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
+                column_names = np.append(column_names, ["flucCorr" + dist_name + "Pred"])
         else:
             loaded_model = None
 
-        for imean, mean_factor in zip(self.mean_ids, self.mean_factors):
-            tree_filename = "%s/treeInput_mean%.2f_%s.root" \
-                            % (self.config.diroutflattree, mean_factor, self.config.suffix_ds)
-            if self.config.validate_model:
-                tree_filename = "%s/%s/treeValidation_mean%.1f_nEv%d.root" \
-                                % (self.config.diroutflattree, self.config.suffix, mean_factor,
-                                   self.config.train_events)
+        dir_name = "%s/parts" % (self.config.diroutflattree)
+        if self.config.validate_model:
+            dir_name = "%s/%s/parts" % (self.config.diroutflattree, self.config.suffix)
+        if os.path.isdir(dir_name):
+            shutil.rmtree(dir_name)
 
-            if os.path.isfile(tree_filename):
-                os.remove(tree_filename)
+        # define IDC tree
+        name_file_idc = "%s/treeIDCs_%s.root" \
+            % (self.config.diroutflattree, self.config.suffix_ds)
+        file_idc = ROOT.TFile(name_file_idc, "recreate")
+        tree_idc = ROOT.TTree("idc", "idc")
+        index_random = array('I', [0])
+        index_mean = array('I', [0])
+        index = array('I', [0])
+        std_vec_fluc_oned_idc = ROOT.std.vector('float')()
+        std_vec_mean_oned_idc = ROOT.std.vector('float')()
+        std_vec_fourier_coeffs = ROOT.std.vector('float')()
+        tree_idc.Branch(column_names[0], index, '%s/i' % (column_names[0]))
+        tree_idc.Branch(column_names[1], index_mean, '%s/i' % (column_names[1]))
+        tree_idc.Branch(column_names[2], index_random, '%s/i' % (column_names[2]))
+        tree_idc.Branch('fluc1DIDC', std_vec_fluc_oned_idc)
+        tree_idc.Branch('mean1DIDC', std_vec_mean_oned_idc)
+        tree_idc.Branch('coeffs', std_vec_fourier_coeffs)
 
+        for index_mean_id, _ in enumerate(self.mean_ids):
             counter = 0
+            index_mean[0] = self.mean_ids[index_mean_id]
+
             if self.config.use_partition != 'random':
                 for ind_ev in self.config.part_inds:
-                    if ind_ev[1] != imean:
+                    if ind_ev[1] != self.mean_ids[index_mean_id]:
                         continue
                     irnd = ind_ev[0]
-                    self.config.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
-                    self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_corr, loaded_model, tree_filename)
+                    self.config.logger.info("processing event: %d [%d, %d]",
+                                            counter, self.mean_ids[index_mean_id], irnd)
+                    vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
+                        self.create_data_for_event(index_mean_id, irnd, column_names,
+                                                   loaded_model, dir_name)
+
+                    # fill IDC tree
+                    std_vec_fluc_oned_idc.resize(0)
+                    std_vec_mean_oned_idc.resize(0)
+                    std_vec_fourier_coeffs.resize(0)
+                    index_random[0] = irnd
+                    index[0] = irnd + 1000 * self.mean_ids[index_mean_id]
+                    for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
+                        std_vec_fluc_oned_idc.push_back(val_fluc)
+                        std_vec_mean_oned_idc.push_back(val_mean)
+                    for val_coeff in dft_coeffs:
+                        std_vec_fourier_coeffs.push_back(val_coeff)
+                    tree_idc.Fill()
+
                     counter = counter + 1
                     if counter == self.config.val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
-                    self.config.logger.info("processing event: %d [%d, %d]", counter, imean, irnd)
-                    self.create_data_for_event(imean, irnd, column_names, vec_der_ref_mean_sc,
-                                               mat_der_ref_mean_corr, loaded_model, tree_filename)
+                    self.config.logger.info("processing event: %d [%d, %d]",
+                                            counter, self.mean_ids[index_mean_id], irnd)
+                    vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
+                        self.create_data_for_event(index_mean_id, irnd, column_names,
+                                                   loaded_model, dir_name)
+
+                    # fill IDC tree
+                    std_vec_fluc_oned_idc.resize(0)
+                    std_vec_mean_oned_idc.resize(0)
+                    std_vec_fourier_coeffs.resize(0)
+                    index_random[0] = irnd
+                    index[0] = irnd + 1000 * self.mean_ids[index_mean_id]
+                    for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
+                        std_vec_fluc_oned_idc.push_back(val_fluc)
+                        std_vec_mean_oned_idc.push_back(val_mean)
+                    for val_coeff in dft_coeffs:
+                        std_vec_fourier_coeffs.push_back(val_coeff)
+                    tree_idc.Fill()
+
                     counter = counter + 1
                     if counter == self.config.val_events:
                         break
 
-            self.config.logger.info("Tree written in %s", tree_filename)
+        tree_idc.Write()
+        file_idc.Close()
+
+        self.config.logger.info("Trees written in %s", dir_name)
 
     def get_pdf_map_variables_list(self):
         dist_names_list = np.array(self.config.nameopt_predout) \
@@ -237,10 +272,10 @@ class IDCDataValidator():
         else:
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
-        df_val = read_root("%s/%s/treeValidation_mean%.1f_nEv%d.root"
-                           % (self.config.diroutflattree, self.config.suffix, mean_factor,
-                              self.config.train_events),
-                           key='validation', columns=column_names)
+        df_val = tree_to_pandas("%s/%s/treeValidation_mean%.1f_nEv%d.root"
+                                % (self.config.diroutflattree, self.config.suffix, mean_factor,
+                                   self.config.train_events),
+                                'validation', column_names)
         if diff_index != -1:
             df_val[var] = \
                 df_val[var[:diff_index] + "Pred"] - df_val[var[:diff_index]]
@@ -311,9 +346,7 @@ class IDCDataValidator():
                   (0, histo['H'].shape[3], 1, 0),
                   (0, histo['H'].shape[4], 1, 0))
         df_pdf_map = makePdfMaps(histo, slices, dim_var)
-        # set the index name to retrieve the name of the variable of interest later
-        df_pdf_map.index.name = histo['name']
-        df_pdf_map.to_root(output_file_name, key=histo['name'], mode='w', store_index=True)
+        pandas_to_tree(df_pdf_map, output_file_name, histo['name'])
         self.config.logger.info("Pdf map %s written to %s.", histo['name'], output_file_name)
 
 
@@ -348,21 +381,21 @@ class IDCDataValidator():
             input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
                 % (self.config.diroutflattree, self.config.suffix, mean_factor,
                    self.config.train_events)
-            df = read_root(input_file_name_0, columns="*Bin*")
+            df = tree_to_pandas(input_file_name_0, 'flucSC', "*Bin*")
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
             for var in self.get_pdf_map_variables_list():
                 input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
                     % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
                        self.config.train_events)
-                df_temp = read_root(input_file_name, ignore="*Bin*")
+                df_temp = tree_to_pandas(input_file_name, var, "*", ".*Bin")
                 for col in list(df_temp.keys()):
                     df[var + '_' + col] = df_temp[col]
             df_merged = df_merged.append(df, ignore_index=True)
 
         output_file_name = "%s/%s/pdfmaps_nEv%d.root" \
             % (self.config.diroutflattree, self.config.suffix, self.config.train_events)
-        df_merged.to_root(output_file_name, key='pdfmaps', mode='w', store_index=False)
+        pandas_to_tree(df_merged, output_file_name, 'pdfmaps')
         self.config.logger.info("Pdf maps written to %s.", output_file_name)
 
     def merge_pdf_maps_meanid(self, mean_id):

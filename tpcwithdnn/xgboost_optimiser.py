@@ -7,13 +7,14 @@ import matplotlib.pyplot as plt
 from xgboost import XGBRFRegressor
 
 from sklearn.metrics import mean_squared_error
+import xgboost
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
 from tpcwithdnn import plot_utils
 from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
 from tpcwithdnn.optimiser import Optimiser
-from tpcwithdnn.data_loader import load_event_idc
+from tpcwithdnn.data_loader import load_event_idc, get_input_names_oned_idc
 
 class XGBoostOptimiser(Optimiser):
     name = "xgboost"
@@ -59,18 +60,62 @@ class XGBoostOptimiser(Optimiser):
         raise NotImplementedError("Bayes optimise method not implemented yet")
 
     def save_model(self, model):
+        model.get_booster().feature_names = get_input_names_oned_idc()
+        out_filename_feature_importance = "%s/feature_importance_%s_nEv%d.txt" %\
+            (self.config.dirmodel, self.config.suffix, self.config.train_events)
+        score_total_gain = model.get_booster().get_score(importance_type='total_gain')
+        indices_total_gain = np.flip(np.argsort(list(score_total_gain.values())))
+        score_gain = model.get_booster().get_score(importance_type='gain')
+        indices_gain = np.flip(np.argsort(list(score_gain.values())))
+        score_weight = model.get_booster().get_score(importance_type='weight')
+        indices_weight = np.flip(np.argsort(list(score_weight.values())))
+        with open(out_filename_feature_importance, 'w') as file_name:
+            print("Feature importances", file=file_name)
+            print("Total gain   -   Gain   -   Weight", file=file_name)
+            for index_total_gain, index_gain, index_weight in zip(indices_total_gain,
+                                                                  indices_gain,
+                                                                  indices_weight):
+                print("%s: %.4f   -" % (list(score_total_gain.keys())[index_total_gain],
+                                        list(score_total_gain.values())[index_total_gain]),
+                      "   %s: %.4f   -" % (list(score_gain.keys())[index_gain],
+                                           list(score_gain.values())[index_gain]),
+                      "   %s: %.4f" % (list(score_weight.keys())[index_weight],
+                                       list(score_weight.values())[index_weight]),
+                      file=file_name)
+
+        font_size = 5
+        num_features = 40
+        for importance_type, score, indices in zip(['total_gain', 'gain', 'weight'],
+                                        [score_total_gain, score_gain, score_weight],
+                                        [indices_total_gain, indices_gain, indices_weight]):
+            xgboost.plot_importance(model, importance_type=importance_type, xlabel=importance_type,
+                                    log=True, max_num_features=num_features, grid=False,
+                                    show_values=False, height=0.5)
+            plt.yticks(fontsize=font_size)
+            plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
+            for i in range(num_features):
+                plt.text(list(score.values())[indices[i]],
+                        num_features - 1 - 11 / num_features - i,
+                         str("%.2f" % list(score.values())[indices[i]]),
+                        fontsize=font_size)
+            plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
+                        (self.config.dirplots, importance_type, self.config.suffix,
+                         self.config.train_events))
+
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
         with open(out_filename, "wb") as out_file:
             pickle.dump(model, out_file, protocol=4)
 
+
     def load_model(self):
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(filename, "rb") as in_file:
-            return pickle.load(in_file)
+        with open(filename, "rb") as file:
+            model = pickle.load(file)
+        return model
 
     def get_data_(self, partition):
         downsample = self.config.downsample if partition == "train" else False
@@ -78,8 +123,7 @@ class XGBoostOptimiser(Optimiser):
         exp_outputs = []
         for indexev in self.config.partition[partition]:
             inputs_single, exp_outputs_single = load_event_idc(self.config.dirinput_train,
-                                                               indexev, self.config.input_z_range,
-                                                               self.config.output_z_range,
+                                                               indexev, self.config.z_range,
                                                                self.config.opt_predout,
                                                                downsample,
                                                                self.config.downsample_frac)
