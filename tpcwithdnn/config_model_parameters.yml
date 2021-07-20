@@ -30,9 +30,9 @@ common:
 
 xgboost:
   active: True
-  train_events: [20]
-  validation_events: [10]
-  apply_events: [40]
+  train_events: [200]
+  validation_events: [100]
+  apply_events: [400]
   downsample: true
   downsample_fraction: 0.9
   plot_train: true
