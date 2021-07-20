@@ -1,8 +1,7 @@
 """
-Storing user settings from config files.
+User settings from the config_model_parameters.yml
 """
-# pylint: disable=missing-function-docstring, missing-class-docstring
-# pylint: disable=too-many-instance-attributes, too-few-public-methods, too-many-statements
+# pylint: disable=too-many-instance-attributes, too-few-public-methods
 import os
 
 import numpy as np
@@ -11,14 +10,23 @@ from tpcwithdnn.logger import get_logger
 from tpcwithdnn.data_loader import get_event_mean_indices
 
 class Singleton(type):
+    """
+    Singleton type - there will be always one instance of the settings in the whole program.
+    """
     _instances = {}
     def __call__(cls, *args, **kwargs):
+        """
+        Create new instance if it was not called yet, otherwise, return the existing instance.
+        """
         if cls not in cls._instances:
             cls._instances[cls] = super(Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
 class CommonSettings:
-    __metaclass__ = Singleton # avoid re-creation of common settings
+    """
+    A class to store the common configuration (first section of the configuration file).
+    """
+    __metaclass__ = Singleton
     name = "common"
 
     h_dist_name = "h_dist"
@@ -28,6 +36,9 @@ class CommonSettings:
     h_std_dev_name = "h_std_dev"
 
     def __init__(self, data_param):
+        """
+        Read and store the parameters from the file.
+        """
         self.logger = get_logger()
 
         # Dataset config
@@ -100,6 +111,10 @@ class CommonSettings:
         self.apply_events = 0
 
     def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
+        """
+        Update the event ranges for train / validation / apply.
+        To be used internally.
+        """
         self.total_events = total_events
         self.train_events = train_events
         self.val_events = val_events
@@ -123,9 +138,16 @@ class CommonSettings:
 
 
 class DNNSettings:
+    """
+    A class for the UNet-specific settings.
+    Instead of inheriting CommonSettings, it stores a reference.
+    """
     name = "dnn"
 
     def __init__(self, common_settings, data_param):
+        """
+        Read and store the parameters from the file.
+        """
         self.common_settings = common_settings
         self.logger.info("DNNSettings::Init")
 
@@ -179,20 +201,28 @@ class DNNSettings:
 
         self.logger.info("I am processing the configuration %s", self.suffix)
 
-    # Called only for variables that are not directly in this class
     def __getattr__(self, name):
+        """
+        A Python hack to refer to the fields of the stored CommonSettings instance.
+        """
         try:
             return getattr(self.common_settings, name)
         except AttributeError as attr_err:
             raise AttributeError("'DNNSettings' object has no attribute '%s'" % name) from attr_err
 
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+        """
+        A wrapper around internal set_ranges_().
+        """
         self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
 
 class XGBoostSettings:
     name = "xgboost"
 
     def __init__(self, common_settings, data_param):
+        """
+        Read and store the parameters from the file.
+        """
         self.common_settings = common_settings
         self.logger.info("XGBoostSettings::Init")
 
@@ -231,8 +261,10 @@ class XGBoostSettings:
 
         self.logger.info("I am processing the configuration %s", self.suffix)
 
-    # Called only for variables that are not directly in this class
     def __getattr__(self, name):
+        """
+        A Python hack to refer to the fields of the stored CommonSettings instance.
+        """
         try:
             return getattr(self.common_settings, name)
         except AttributeError as attr_err:
@@ -240,4 +272,7 @@ class XGBoostSettings:
                 from attr_err
 
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+        """
+        A wrapper around internal set_ranges_().
+        """
         self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)

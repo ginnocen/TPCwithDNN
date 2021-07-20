@@ -1,4 +1,7 @@
-# pylint: disable=missing-module-docstring, missing-function-docstring
+"""
+Load the input maps for the correction and validation.
+Currently some functions are duplicated for IDC. Later, the old functions should be removed.
+"""
 # pylint: disable=fixme
 import random
 import numpy as np
@@ -6,6 +9,9 @@ import scipy.constants
 
 from tpcwithdnn.logger import get_logger
 
+"""
+Constants to calculate map file name based on its ordinal index.
+"""
 SCALES_CONST = [0, 3, -3, 6, -6]
 SCALES_LINEAR = [0, 3, -3]
 SCALES_PARABOLIC = [0, 3, -3]
@@ -13,6 +19,9 @@ NUM_FOURIER_COEFFS = 40
 NELE_PER_ADC = 670
 
 def get_mean_desc(mean_id):
+    """
+    Get map file name based on its ordinal index.
+    """
     s_const = SCALES_CONST[mean_id // 9]
     s_lin = SCALES_LINEAR[(mean_id % 9) // 3]
     s_para = SCALES_PARABOLIC[mean_id % 3]
@@ -87,6 +96,9 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
     return data
 
 def filter_idc_data(data_a, data_c, z_range):
+    """
+    Select A-side and/or C-side data based on the z range.
+    """
     # TODO: Getter and application of Fourier coefficients need to be modified to handle both A and
     # C side at the same time
     if z_range[0] < 0 and z_range[1] > 0:  # pylint: disable=chained-comparison

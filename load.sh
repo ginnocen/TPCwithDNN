@@ -9,8 +9,8 @@
 
 
 VIRTUALENV_PATH=~/.virtualenvs/tpcwithdnn
-PYTHON_BIN=/usr/bin/python3.6
-PYTHON_VERSION=3.6
+PYTHON_BIN=/usr/bin/python3.8
+PYTHON_VERSION=3.8
 
 create-virtualenv ()
 {
