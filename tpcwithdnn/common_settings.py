@@ -2,7 +2,7 @@
 Storing user settings from config files.
 """
 # pylint: disable=missing-function-docstring, missing-class-docstring
-# pylint: disable=too-many-instance-attributes, too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-few-public-methods, too-many-statements
 import os
 
 import numpy as np
