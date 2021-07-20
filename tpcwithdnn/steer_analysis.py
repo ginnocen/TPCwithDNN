@@ -162,9 +162,9 @@ def main():
         config_parameters['xgboost']['train_events'] = [args.train_events_oned]
     if "docreateinputdata" in args or "docreatevaldata" in args:
         default['docreatevaldata'] = True
-        config_parameters['common']['validate_model'] = False
+        config_parameters['common']['nd_validate_model'] = False
     if "docreatevaldata" in args:
-        config_parameters['common']['validate_model'] = True
+        config_parameters['common']['nd_validate_model'] = True
     if "val_events" in args:
         config_parameters['common']['val_events'] = args.val_events
     if "downsample_fraction" in args:

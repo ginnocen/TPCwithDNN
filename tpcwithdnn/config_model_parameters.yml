@@ -1,9 +1,9 @@
 common:
-  dirmodel: model_idc
-  dirapply: validation_idc
-  dirplots: plots_idc
-  dirtree: /mnt/temp/mkabus/idc-20210508/trees
-  dirhist: /mnt/temp/mkabus/idc-20210508/histograms
+  dirmodel: model_test
+  dirapply: validation_test
+  dirplots: plots_test
+  dirtree: /mnt/temp/mkabus/test
+  dirhist: /mnt/temp/mkabus/test
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
@@ -14,7 +14,7 @@ common:
   nd_val_events: 1000 # Number of events for validation (random events for nd_validation)
   nd_val_partition: random # Whether the validator uses only the events from given partition
                            # 'random' is for choosing events randomly
-  nd_validate_model: false
+  nd_validate_model: true
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
   grid_phi: 90
@@ -30,13 +30,13 @@ common:
 
 xgboost:
   active: True
-  train_events: [200]
-  validation_events: [100]
-  apply_events: [400]
-  downsample: false
-  downsample_fraction: 0.2
-  plot_train: false
-  train_plot_npoints: 10
+  train_events: [20]
+  validation_events: [10]
+  apply_events: [40]
+  downsample: true
+  downsample_fraction: 0.9
+  plot_train: true
+  train_plot_npoints: 2
   params:
     n_estimators: 100 # 850, 100 is better than 500
     max_depth: 3

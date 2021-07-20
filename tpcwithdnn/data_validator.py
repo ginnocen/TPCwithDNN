@@ -85,7 +85,7 @@ class DataValidator:
             df_single_map[column_names[12 + ind_dist * 3]] = \
                 mat_der_ref_mean_dist[ind_dist, :]
 
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             input_single = np.empty((1, self.config.grid_phi, self.config.grid_r,
                                      self.config.grid_z, self.config.dim_input))
             index_fill_input = 0
@@ -109,7 +109,7 @@ class DataValidator:
 
         tree_filename = "%s/%d/treeInput_mean%.2f_%s.root" \
             % (dir_name, irnd, self.mean_factors[index_mean_id], self.config.suffix_ds)
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             tree_filename = "%s/%d/treeValidation_mean%.2f_nEv%d.root" \
                             % (dir_name, irnd, self.mean_factors[index_mean_id],
                                self.config.train_events)
@@ -133,7 +133,7 @@ class DataValidator:
             column_names = np.append(column_names, ["flucDist" + dist_name,
                                                     "meanDist" + dist_name,
                                                     "derRefMeanDist" + dist_name])
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             loaded_model = self.model.load_model()
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
@@ -141,7 +141,7 @@ class DataValidator:
             loaded_model = None
 
         dir_name = "%s/parts" % (self.config.dirtree)
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             dir_name = "%s/%s/parts" % (self.config.dirtree, self.config.suffix)
         if os.path.isdir(dir_name):
             shutil.rmtree(dir_name)

@@ -111,7 +111,7 @@ class IDCDataValidator():
             df_single_map[column_names[n_col_tmp + 4 + ind_dist * 5]] = \
                 mat_mean_corr[ind_dist, :].astype('float32')
 
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
             inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                                    vec_der_ref_mean_corr, dft_coeffs)
@@ -120,7 +120,7 @@ class IDCDataValidator():
 
         tree_filename = "%s/%d/treeInput_mean%.2f_%s.root" \
             % (dir_name, irnd, self.mean_factors[index_mean_id], self.config.suffix_ds)
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             tree_filename = "%s/%d/treeValidation_mean%.2f_nEv%d.root" \
                             % (dir_name, irnd, self.mean_factors[index_mean_id],
                             self.config.train_events)
@@ -145,7 +145,7 @@ class IDCDataValidator():
                                                     "derRefMeanCorr" + dist_name,
                                                     "flucCorr" + dist_name,
                                                     "meanCorr" + dist_name])
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             loaded_model = self.model.load_model()
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucCorr" + dist_name + "Pred"])
@@ -153,7 +153,7 @@ class IDCDataValidator():
             loaded_model = None
 
         dir_name = "%s/parts" % (self.config.dirtree)
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             dir_name = "%s/%s/parts" % (self.config.dirtree, self.config.suffix)
         if os.path.isdir(dir_name):
             shutil.rmtree(dir_name)
