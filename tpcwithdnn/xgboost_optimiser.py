@@ -85,12 +85,12 @@ class XGBoostOptimiser(Optimiser):
 
         font_size = 5
         num_features = 40
-        for type, score, indices in zip(['total_gain', 'gain', 'weight'],
+        for importance_type, score, indices in zip(['total_gain', 'gain', 'weight'],
                                         [score_total_gain, score_gain, score_weight],
                                         [indices_total_gain, indices_gain, indices_weight]):
-            xgboost.plot_importance(model, importance_type=type, xlabel=type, log=True,
-                                    max_num_features=num_features, grid=False, show_values=False,
-                                    height=0.5)
+            xgboost.plot_importance(model, importance_type=importance_type, xlabel=importance_type,
+                                    log=True, max_num_features=num_features, grid=False,
+                                    show_values=False, height=0.5)
             plt.yticks(fontsize=font_size)
             plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
             for i in range(num_features):
@@ -99,7 +99,8 @@ class XGBoostOptimiser(Optimiser):
                          str("%.2f" % list(score.values())[indices[i]]),
                         fontsize=font_size)
             plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
-                        (self.config.dirplots, type, self.config.suffix, self.config.train_events))
+                        (self.config.dirplots, importance_type, self.config.suffix,
+                         self.config.train_events))
 
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
