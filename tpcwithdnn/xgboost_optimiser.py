@@ -26,7 +26,10 @@ class XGBoostOptimiser(Optimiser):
     def train(self):
         self.config.logger.info("XGBoostOptimiser::train")
         model = XGBRFRegressor(verbosity=1, **(self.config.params))
+        start = timer()
         inputs, exp_outputs = self.get_data_("train")
+        end = timer()
+        log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
         log_total_memory_usage("Memory usage after loading data")
         if self.config.plot_train:
@@ -126,7 +129,8 @@ class XGBoostOptimiser(Optimiser):
                                                                indexev, self.config.z_range,
                                                                self.config.opt_predout,
                                                                downsample,
-                                                               self.config.downsample_frac)
+                                                               self.config.downsample_frac,
+                                                               self.config.rnd_augment)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)

@@ -19,35 +19,40 @@ def get_mean_desc(mean_id):
     return "%d-Const_%d_Lin_%d_Para_%d" % (mean_id, s_const, s_lin, s_para)
 
 
-def load_data_original_idc(dirinput, event_index, z_range):
+def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
     """
     Load IDC data.
     """
-    mean_prefix = get_mean_desc(event_index[1])
+    if use_rnd_augment:
+        ref_prefix = "Random"
+        ref_map_index = str(event_index[1])
+    else:
+        ref_prefix = "Mean"
+        ref_map_index = get_mean_desc(event_index[1])
 
     files = ["%s/Pos/vecRPos.npy" % dirinput,
              "%s/Pos/vecPhiPos.npy" % dirinput,
              "%s/Pos/vecZPos.npy" % dirinput,
-             "%s/Mean/%s-vecMeanSC.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sSC.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanDistR.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sDistR.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanDistRPhi.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sDistRPhi.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanDistZ.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sDistZ.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanCorrR.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sCorrR.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomCorrR.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanCorrRPhi.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sCorrRPhi.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomCorrRPhi.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanCorrZ.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sCorrZ.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomCorrZ.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-numMeanZeroDIDCA.npy" % (dirinput, mean_prefix),
-             "%s/Mean/%s-numMeanZeroDIDCC.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-num%sZeroDIDCA.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
+             "%s/%s/%s-num%sZeroDIDCC.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-numRandomZeroDIDCA.npy" % (dirinput, event_index[0]),
              "%s/Random/%d-numRandomZeroDIDCC.npy" % (dirinput, event_index[0]),
-             "%s/Mean/%s-vecMeanOneDIDCA.npy" % (dirinput, mean_prefix),
-             "%s/Mean/%s-vecMeanOneDIDCC.npy" % (dirinput, mean_prefix),
+             "%s/%s/%s-vec%sOneDIDCA.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
+             "%s/%s/%s-vec%sOneDIDCC.npy" % (dirinput, ref_prefix, ref_map_index, ref_prefix),
              "%s/Random/%d-vecRandomOneDIDCA.npy" % (dirinput, event_index[0]),
              "%s/Random/%d-vecRandomOneDIDCC.npy" % (dirinput, event_index[0])]
 
@@ -170,7 +175,7 @@ def get_fourier_coeffs(vec_oned_idc):
     dft_real = np.real(dft)[:NUM_FOURIER_COEFFS]
     dft_imag = np.imag(dft)[:NUM_FOURIER_COEFFS]
 
-    return np.concatenate((dft_real, dft_imag))
+    return np.dstack((dft_real, dft_imag)).reshape(2 * NUM_FOURIER_COEFFS)
 
 
 def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
@@ -185,15 +190,14 @@ def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
 
 
 def get_input_names_oned_idc():
-    # input_names = ['r', 'phi', 'z', 'der_corr_r', 'fluc_0d_idc']
     input_names = ['r', 'phi', 'z', 'der_corr_r']
-    input_names = input_names + ['c_real%d' % i for i in range(0, NUM_FOURIER_COEFFS)] + \
-        ['c_imag%d' % i for i in range(0, NUM_FOURIER_COEFFS)]
+    for i in range(NUM_FOURIER_COEFFS):
+        input_names = input_names + ['c_real%d' % i, 'c_imag%d' % i]
     return input_names
 
 
 def load_data_oned_idc(dirinput, event_index, z_range,
-                      opt_pred, downsample, downsample_frac):
+                       opt_pred, downsample, downsample_frac, use_rnd_augment):
     [vec_r_pos, vec_phi_pos, vec_z_pos,
      *_,
      vec_mean_corr_r, vec_random_corr_r,
@@ -203,7 +207,8 @@ def load_data_oned_idc(dirinput, event_index, z_range,
      _, _, _, _,
      vec_mean_oned_idc_a, vec_mean_oned_idc_c,
      vec_random_oned_idc_a, vec_random_oned_idc_c] = load_data_original_idc(dirinput, event_index,
-                                                                  z_range)
+                                                                            z_range,
+                                                                            use_rnd_augment)
 
     vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
               (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
@@ -274,10 +279,10 @@ def load_data(input_data, event_index, z_range):
 
 
 def load_event_idc(dirinput, event_index, z_range,
-                   opt_pred, downsample, downsample_frac):
+                   opt_pred, downsample, downsample_frac, use_rnd_augment):
 
     inputs, exp_outputs = load_data_oned_idc(dirinput, event_index, z_range,
-                                            opt_pred, downsample, downsample_frac)
+                                             opt_pred, downsample, downsample_frac, use_rnd_augment)
 
     dim_output = sum(opt_pred)
     if dim_output > 1:
@@ -312,7 +317,7 @@ def load_train_apply(input_data, event_index, z_range,
 
     if dim_output > 1:
         logger = get_logger()
-        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORSION. The sum of opt_predout == 1")
+        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
 
     flucs = np.array((vec_fluctuation_dist_r, vec_fluctuation_dist_rphi, vec_fluctuation_dist_z))
     sel_flucs = flucs[np.array(opt_pred) == 1]
@@ -326,14 +331,18 @@ def load_train_apply(input_data, event_index, z_range,
     return inputs, exp_outputs
 
 
-def get_event_mean_indices(maxrandomfiles, range_mean_index, ranges):
+def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_rnd_augment):
     all_indices_events_means = []
-    for ievent in np.arange(maxrandomfiles):
-        for imean in np.arange(range_mean_index[0], range_mean_index[1] + 1):
-            all_indices_events_means.append([ievent, imean])
+    range_ref_index = range_mean_index
+    if use_rnd_augment:
+        range_ref_index = range_rnd_index_train
+    for ievent in np.arange(range_rnd_index_train[0], range_rnd_index_train[1] + 1):
+        for iref in np.arange(range_ref_index[0], range_ref_index[1] + 1):
+            if use_rnd_augment and ievent == iref:
+                continue
+            all_indices_events_means.append([ievent, iref])
     # Equivalent to shuffling the data
-    sel_indices_events_means = random.sample(all_indices_events_means, \
-        maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
+    sel_indices_events_means = random.sample(all_indices_events_means, ranges["apply"][1] + 1)
 
     indices_train = sel_indices_events_means[ranges["train"][0]:ranges["train"][1]]
     indices_val = sel_indices_events_means[ranges["val"][0]:ranges["val"][1]]
