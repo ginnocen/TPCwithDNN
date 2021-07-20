@@ -87,19 +87,19 @@ class XGBoostOptimiser(Optimiser):
                       file=file_name)
 
         font_size = 5
-        num_features = 40
         for importance_type, score, indices in zip(['total_gain', 'gain', 'weight'],
                                         [score_total_gain, score_gain, score_weight],
                                         [indices_total_gain, indices_gain, indices_weight]):
+            num_features = min(40, len(indices))
             xgboost.plot_importance(model, importance_type=importance_type, xlabel=importance_type,
                                     log=True, max_num_features=num_features, grid=False,
                                     show_values=False, height=0.5)
             plt.yticks(fontsize=font_size)
             plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
-            for i in range(num_features):
-                plt.text(list(score.values())[indices[i]],
-                        num_features - 1 - 11 / num_features - i,
-                         str("%.2f" % list(score.values())[indices[i]]),
+            for i, index in enumerate(indices[:num_features]):
+                plt.text(list(score.values())[index],
+                         num_features - 1.275 + 1 / num_features - i,
+                         str("%.2f" % list(score.values())[index]),
                         fontsize=font_size)
             plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
                         (self.config.dirplots, importance_type, self.config.suffix,
