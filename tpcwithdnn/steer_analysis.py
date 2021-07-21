@@ -24,7 +24,7 @@ tf.random.set_seed(SEED)
 import matplotlib
 matplotlib.use("Agg")
 
-from ROOT import PyConfig
+from ROOT import PyConfig # pylint: disable=import-error
 PyConfig.IgnoreCommandLineOptions = True
 
 import yaml

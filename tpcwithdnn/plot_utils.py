@@ -8,7 +8,7 @@ import numpy as np
 from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT # pylint: disable=import-error, no-name-in-module
 
 gROOT.SetStyle("Plain")
 gROOT.SetBatch()
