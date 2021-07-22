@@ -17,9 +17,9 @@ common:
   nd_validate_model: true
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
-  grid_phi: 90
-  grid_z: 17
-  grid_r: 17
+  grid_phi: 180
+  grid_z: 33
+  grid_r: 33
   z_range: [0, 251] # train for distortions with min <= z < max
   opt_train: [1, 1] # first position = meanSC, second = SCfluctuations
   opt_predout: [1, 0, 0] # R, Rphi, z output distorsion predictions
@@ -34,9 +34,9 @@ xgboost:
   validation_events: [100]
   apply_events: [400]
   downsample: true
-  downsample_fraction: 0.9
-  plot_train: true
-  train_plot_npoints: 2
+  downsample_fraction: 0.001
+  plot_train: false
+  train_plot_npoints: 10
   params:
     n_estimators: 100 # 850, 100 is better than 500
     max_depth: 3
