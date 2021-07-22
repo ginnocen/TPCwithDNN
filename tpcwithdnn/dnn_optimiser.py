@@ -38,7 +38,7 @@ class DnnOptimiser(Optimiser):
         model = u_net((self.config.grid_phi, self.config.grid_r, self.config.grid_z,
                        self.config.dim_input),
                       depth=self.config.depth, batchnorm=self.config.batch_normalization,
-                      pool_type=self.config.pooling, start_channels=self.config.filters,
+                      pool_type=self.config.pool_type, start_channels=self.config.filters,
                       dropout=self.config.dropout)
         if self.config.metrics == "root_mean_squared_error":
             metrics = RootMeanSquaredError()
@@ -70,7 +70,7 @@ class DnnOptimiser(Optimiser):
         loaded_model = self.load_model()
 
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                            (self.config.dirval, self.config.suffix, self.config.train_events),
+                            (self.config.dirapply, self.config.suffix, self.config.train_events),
                             "recreate")
         h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events =\
                 plot_utils.create_apply_histos(self.config, self.config.suffix, infix="all_events_")

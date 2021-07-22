@@ -1,41 +1,41 @@
 common:
-  dirmodel: model_idc
-  dirval: validation_idc
-  dirplots: plots_idc
+  dirmodel: model_test
+  dirapply: validation_test
+  dirplots: plots_test
+  dirtree: /mnt/temp/mkabus/test
+  dirhist: /mnt/temp/mkabus/test
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
   dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
   train_bias: true
-  test_bias: true
+  validation_bias: true
   apply_bias: false
-  diroutflattree: /mnt/temp/mkabus/idc-20210508/trees
-  dirouthistograms: /mnt/temp/mkabus/idc-20210508/histograms
-  val_events: 1000 # Number of events for validation (random events for nd_validation)
-  use_partition: random # Whether the validator uses only the events from given partition
-                        # 'random' is for choosing events randomly
-  validate_model: false
+  nd_val_events: 1000 # Number of events for validation (random events for nd_validation)
+  nd_val_partition: random # Whether the validator uses only the events from given partition
+                           # 'random' is for choosing events randomly
+  nd_validate_model: true
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
-  grid_phi: 90
-  grid_z: 17
-  grid_r: 17
+  grid_phi: 180
+  grid_z: 33
+  grid_r: 33
   z_range: [0, 251] # train for distortions with min <= z < max
-  opt_train: [1, 1] #first position = meanSC, second = SCfluctuations
-  opt_predout: [1, 0, 0] #R, Rphi, z output distorsion predictions
-  nameopt_predout: [R, RPhi, Z] #R, RPhi, Z output distorsion predictions
-  maxrandomfiles: 1000 #this is the total number of random events generated
+  opt_train: [1, 1] # first position = meanSC, second = SCfluctuations
+  opt_predout: [1, 0, 0] # R, Rphi, z output distorsion predictions
+  nameopt_predout: [R, RPhi, Z] # R, RPhi, Z output distorsion predictions
+  maxrandomfiles: 1000 # this is the total number of random events generated
   range_mean_index: [0, 44] # min and max index of mean SC configurations
   max_events: 45000 # number of all available events
 
 xgboost:
   active: True
   train_events: [200]
-  test_events: [100]
+  validation_events: [100]
   apply_events: [400]
-  downsample: False
-  downsample_fraction: 0.2
-  plot_train: False
+  downsample: true
+  downsample_fraction: 0.001
+  plot_train: false
   train_plot_npoints: 10
   params:
     n_estimators: 100 # 850, 100 is better than 500
@@ -59,18 +59,18 @@ xgboost:
     base_score: 0.5
 
 corr:
-  active: False
+  active: false
 
 dnn:
-  active: False
+  active: false
   train_events: [5000] # 5000, 18000
-  test_events: [600] # 500, 1800
+  validation_events: [600] # 500, 1800
   apply_events: [1400] # 7000, 7000
-  use_scaler: 0
+  use_scaler: false
   filters: 4
-  pooling: 0
+  pool_type: "max" # max, avg, conv
   depth: 4
-  batch_normalization: 0
+  batch_normalization: false
   dropout: 0.0
   batch_size: 27
   shuffle: false

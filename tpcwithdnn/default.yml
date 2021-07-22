@@ -1,10 +1,10 @@
-dotrain: true
-doapply: true
-doplot: true
+dotrain: false
+doapply: false
+doplot: false
 dogrid: false
 dobayes: false
 doprofile: false
-docreatevaldata: false
+docreatendvaldata: false
 docreatepdfmaps: false
 docreatepdfmapforvariable: false
 docreatepdfmapformeanid: false

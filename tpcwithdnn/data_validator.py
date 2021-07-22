@@ -37,8 +37,8 @@ class DataValidator:
          vec_mean_dist_r, vec_rand_dist_r,
          vec_mean_dist_rphi, vec_rand_dist_rphi,
          vec_mean_dist_z, vec_rand_dist_z] = load_data_original(
-             self.config.dirinput_val,
-            [irnd, self.mean_ids[index_mean_id]])
+             self.config.dirinput_nd_val,
+             [irnd, self.mean_ids[index_mean_id]])
 
         vec_sel_z = (self.config.z_range[0] <= vec_z_pos) &\
                     (vec_z_pos < self.config.z_range[1])
@@ -85,7 +85,7 @@ class DataValidator:
             df_single_map[column_names[12 + ind_dist * 3]] = \
                 mat_der_ref_mean_dist[ind_dist, :]
 
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             input_single = np.empty((1, self.config.grid_phi, self.config.grid_r,
                                      self.config.grid_z, self.config.dim_input))
             index_fill_input = 0
@@ -109,7 +109,7 @@ class DataValidator:
 
         tree_filename = "%s/%d/treeInput_mean%.2f_%s.root" \
             % (dir_name, irnd, self.mean_factors[index_mean_id], self.config.suffix_ds)
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             tree_filename = "%s/%d/treeValidation_mean%.2f_nEv%d.root" \
                             % (dir_name, irnd, self.mean_factors[index_mean_id],
                                self.config.train_events)
@@ -124,7 +124,7 @@ class DataValidator:
         self.config.logger.info("DataValidator::create_data")
 
         vec_der_ref_mean_sc, mat_der_ref_mean_dist = \
-            load_data_derivatives_ref_mean(self.config.dirinput_val, self.config.z_range)
+            load_data_derivatives_ref_mean(self.config.dirinput_nd_val, self.config.z_range)
 
         dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
         column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
@@ -133,22 +133,22 @@ class DataValidator:
             column_names = np.append(column_names, ["flucDist" + dist_name,
                                                     "meanDist" + dist_name,
                                                     "derRefMeanDist" + dist_name])
-        if self.config.validate_model:
+        if self.config.nd_validate_model:
             loaded_model = self.model.load_model()
             for dist_name in dist_names:
                 column_names = np.append(column_names, ["flucDist" + dist_name + "Pred"])
         else:
             loaded_model = None
 
-        dir_name = "%s/parts" % (self.config.diroutflattree)
-        if self.config.validate_model:
-            dir_name = "%s/%s/parts" % (self.config.diroutflattree, self.config.suffix)
+        dir_name = "%s/parts" % (self.config.dirtree)
+        if self.config.nd_validate_model:
+            dir_name = "%s/%s/parts" % (self.config.dirtree, self.config.suffix)
         if os.path.isdir(dir_name):
             shutil.rmtree(dir_name)
 
         for index_mean_id, mean_id in enumerate(self.mean_ids):
             counter = 0
-            if self.config.use_partition != 'random':
+            if self.config.nd_val_partition != 'random':
                 for ind_ev in self.config.part_inds:
                     if ind_ev[1] != mean_id:
                         continue
@@ -159,7 +159,7 @@ class DataValidator:
                                                vec_der_ref_mean_sc, mat_der_ref_mean_dist,
                                                loaded_model, dir_name)
                     counter = counter + 1
-                    if counter == self.config.val_events:
+                    if counter == self.config.nd_val_events:
                         break
             else:
                 for irnd in range(self.config.maxrandomfiles):
@@ -169,7 +169,7 @@ class DataValidator:
                                                vec_der_ref_mean_sc, mat_der_ref_mean_dist,
                                                loaded_model, dir_name)
                     counter = counter + 1
-                    if counter == self.config.val_events:
+                    if counter == self.config.nd_val_events:
                         break
 
             self.config.logger.info("Trees written in %s", dir_name)
@@ -212,7 +212,7 @@ class DataValidator:
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
         df_val = tree_to_pandas("%s/%s/treeValidation_mean%.1f_nEv%d.root"
-                                % (self.config.diroutflattree, self.config.suffix, mean_factor,
+                                % (self.config.dirtree, self.config.suffix, mean_factor,
                                    self.config.train_events),
                                 'validation', column_names)
         if diff_index != -1:
@@ -233,7 +233,7 @@ class DataValidator:
                        "40,0,250," + \
                        "%d,%.4f,%.4f)" % (10, df_val['deltaSC'].min(), df_val['deltaSC'].max())
         output_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
-            % (self.config.dirouthistograms, self.config.suffix, var, mean_factor,
+            % (self.config.dirhist, self.config.suffix, var, mean_factor,
                self.config.train_events)
         with gzip.open(output_file_name, 'wb') as output_file:
             pickle.dump(makeHistogram(df_val, histo_string), output_file)
@@ -272,13 +272,13 @@ class DataValidator:
         mean_factor = 1 + 0.1 * (mean_id != 0) * (1 - 2 * (mean_id == 18))
 
         input_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
-            % (self.config.dirouthistograms, self.config.suffix, var, mean_factor,
+            % (self.config.dirhist, self.config.suffix, var, mean_factor,
                self.config.train_events)
         with gzip.open(input_file_name, 'rb') as input_file:
             histo = pickle.load(input_file)
 
         output_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
-            % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
+            % (self.config.dirtree, self.config.suffix, var, mean_factor,
                self.config.train_events)
         dim_var = 0
         # slices: (start_bin, stop_bin, step, grouping) for each histogram dimension
@@ -323,14 +323,14 @@ class DataValidator:
         df_merged = pd.DataFrame()
         for mean_factor in mean_factors:
             input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
-                % (self.config.diroutflattree, self.config.suffix, mean_factor,
+                % (self.config.dirtree, self.config.suffix, mean_factor,
                    self.config.train_events)
             df = tree_to_pandas(input_file_name_0, 'flucSC', "*Bin*")
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
             for var in self.get_pdf_map_variables_list():
                 input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
-                    % (self.config.diroutflattree, self.config.suffix, var, mean_factor,
+                    % (self.config.dirtree, self.config.suffix, var, mean_factor,
                        self.config.train_events)
                 df_temp = tree_to_pandas(input_file_name, var, "*", ".*Bin")
                 for col in list(df_temp.keys()):
@@ -338,7 +338,7 @@ class DataValidator:
             df_merged = df_merged.append(df, ignore_index=True)
 
         output_file_name = "%s/%s/pdfmaps_nEv%d.root" \
-            % (self.config.diroutflattree, self.config.suffix, self.config.train_events)
+            % (self.config.dirtree, self.config.suffix, self.config.train_events)
         pandas_to_tree(df_merged, output_file_name, 'pdfmaps')
         self.config.logger.info("Pdf maps written to %s.", output_file_name)
 

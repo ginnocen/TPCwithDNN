@@ -8,7 +8,7 @@ import numpy as np
 from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
-from ROOT import gROOT  # pylint: disable=import-error, no-name-in-module
+from ROOT import gROOT # pylint: disable=import-error, no-name-in-module
 
 gROOT.SetStyle("Plain")
 gROOT.SetBatch()
@@ -97,7 +97,7 @@ def plot(config):
     sel_opts_names = sel_opts_names[sel_opts == 1]
     for opt_name in sel_opts_names:
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                            (config.dirval, config.suffix,
+                            (config.dirapply, config.suffix,
                              config.train_events), "open")
         h_dist_all_events = myfile.Get("%s_all_events_%s" % (config.h_dist_name,
                                                              config.suffix))
@@ -243,7 +243,7 @@ def add_desc_to_canvas(config, xmin, ymin, xmax, ymax, size, content):
             txt1.AddText("inputs: #it{#rho}_{SC} - <#it{#rho}_{SC}>")
     if content["add_events"]:
         txt1.AddText("#it{N}_{ev}^{training} = %d" % config.train_events)
-        # txt1.AddText("#it{N}_{ev}^{validation} = %d" % config.test_events)
+        # txt1.AddText("#it{N}_{ev}^{validation} = %d" % config.val_events)
         # txt1.AddText("#it{N}_{ev}^{apply} = %d" % config.apply_events)
     if config.name == "dnn":
         txt1.AddText("%d epochs" % config.epochs)
@@ -272,7 +272,7 @@ def draw_multievent_hist(config, events_counts, func_label, hist_name, source_hi
 
         # TODO: Clean these codes
         for i, (train_events, _, _, _) in enumerate(events_counts):
-            filename = "%s/output_%s_nEv%d.root" % (config.dirval, config.suffix, train_events)
+            filename = "%s/output_%s_nEv%d.root" % (config.dirapply, config.suffix, train_events)
             config.logger.info("Reading %s...", filename)
 
             root_file = TFile.Open(filename, "read")

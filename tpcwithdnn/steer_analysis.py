@@ -24,6 +24,9 @@ tf.random.set_seed(SEED)
 import matplotlib
 matplotlib.use("Agg")
 
+from ROOT import PyConfig # pylint: disable=import-error
+PyConfig.IgnoreCommandLineOptions = True
+
 import yaml
 
 import tpcwithdnn.check_root # pylint: disable=unused-import
@@ -70,11 +73,11 @@ def init_models(config_parameters):
     dataval = IDCDataValidator()
     return models, corr, dataval
 
-def get_events_counts(train_events, test_events, apply_events):
-    if len(train_events) != len(test_events) or \
+def get_events_counts(train_events, val_events, apply_events):
+    if len(train_events) != len(val_events) or \
        len(train_events) != len(apply_events):
-        raise ValueError("Different number of ranges specified for train/test/apply")
-    return zip(train_events, test_events, apply_events)
+        raise ValueError("Different number of ranges specified for train/val/apply")
+    return zip(train_events, val_events, apply_events)
 
 def run_model_and_val(model, dataval, default, config_parameters):
     dataval.set_model(model)
@@ -97,7 +100,7 @@ def run_model_and_val(model, dataval, default, config_parameters):
         model.plot()
     if default["dogrid"] is True:
         model.search_grid()
-    if default["docreatevaldata"] is True:
+    if default["docreatendvaldata"] is True:
         dataval.create_data()
     if default["docreatepdfmaps"] is True:
         dataval.create_nd_histograms()
@@ -159,9 +162,9 @@ def main():
         config_parameters['xgboost']['train_events'] = [args.train_events_oned]
     if "docreateinputdata" in args or "docreatevaldata" in args:
         default['docreatevaldata'] = True
-        config_parameters['common']['validate_model'] = False
+        config_parameters['common']['nd_validate_model'] = False
     if "docreatevaldata" in args:
-        config_parameters['common']['validate_model'] = True
+        config_parameters['common']['nd_validate_model'] = True
     if "val_events" in args:
         config_parameters['common']['val_events'] = args.val_events
     if "downsample_fraction" in args:
@@ -172,52 +175,28 @@ def main():
     if "max_depth" in args:
         config_parameters['xgboost']['params']['max_depth'] = args.max_depth
 
-    # FIXME: Do we need these commented lines anymore?
-    #dirmodel = config_parameters["common"]["dirmodel"]
-    #dirval = config_parameters["common"]["dirval"]
-    #dirinput = config_parameters["common"]["dirinput"]
-
-    # NOTE
-    # checkdir and checkmakedir not yet implemented. Was previously used from
-    # machine_learning_hep package but is now the only thing required from there.
-    # Easy to adapt an implementation like that to avoid heavy dependency
-    # on machine_learning_hep
-
-    #counter = 0
-    #if dotraining is True:
-    #    counter = counter + checkdir(dirmodel)
-    #if dotesting is True:
-    #    counter = counter + checkdir(dirval)
-    #if counter < 0:
-    #    sys.exit()
-
-    #if dotraining is True:
-    #    checkmakedir(dirmodel)
-    #if dotesting is True:
-    #    checkmakedir(dirval)
-
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
-                                       config_parameters[model.name]["test_events"],
+                                       config_parameters[model.name]["validation_events"],
                                        config_parameters[model.name]["apply_events"])
                         for model in models)
     max_available_events = config_parameters["common"]["max_events"]
 
     for model, model_events_counts in zip(models, events_counts):
         all_events_counts = []
-        for (train_events, test_events, apply_events) in model_events_counts:
-            total_events = train_events + test_events + apply_events
+        for (train_events, val_events, apply_events) in model_events_counts:
+            total_events = train_events + val_events + apply_events
             if total_events > max_available_events:
                 logger.warning("Too big number of events requested: %d available: %d",
                                total_events, max_available_events)
                 continue
 
-            all_events_counts.append((train_events, test_events, apply_events, total_events))
+            all_events_counts.append((train_events, val_events, apply_events, total_events))
 
             ranges = {"train": [0, train_events],
-                      "test": [train_events, train_events + test_events],
-                      "apply": [train_events + test_events, total_events]}
-            model.config.set_ranges(ranges, total_events, train_events, test_events, apply_events)
+                      "val": [train_events, train_events + val_events],
+                      "apply": [train_events + val_events, total_events]}
+            model.config.set_ranges(ranges, total_events, train_events, val_events, apply_events)
 
             run_model_and_val(model, dataval, default, config_parameters["common"])
 

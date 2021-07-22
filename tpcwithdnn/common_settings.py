@@ -47,37 +47,37 @@ class CommonSettings:
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
 
-        self.validate_model = data_param["validate_model"]
+        self.nd_validate_model = data_param["nd_validate_model"]
 
         # Directories
         self.dirmodel = data_param["dirmodel"]
-        self.dirval = data_param["dirval"]
+        self.dirapply = data_param["dirapply"]
         self.dirplots = data_param["dirplots"]
-        self.diroutflattree = data_param["diroutflattree"]
-        self.dirouthistograms = data_param["dirouthistograms"]
+        self.dirtree = data_param["dirtree"]
+        self.dirhist = data_param["dirhist"]
         train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
                     else data_param["dirinput_nobias"]
-        test_dir = data_param["dirinput_bias"] if data_param["test_bias"] \
+        val_dir = data_param["dirinput_bias"] if data_param["validation_bias"] \
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
         self.dirinput_train = "%s/SC-%d-%d-%d" % \
                               (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_test = "%s/SC-%d-%d-%d" % \
-                             (test_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_val = "%s/SC-%d-%d-%d" % \
+                             (val_dir, self.grid_z, self.grid_r, self.grid_phi)
         self.dirinput_apply = "%s/SC-%d-%d-%d" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_val = "%s/SC-%d-%d-%d" % \
-                            (data_param["dirinput_nobias"], self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
+                               self.grid_z, self.grid_r, self.grid_phi)
 
         if not os.path.isdir(self.dirmodel):
             os.makedirs(self.dirmodel)
-        if not os.path.isdir(self.dirval):
-            os.makedirs(self.dirval)
+        if not os.path.isdir(self.dirapply):
+            os.makedirs(self.dirapply)
         if not os.path.isdir(self.dirplots):
             os.makedirs(self.dirplots)
-        if not os.path.isdir(self.diroutflattree):
-            os.makedirs(self.diroutflattree)
+        if not os.path.isdir(self.dirtree):
+            os.makedirs(self.dirtree)
 
         self.suffix = None
         self.suffix_ds = "phi%d_r%d_z%d" % \
@@ -85,21 +85,21 @@ class CommonSettings:
 
         # Parameters for getting input indices
         self.maxrandomfiles = data_param["maxrandomfiles"]
-        self.val_events = data_param["val_events"]
+        self.nd_val_events = data_param["nd_val_events"]
         self.part_inds = None
-        self.use_partition = data_param["use_partition"]
+        self.nd_val_partition = data_param["nd_val_partition"]
         self.range_mean_index = data_param["range_mean_index"]
         self.indices_events_means = None
         self.partition = None
         self.total_events = 0
         self.train_events = 0
-        self.test_events = 0
+        self.val_events = 0
         self.apply_events = 0
 
-    def set_ranges_(self, ranges, suffix, total_events, train_events, test_events, apply_events):
+    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
         self.total_events = total_events
         self.train_events = train_events
-        self.test_events = test_events
+        self.val_events = val_events
         self.apply_events = apply_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
@@ -111,7 +111,7 @@ class CommonSettings:
             events_file = "%s/events_%s_%s_nEv%d.csv" % \
                           (self.dirmodel, part, suffix, self.train_events)
             np.savetxt(events_file, events_inds, delimiter=",", fmt="%d")
-            if self.use_partition != "random" and part == self.use_partition:
+            if self.nd_val_partition != "random" and part == self.nd_val_partition:
                 part_inds = events_inds
                 self.part_inds = part_inds #[(part_inds[:,1] == 0) | (part_inds[:,1] == 9) | \
                                            #  (part_inds[:,1] == 18)]
@@ -132,7 +132,7 @@ class DNNSettings:
 
         # DNN config
         self.filters = data_param["filters"]
-        self.pooling = data_param["pooling"]
+        self.pool_type = data_param["pool_type"]
         self.depth = data_param["depth"]
         self.batch_normalization = data_param["batch_normalization"]
         self.dropout = data_param["dropout"]
@@ -159,8 +159,9 @@ class DNNSettings:
                        'use_scaler': self.use_scaler}
 
         self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
-                (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pooling,
-                 self.dropout, self.depth, self.batch_normalization, self.use_scaler)
+                (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pool_type,
+                 self.dropout, self.depth, 1 if self.batch_normalization else 0,
+                 1 if self.use_scaler else 0)
         self.suffix = "%s_useSCMean%d_useSCFluc%d" % \
                 (self.suffix, self.opt_train[0], self.opt_train[1])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
@@ -168,10 +169,10 @@ class DNNSettings:
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
 
-        if not os.path.isdir("%s/%s" % (self.diroutflattree, self.suffix)):
-            os.makedirs("%s/%s" % (self.diroutflattree, self.suffix))
-        if not os.path.isdir("%s/%s" % (self.dirouthistograms, self.suffix)):
-            os.makedirs("%s/%s" % (self.dirouthistograms, self.suffix))
+        if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
+            os.makedirs("%s/%s" % (self.dirtree, self.suffix))
+        if not os.path.isdir("%s/%s" % (self.dirhist, self.suffix)):
+            os.makedirs("%s/%s" % (self.dirhist, self.suffix))
 
         self.logger.info("I am processing the configuration %s", self.suffix)
 
@@ -182,8 +183,8 @@ class DNNSettings:
         except AttributeError as attr_err:
             raise AttributeError("'DNNSettings' object has no attribute '%s'" % name) from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, test_events, apply_events)
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
 
 class XGBoostSettings:
     name = "xgboost"
@@ -218,10 +219,10 @@ class XGBoostSettings:
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
 
-        if not os.path.isdir("%s/%s" % (self.diroutflattree, self.suffix)):
-            os.makedirs("%s/%s" % (self.diroutflattree, self.suffix))
-        if not os.path.isdir("%s/%s" % (self.dirouthistograms, self.suffix)):
-            os.makedirs("%s/%s" % (self.dirouthistograms, self.suffix))
+        if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
+            os.makedirs("%s/%s" % (self.dirtree, self.suffix))
+        if not os.path.isdir("%s/%s" % (self.dirhist, self.suffix)):
+            os.makedirs("%s/%s" % (self.dirhist, self.suffix))
 
         self.logger.info("I am processing the configuration %s", self.suffix)
 
@@ -233,5 +234,5 @@ class XGBoostSettings:
             raise AttributeError("'XGBoostSettings' object has no attribute '%s'" % name) \
                 from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, test_events, apply_events):
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, test_events, apply_events)
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)

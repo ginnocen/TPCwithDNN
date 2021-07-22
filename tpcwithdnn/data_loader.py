@@ -336,11 +336,11 @@ def get_event_mean_indices(maxrandomfiles, range_mean_index, ranges):
         maxrandomfiles * (range_mean_index[1] + 1 - range_mean_index[0]))
 
     indices_train = sel_indices_events_means[ranges["train"][0]:ranges["train"][1]]
-    indices_test = sel_indices_events_means[ranges["test"][0]:ranges["test"][1]]
+    indices_val = sel_indices_events_means[ranges["val"][0]:ranges["val"][1]]
     indices_apply = sel_indices_events_means[ranges["apply"][0]:ranges["apply"][1]]
 
     partition = {"train": indices_train,
-                 "validation": indices_test,
+                 "validation": indices_val,
                  "apply": indices_apply}
 
     return sel_indices_events_means, partition
