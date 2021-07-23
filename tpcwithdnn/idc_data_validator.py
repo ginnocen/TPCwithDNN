@@ -208,8 +208,8 @@ class IDCDataValidator():
                     if counter == self.config.nd_val_events:
                         break
             else:
-                for irnd in np.arange(self.config.range_rnd_index_val[0],
-                                      self.config.range_rnd_index_val[1] + 1):
+                for irnd in np.arange(self.config.range_rnd_index_nd_val[0],
+                                      self.config.range_rnd_index_nd_val[1] + 1):
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, mean_id, irnd)
                     vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \

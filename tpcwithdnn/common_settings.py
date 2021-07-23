@@ -87,7 +87,7 @@ class CommonSettings:
         self.maxrandomfiles = data_param["maxrandomfiles"]
         self.nd_val_events = data_param["nd_val_events"]
         self.range_rnd_index_train = data_param["range_rnd_index_train"]
-        self.range_rnd_index_val = data_param["range_rnd_index_val"]
+        self.range_rnd_index_nd_val = data_param["range_rnd_index_nd_val"]
         self.rnd_augment = data_param["rnd_augment"]
         self.part_inds = None
         self.nd_val_partition = data_param["nd_val_partition"]
