@@ -99,7 +99,7 @@ class XGBoostOptimiser(Optimiser):
             for i, index in enumerate(indices[:num_features]):
                 plt.text(list(score.values())[index],
                          num_features - 1.275 + 1 / num_features - i,
-                         str("%.2f" % list(score.values())[index]),
+                         str("%.3e" % list(score.values())[index]),
                         fontsize=font_size)
             plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
                         (self.config.dirplots, importance_type, self.config.suffix,
