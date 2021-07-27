@@ -48,7 +48,8 @@ class IDCDataValidator():
          vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
             load_data_original_idc(self.config.dirinput_nd_val,
                                    [irnd, self.mean_ids[index_mean_id]],
-                                   self.config.z_range)
+                                   self.config.z_range, False)
+                                   # here we still use mean maps as references (hardcoded)
 
         mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
         mat_random_dist = np.array((vec_random_dist_r, vec_random_dist_rphi, vec_random_dist_z))
@@ -176,17 +177,16 @@ class IDCDataValidator():
         tree_idc.Branch('mean1DIDC', std_vec_mean_oned_idc)
         tree_idc.Branch('coeffs', std_vec_fourier_coeffs)
 
-        for index_mean_id, _ in enumerate(self.mean_ids):
+        for index_mean_id, mean_id in enumerate(self.mean_ids):
             counter = 0
-            index_mean[0] = self.mean_ids[index_mean_id]
 
             if self.config.nd_val_partition != 'random':
                 for ind_ev in self.config.part_inds:
-                    if ind_ev[1] != self.mean_ids[index_mean_id]:
+                    if ind_ev[1] != mean_id:
                         continue
                     irnd = ind_ev[0]
                     self.config.logger.info("processing event: %d [%d, %d]",
-                                            counter, self.mean_ids[index_mean_id], irnd)
+                                            counter, mean_id, irnd)
                     vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
                         self.create_data_for_event(index_mean_id, irnd, column_names,
                                                    loaded_model, dir_name)
@@ -196,7 +196,7 @@ class IDCDataValidator():
                     std_vec_mean_oned_idc.resize(0)
                     std_vec_fourier_coeffs.resize(0)
                     index_random[0] = irnd
-                    index[0] = irnd + 1000 * self.mean_ids[index_mean_id]
+                    index[0] = irnd + 1000 * mean_id
                     for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
                         std_vec_fluc_oned_idc.push_back(val_fluc)
                         std_vec_mean_oned_idc.push_back(val_mean)
@@ -208,9 +208,10 @@ class IDCDataValidator():
                     if counter == self.config.nd_val_events:
                         break
             else:
-                for irnd in range(self.config.maxrandomfiles):
+                for irnd in np.arange(self.config.range_rnd_index_nd_val[0],
+                                      self.config.range_rnd_index_nd_val[1] + 1):
                     self.config.logger.info("processing event: %d [%d, %d]",
-                                            counter, self.mean_ids[index_mean_id], irnd)
+                                            counter, mean_id, irnd)
                     vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
                         self.create_data_for_event(index_mean_id, irnd, column_names,
                                                    loaded_model, dir_name)
@@ -220,7 +221,7 @@ class IDCDataValidator():
                     std_vec_mean_oned_idc.resize(0)
                     std_vec_fourier_coeffs.resize(0)
                     index_random[0] = irnd
-                    index[0] = irnd + 1000 * self.mean_ids[index_mean_id]
+                    index[0] = irnd + 1000 * mean_id
                     for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
                         std_vec_fluc_oned_idc.push_back(val_fluc)
                         std_vec_mean_oned_idc.push_back(val_mean)

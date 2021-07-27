@@ -54,6 +54,7 @@ tpcwithdnn/*.txt
 **/.mypy_cache
 setup.cfg
 **/.ipynb_checkpoints
+.clang-format
 
 # macOS
 .DS_Store

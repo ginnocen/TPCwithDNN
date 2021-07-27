@@ -130,12 +130,16 @@ def main():
                         type=str, help="path to the *.yml configuration file")
     parser.add_argument("-s", "--steer", dest="steer_file", default="default.yml",
                         type=str, help="path to the *.yml steering file")
+    # parameters for steer file
     parser.add_argument("--dotrain", action='store_true', default=argparse.SUPPRESS,
                         help="Perform the training")
     parser.add_argument("--docreateinputdata", action='store_true', default=argparse.SUPPRESS,
                         help="Create input data trees")
     parser.add_argument("--docreatevaldata", action='store_true', default=argparse.SUPPRESS,
                         help="Create validation data trees")
+    # parameters for config file
+    parser.add_argument("--rndaugment", action='store_true', default=argparse.SUPPRESS,
+                        help="Use random-random augmentation for training")
     parser.add_argument("--ntrain1d", dest='train_events_oned', type=int, default=argparse.SUPPRESS,
                         help="Set custom number of training events")
     parser.add_argument("--nval", dest='val_events', type=int, default=argparse.SUPPRESS,
@@ -158,13 +162,15 @@ def main():
     logger.info("Arguments provided: %s", str(args))
     if "dotrain" in args:
         default['dotrain'] = True
-    if "train_events_oned" in args:
-        config_parameters['xgboost']['train_events'] = [args.train_events_oned]
     if "docreateinputdata" in args or "docreatevaldata" in args:
         default['docreatevaldata'] = True
         config_parameters['common']['nd_validate_model'] = False
     if "docreatevaldata" in args:
         config_parameters['common']['nd_validate_model'] = True
+    if "rndaugment" in args:
+        config_parameters['common']['rnd_augment'] = True
+    if "train_events_oned" in args:
+        config_parameters['xgboost']['train_events'] = [args.train_events_oned]
     if "val_events" in args:
         config_parameters['common']['val_events'] = args.val_events
     if "downsample_fraction" in args:
@@ -180,7 +186,13 @@ def main():
                                        config_parameters[model.name]["validation_events"],
                                        config_parameters[model.name]["apply_events"])
                         for model in models)
-    max_available_events = config_parameters["common"]["max_events"]
+    ranges_rnd = config_parameters["common"]["range_rnd_index_train"]
+    ranges_mean = config_parameters["common"]["range_mean_index"]
+    if config_parameters["common"]["rnd_augment"]:
+        max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * (ranges_rnd[1] - ranges_rnd[0])
+    else:
+        max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * \
+            (ranges_mean[1] + 1 - ranges_mean[0])
 
     for model, model_events_counts in zip(models, events_counts):
         all_events_counts = []

@@ -2,7 +2,7 @@
 Storing user settings from config files.
 """
 # pylint: disable=missing-function-docstring, missing-class-docstring
-# pylint: disable=too-many-instance-attributes, too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-few-public-methods, too-many-statements
 import os
 
 import numpy as np
@@ -86,6 +86,9 @@ class CommonSettings:
         # Parameters for getting input indices
         self.maxrandomfiles = data_param["maxrandomfiles"]
         self.nd_val_events = data_param["nd_val_events"]
+        self.range_rnd_index_train = data_param["range_rnd_index_train"]
+        self.range_rnd_index_nd_val = data_param["range_rnd_index_nd_val"]
+        self.rnd_augment = data_param["rnd_augment"]
         self.part_inds = None
         self.nd_val_partition = data_param["nd_val_partition"]
         self.range_mean_index = data_param["range_mean_index"]
@@ -103,7 +106,7 @@ class CommonSettings:
         self.apply_events = apply_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
-            self.maxrandomfiles, self.range_mean_index, ranges)
+            self.range_rnd_index_train, self.range_mean_index, ranges, self.rnd_augment)
 
         part_inds = None
         for part in self.partition:
@@ -218,6 +221,8 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
+        self.suffix = "%s_down_frac%.3f" % \
+            (self.suffix, self.downsample_frac)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
             os.makedirs("%s/%s" % (self.dirtree, self.suffix))
