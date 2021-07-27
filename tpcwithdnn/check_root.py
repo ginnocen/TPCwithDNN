@@ -17,14 +17,14 @@ def check_import(mod_name, add_message=""):
         return False
 
 
-CHECK_MODULES = "ROOT"
-MESSAGES = "Please source manually if not on aliceml"
+CHECK_MODULES = ("ROOT", "root_numpy")
+MESSAGES = ("Please source manually if not on aliceml",
+            "Please install manually")
 
 IMPORT_OK=True
 
-# for chm, m in zip(CHECK_MODULES, MESSAGES):
-# IMPORT_OK = check_import(chm, m) and IMPORT_OK
-IMPORT_OK = check_import(CHECK_MODULES, MESSAGES) and IMPORT_OK
+for chm, m in zip(CHECK_MODULES, MESSAGES):
+    IMPORT_OK = check_import(chm, m) and IMPORT_OK
 
 if not IMPORT_OK:
     sys.exit(1)
