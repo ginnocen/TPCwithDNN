@@ -135,15 +135,15 @@ def main():
                         help="Perform the training")
     parser.add_argument("--docreateinputdata", action='store_true', default=argparse.SUPPRESS,
                         help="Create input data trees")
-    parser.add_argument("--docreatevaldata", action='store_true', default=argparse.SUPPRESS,
+    parser.add_argument("--docreatendvaldata", action='store_true', default=argparse.SUPPRESS,
                         help="Create validation data trees")
     # parameters for config file
     parser.add_argument("--rndaugment", action='store_true', default=argparse.SUPPRESS,
                         help="Use random-random augmentation for training")
     parser.add_argument("--ntrain1d", dest='train_events_oned', type=int, default=argparse.SUPPRESS,
                         help="Set custom number of training events")
-    parser.add_argument("--nval", dest='val_events', type=int, default=argparse.SUPPRESS,
-                        help="Set custom number of validation events")
+    parser.add_argument("--nval", dest='nd_val_events', type=int, default=argparse.SUPPRESS,
+                        help="Set custom number of max nd validation events")
     parser.add_argument("--frac", dest='downsample_fraction', type=float, default=argparse.SUPPRESS,
                         help="Set downsampling fraction if --downsample is set")
     parser.add_argument("--nestimators", dest='n_estimators', type=int, default=argparse.SUPPRESS,
@@ -162,17 +162,17 @@ def main():
     logger.info("Arguments provided: %s", str(args))
     if "dotrain" in args:
         default['dotrain'] = True
-    if "docreateinputdata" in args or "docreatevaldata" in args:
-        default['docreatevaldata'] = True
+    if "docreateinputdata" in args or "docreatendvaldata" in args:
+        default['docreatendvaldata'] = True
         config_parameters['common']['nd_validate_model'] = False
-    if "docreatevaldata" in args:
+    if "docreatendvaldata" in args:
         config_parameters['common']['nd_validate_model'] = True
     if "rndaugment" in args:
         config_parameters['common']['rnd_augment'] = True
     if "train_events_oned" in args:
         config_parameters['xgboost']['train_events'] = [args.train_events_oned]
-    if "val_events" in args:
-        config_parameters['common']['val_events'] = args.val_events
+    if "nd_val_events" in args:
+        config_parameters['common']['nd_val_events'] = args.nd_val_events
     if "downsample_fraction" in args:
         config_parameters['xgboost']['downsample'] = True
         config_parameters['xgboost']['downsample_fraction'] = args.downsample_fraction
