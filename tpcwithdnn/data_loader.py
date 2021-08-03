@@ -12,15 +12,19 @@ from tpcwithdnn.logger import get_logger
 """
 Constants to calculate map file name based on its ordinal index.
 """
-SCALES_CONST = [0, 3, -3, 6, -6]
-SCALES_LINEAR = [0, 3, -3]
-SCALES_PARABOLIC = [0, 3, -3]
-NUM_FOURIER_COEFFS = 40
-NELE_PER_ADC = 670
+SCALES_CONST = [0, 3, -3, 6, -6] # Indices of constant scaling of the mean maps
+SCALES_LINEAR = [0, 3, -3] # Indices of linear scaling of the mean maps
+SCALES_PARABOLIC = [0, 3, -3] # Indices of parabolic scaling of the mean maps
+NUM_FOURIER_COEFFS = 40 # Number of Fourier coefficients to take from the 1D IDC input
+NELE_PER_ADC = 670 # A constant for charge-to-ADC (digitized value) normalization
 
 def get_mean_desc(mean_id):
     """
     Get map file name based on its ordinal index.
+
+    :param int mean_id: index number of the mean map
+    :return: mean file prefix
+    :rtype: str
     """
     s_const = SCALES_CONST[mean_id // 9]
     s_lin = SCALES_LINEAR[(mean_id % 9) // 3]
@@ -30,7 +34,20 @@ def get_mean_desc(mean_id):
 
 def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
     """
-    Load IDC data.
+    The base function to load IDC data and filter it according to z_range.
+
+    :param str dirinput: the directory with the input data, value taken from the config file
+    :param list event_index: a list of [random_index, second_map_index] indices of the random
+                             and the second reference map, respectively. The second map can be mean
+                             or random, depending on use_rnd_augment.
+    :param list z_range: a list of [min_z, max_z] values, the input and output data will be
+    :param bool use_rnd_augment: if True, (random-random) map pairs are used,
+                                 if False, (random-mean)
+    :return: a vector of numpy arrays, one per each input data type:
+             - r, rphi, z position
+             - random and reference space charge
+             - random and reference r, rphi and z distortion
+             - random and reference r, rphi and z distortion correction
     """
     if use_rnd_augment:
         ref_prefix = "Random"
@@ -118,28 +135,28 @@ def filter_idc_data(data_a, data_c, z_range):
                                           data / (scipy.constants.e * NELE_PER_ADC))) # C -> ADC
     return tuple(output_data)
 
-def load_data_original(input_data, event_index):
+def load_data_original(dirinput, event_index):
     """
     Load old SC data.
     """
-    files = ["%s/data/Pos/0-vecRPos.npy" % input_data,
-             "%s/data/Pos/0-vecPhiPos.npy" % input_data,
-             "%s/data/Pos/0-vecZPos.npy" % input_data,
-             "%s/data/Mean/%d-vecMeanSC.npy" % (input_data, event_index[1]),
-             "%s/data/Random/%d-vecRandomSC.npy" % (input_data, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistR.npy" % (input_data, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistR.npy" % (input_data, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistRPhi.npy" % (input_data, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistRPhi.npy" % (input_data, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistZ.npy" % (input_data, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistZ.npy" % (input_data, event_index[0])]
+    files = ["%s/data/Pos/0-vecRPos.npy" % dirinput,
+             "%s/data/Pos/0-vecPhiPos.npy" % dirinput,
+             "%s/data/Pos/0-vecZPos.npy" % dirinput,
+             "%s/data/Mean/%d-vecMeanSC.npy" % (dirinput, event_index[1]),
+             "%s/data/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
+             "%s/data/Mean/%d-vecMeanDistR.npy" % (dirinput, event_index[1]),
+             "%s/data/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
+             "%s/data/Mean/%d-vecMeanDistRPhi.npy" % (dirinput, event_index[1]),
+             "%s/data/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
+             "%s/data/Mean/%d-vecMeanDistZ.npy" % (dirinput, event_index[1]),
+             "%s/data/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0])]
 
     return [np.load(f) for f in files]
 
-def load_data_derivatives_ref_mean(inputdata, z_range):
-    z_pos_file = "%s/data/Pos/0-vecZPos.npy" % inputdata
-    ref_mean_sc_plus_file = "%s/data/Mean/9-vecMeanSC.npy" % inputdata
-    ref_mean_sc_minus_file = "%s/data/Mean/18-vecMeanSC.npy" % inputdata
+def load_data_derivatives_ref_mean(dirinput, z_range):
+    z_pos_file = "%s/data/Pos/0-vecZPos.npy" % dirinput
+    ref_mean_sc_plus_file = "%s/data/Mean/9-vecMeanSC.npy" % dirinput
+    ref_mean_sc_minus_file = "%s/data/Mean/18-vecMeanSC.npy" % dirinput
 
     vec_z_pos = np.load(z_pos_file)
     vec_sel_z = (z_range[0] <= vec_z_pos) & (vec_z_pos < z_range[1])
@@ -148,16 +165,16 @@ def load_data_derivatives_ref_mean(inputdata, z_range):
                           np.load(ref_mean_sc_minus_file)[vec_sel_z]
 
     mat_der_ref_mean_dist = np.empty((3, vec_der_ref_mean_sc.size))
-    ref_mean_dist_r_plus_file = "%s/data/Mean/9-vecMeanDistR.npy" % inputdata
-    ref_mean_dist_r_minus_file = "%s/data/Mean/18-vecMeanDistR.npy" % inputdata
+    ref_mean_dist_r_plus_file = "%s/data/Mean/9-vecMeanDistR.npy" % dirinput
+    ref_mean_dist_r_minus_file = "%s/data/Mean/18-vecMeanDistR.npy" % dirinput
     mat_der_ref_mean_dist[0, :] = np.load(ref_mean_dist_r_plus_file)[vec_sel_z] \
                                                 - np.load(ref_mean_dist_r_minus_file)[vec_sel_z]
-    ref_mean_dist_rphi_plus_file = "%s/data/Mean/9-vecMeanDistRPhi.npy" % inputdata
-    ref_mean_dist_rphi_minus_file = "%s/data/Mean/18-vecMeanDistRPhi.npy" % inputdata
+    ref_mean_dist_rphi_plus_file = "%s/data/Mean/9-vecMeanDistRPhi.npy" % dirinput
+    ref_mean_dist_rphi_minus_file = "%s/data/Mean/18-vecMeanDistRPhi.npy" % dirinput
     mat_der_ref_mean_dist[1, :] = np.load(ref_mean_dist_rphi_plus_file)[vec_sel_z] - \
                                                 np.load(ref_mean_dist_rphi_minus_file)[vec_sel_z]
-    ref_mean_dist_z_plus_file = "%s/data/Mean/9-vecMeanDistZ.npy" % inputdata
-    ref_mean_dist_z_minus_file = "%s/data/Mean/18-vecMeanDistZ.npy" % inputdata
+    ref_mean_dist_z_plus_file = "%s/data/Mean/9-vecMeanDistZ.npy" % dirinput
+    ref_mean_dist_z_minus_file = "%s/data/Mean/18-vecMeanDistZ.npy" % dirinput
     mat_der_ref_mean_dist[2, :] = np.load(ref_mean_dist_z_plus_file)[vec_sel_z] \
                                                 - np.load(ref_mean_dist_z_minus_file)[vec_sel_z]
 
@@ -249,32 +266,27 @@ def load_data_oned_idc(dirinput, event_index, z_range,
     return inputs, vec_exp_corr_fluc
 
 
-def load_data(input_data, event_index, z_range):
+def load_data(dirinput, event_index, z_range):
+    """
+    Load files for specified event_index pair from the input directory, restricted to the z_range.
+    NOTE: Function for the old data, will be deprecated.
 
-    """ Here we define the functionalties to load the files from the input
-    directory which is set in the database. Here below the description of
-    the input files:
-        - 0-vecZPos.npy, 0-vecRPos.npy, 0-vecPhiPos.npy contains the
-        position of the FIXME. There is only one of these files for each
-        folder, therefore for each bunch of events
-        Input features for training:
-        - vecMeanSC.npy: average space charge in each bin of r, rphi and z.
-        - vecRandomSC.npy: fluctuation of the space charge.
-        Output from the numberical calculations:
-        - vecMeanDistR.npy average distorsion along the R axis in the same
-          grid. It represents the expected distorsion that an electron
-          passing by that region would have as a consequence of the IBF.
-        - vecRandomDistR.npy are the correponding fluctuations.
-        - All the distorsions along the other directions have a consistent
-          naming choice.
-
+    :param str dirinput: the directory with the input data, value taken from the config file
+    :param list event_index: a list of [random_index, second_map_index] indices of the random
+                             and the second reference map, respectively.
+                             The second map can be mean or random, depending on the settings.
+    :param list z_range: a list of [min_z, max_z] values, the input and output data will be
+                         restricted to min_z <= z < max_z 
+    :return: list of vectors of mean space charge, space-charge fluctuations
+             and r, rphi, z distortion fluctuations, restricted to the z_range
+    :rtype: list
     """
 
     [_, _, vec_z_pos,
      vec_mean_sc, vec_random_sc,
      vec_mean_dist_r, vec_random_dist_r,
      vec_mean_dist_rphi, vec_random_dist_rphi,
-     vec_mean_dist_z, vec_random_dist_z] = load_data_original(input_data, event_index)
+     vec_mean_dist_z, vec_random_dist_z] = load_data_original(dirinput, event_index)
 
     vec_sel_in_z = (z_range[0] <= vec_z_pos) & (vec_z_pos < z_range[1])
 
@@ -307,12 +319,12 @@ def load_event_idc(dirinput, event_index, z_range,
     return inputs, exp_outputs
 
 
-def load_train_apply(input_data, event_index, z_range,
+def load_train_apply(dirinput, event_index, z_range,
                      grid_r, grid_rphi, grid_z, opt_train, opt_pred):
 
     [vec_mean_sc, vec_fluctuation_sc, vec_fluctuation_dist_r,
      vec_fluctuation_dist_rphi, vec_fluctuation_dist_z] = \
-        load_data(input_data, event_index, z_range)
+        load_data(dirinput, event_index, z_range)
     dim_input = sum(opt_train)
     dim_output = sum(opt_pred)
     inputs = np.empty((grid_rphi, grid_r, grid_z, dim_input))
