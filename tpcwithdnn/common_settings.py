@@ -38,6 +38,8 @@ class CommonSettings:
     def __init__(self, data_param):
         """
         Read and store the parameters from the file.
+
+        :param dict data_param: dictionary of values read from the config file
         """
         self.logger = get_logger()
 
@@ -112,8 +114,15 @@ class CommonSettings:
 
     def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
         """
-        Update the event ranges for train / validation / apply.
+        Update the event indices ranges for train / validation / apply.
         To be used internally.
+
+        :param dict ranges: dictionary of lists with event indices ranges for train / val / apply
+        :param str suffix: suffix of the output file
+        :param int total_events: number of all events used
+        :param int train_events: number of events used for training
+        :param int val_events: number of events used for validation
+        :param int apply_events: number of events used for prediction
         """
         self.total_events = total_events
         self.train_events = train_events
@@ -147,6 +156,9 @@ class DNNSettings:
     def __init__(self, common_settings, data_param):
         """
         Read and store the parameters from the file.
+
+        :param obj common_settings: CommonSettings singleton instance
+        :param dict data_param: dictionary of values read from the config file
         """
         self.common_settings = common_settings
         self.logger.info("DNNSettings::Init")
@@ -204,6 +216,8 @@ class DNNSettings:
     def __getattr__(self, name):
         """
         A Python hack to refer to the fields of the stored CommonSettings instance.
+
+        :param str name: name of the requested instance attribute
         """
         try:
             return getattr(self.common_settings, name)
@@ -213,6 +227,12 @@ class DNNSettings:
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
         A wrapper around internal set_ranges_().
+
+        :param dict ranges: dictionary of lists with event indices ranges for train / val / apply
+        :param int total_events: number of all events used
+        :param int train_events: number of events used for training
+        :param int val_events: number of events used for validation
+        :param int apply_events: number of events used for prediction
         """
         self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
 
@@ -222,6 +242,9 @@ class XGBoostSettings:
     def __init__(self, common_settings, data_param):
         """
         Read and store the parameters from the file.
+
+        :param obj common_settings: CommonSettings singleton instance
+        :param dict data_param: dictionary of values read from the config file
         """
         self.common_settings = common_settings
         self.logger.info("XGBoostSettings::Init")
@@ -264,6 +287,8 @@ class XGBoostSettings:
     def __getattr__(self, name):
         """
         A Python hack to refer to the fields of the stored CommonSettings instance.
+
+        :param str name: name of the requested instance attribute
         """
         try:
             return getattr(self.common_settings, name)
@@ -274,5 +299,11 @@ class XGBoostSettings:
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
         A wrapper around internal set_ranges_().
+
+        :param dict ranges: dictionary of lists with event indices ranges for train / val / apply
+        :param int total_events: number of all events used
+        :param int train_events: number of events used for training
+        :param int val_events: number of events used for validation
+        :param int apply_events: number of events used for prediction
         """
         self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)

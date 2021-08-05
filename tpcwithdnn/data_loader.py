@@ -40,7 +40,8 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
     :param list event_index: a list of [random_index, second_map_index] indices of the random
                              and the second reference map, respectively. The second map can be mean
                              or random, depending on use_rnd_augment.
-    :param list z_range: a list of [min_z, max_z] values, the input and output data will be
+    :param list z_range: a list of [min_z, max_z] values, the input and output data is taken
+                         from this interval
     :param bool use_rnd_augment: if True, (random-random) map pairs are used,
                                  if False, (random-mean)
     :return: a vector of numpy arrays, one per each input data type:
@@ -114,7 +115,16 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
 
 def filter_idc_data(data_a, data_c, z_range):
     """
-    Select A-side and/or C-side data based on the z range.
+    Select the A-side and/or C-side data based on the z range.
+
+    :param list data_a: list of arrays of values from the A-side
+    :param list data_c: list of arrays of values from the C-side
+    :param list z_range: a list of [min_z, max_z] values.
+                         If the interval contains positive z, A-side data will be used.
+                         Similarly, for any negative z C-side data is used.
+    :return: tuple with selected data. If both A and C-side are selected,
+             the correspondings arrays are stacked.
+    :rtype: tuple
     """
     # TODO: Getter and application of Fourier coefficients need to be modified to handle both A and
     # C side at the same time
@@ -137,7 +147,15 @@ def filter_idc_data(data_a, data_c, z_range):
 
 def load_data_original(dirinput, event_index):
     """
-    Load old SC data.
+    Load the old input data.
+    NOTE: Function for the old data, will be deprecated.
+
+    :param str dirinput: the directory with the input data, value taken from the config file
+    :param list event_index: a list of [random_index, mean_map_index] indices of the random
+                             and the mean map, respectively.
+    :return: list of vectors of r, rphi, z positions, mean and random space charge,
+             and r, rphi, z mean and random distortions, unrestricted
+    :rtype: list
     """
     files = ["%s/data/Pos/0-vecRPos.npy" % dirinput,
              "%s/data/Pos/0-vecPhiPos.npy" % dirinput,
@@ -154,6 +172,17 @@ def load_data_original(dirinput, event_index):
     return [np.load(f) for f in files]
 
 def load_data_derivatives_ref_mean(dirinput, z_range):
+    """
+    Load selected mean maps and calculate the derivatives of average space charge
+    and average distortions.
+
+    :param str dirinput: the directory with the input data, value taken from the config file
+    :param list z_range: a list of [min_z, max_z] values, the input and output data will be
+                         restricted to min_z <= z < max_z
+    :return: tuple with a vector of SC derivative and a 2D array with derivatives of r, rphi and z
+             distortions, respectively
+    :rtype: tuple
+    """
     z_pos_file = "%s/data/Pos/0-vecZPos.npy" % dirinput
     ref_mean_sc_plus_file = "%s/data/Mean/9-vecMeanSC.npy" % dirinput
     ref_mean_sc_minus_file = "%s/data/Mean/18-vecMeanSC.npy" % dirinput
@@ -181,6 +210,15 @@ def load_data_derivatives_ref_mean(dirinput, z_range):
     return vec_der_ref_mean_sc, mat_der_ref_mean_dist
 
 def mat_to_vec(opt_pred, mat_tuple):
+    """
+    Convert multidimensional arrays to flat vectors.
+
+    :param list opt_pred: list of 3 binary values corresponding to activation of
+                          r, rphi and z distortion corrections, taken from the config file
+    :param tuple mat_tuple: tuple of arrays to be flattened
+    :return: tuple of flattened input arrays
+    :rtype: tuple
+    """
     if sum(opt_pred) > 1:
         logger = get_logger()
         logger.fatal("Framework not yet fully prepared for more than one distortion direction.")
@@ -190,6 +228,14 @@ def mat_to_vec(opt_pred, mat_tuple):
     return res
 
 def downsample_data(data_size, downsample_frac):
+    """
+    Downsample data - select randomly a downsample_frac fraction of the input data
+
+    :param int data_size: size of the data to be downsampled
+    :param double downsample_frac: fraction of the data to be sampled
+    :return: boolean vector that can be used as a mask for sampling 1D data
+    :rtype: list
+    """
     chosen = [False] * data_size
     num_points = int(round(downsample_frac * data_size))
     for _ in range(num_points):
@@ -200,6 +246,14 @@ def downsample_data(data_size, downsample_frac):
     return chosen
 
 def get_fourier_coeffs(vec_oned_idc):
+    """
+    Calculate Fourier transform and real and imaginary Fourier coefficients for a given vector.
+
+    :param list vec_oned_idc: vector of 1D IDC values
+    :param int NUM_FOURIER_COEFFS: number of Fourier coefficients
+    :return: numpy 1D array of interleaved real and imaginary Fourier coefficients
+    :rtype: np.ndarray
+    """
     dft = np.fft.fft(vec_oned_idc)
     dft_real = np.real(dft)[:NUM_FOURIER_COEFFS]
     dft_imag = np.imag(dft)[:NUM_FOURIER_COEFFS]
@@ -209,6 +263,17 @@ def get_fourier_coeffs(vec_oned_idc):
 
 def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                   vec_der_ref_mean_corr, dft_coeffs):
+    """
+    Create the input sample for 1D BDT correction for a single event map pair.
+
+    :param np.ndarray vec_r_pos: vector of r positions
+    :param np.ndarray vec_rphi_pos: vector of rphi positions
+    :param np.ndarray vec_z_pos: vector of z positions
+    :param np.ndarray vec_der_ref_mean_corr: vector of the derivative of average space charge
+    :param np.ndarray dft_coeffs: vector of Fourier coefficients
+    :return: an input sample (a vector) for 1D BDT correction
+    :rtype: np.ndarray
+    """
     inputs = np.zeros((vec_der_ref_mean_corr.size,
                        4 + dft_coeffs.size))
     for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
@@ -219,6 +284,12 @@ def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
 
 
 def get_input_names_oned_idc():
+    """
+    Get an array with names of the input parameters.
+
+    :return: a list of names
+    :rtype: list
+    """
     input_names = ['r', 'phi', 'z', 'der_corr_r']
     for i in range(NUM_FOURIER_COEFFS):
         input_names = input_names + ['c_real%d' % i, 'c_imag%d' % i]
@@ -227,6 +298,8 @@ def get_input_names_oned_idc():
 
 def load_data_oned_idc(dirinput, event_index, z_range,
                        opt_pred, downsample, downsample_frac, use_rnd_augment):
+    """
+    """
     [vec_r_pos, vec_phi_pos, vec_z_pos,
      *_,
      vec_mean_corr_r, vec_random_corr_r,
@@ -276,7 +349,7 @@ def load_data(dirinput, event_index, z_range):
                              and the second reference map, respectively.
                              The second map can be mean or random, depending on the settings.
     :param list z_range: a list of [min_z, max_z] values, the input and output data will be
-                         restricted to min_z <= z < max_z 
+                         restricted to min_z <= z < max_z
     :return: list of vectors of mean space charge, space-charge fluctuations
              and r, rphi, z distortion fluctuations, restricted to the z_range
     :rtype: list
@@ -356,6 +429,17 @@ def load_train_apply(dirinput, event_index, z_range,
 
 
 def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_rnd_augment):
+    """
+    Select randomly event pair indices for train / validation / apply.
+
+    :param int range_rnd_index_train: number of random event maps available
+    :param int range_mean_index: number of mean event maps available
+    :param dict ranges: dictionary of lists of event ranges for train / validation / apply
+    :param bool use_rnd_augment: if True, (random-random) map pairs are used,
+                                 if False, (random-mean)
+    :return: list of all selected map indices and dictionary with selected train / validation / apply indices
+    :rtype: tuple(list, dict)
+    """
     all_indices_events_means = []
     range_ref_index = range_mean_index
     if use_rnd_augment:
@@ -365,7 +449,6 @@ def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_
             if use_rnd_augment and ievent == iref:
                 continue
             all_indices_events_means.append([ievent, iref])
-    # Equivalent to shuffling the data
     sel_indices_events_means = random.sample(all_indices_events_means, ranges["apply"][1] + 1)
 
     indices_train = sel_indices_events_means[ranges["train"][0]:ranges["train"][1]]

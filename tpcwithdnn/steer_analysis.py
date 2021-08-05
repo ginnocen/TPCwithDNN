@@ -1,5 +1,5 @@
 """
-main script for doing tpc calibration with dnn
+The main script for the TPC calibration with DNN and BDT.
 """
 # pylint: disable=fixme, too-many-statements, too-many-branches
 import os
@@ -24,6 +24,7 @@ tf.random.set_seed(SEED)
 import matplotlib
 matplotlib.use("Agg")
 
+# To suppress ROOT-specific command line help
 from ROOT import PyConfig # pylint: disable=import-error
 PyConfig.IgnoreCommandLineOptions = True
 
@@ -33,11 +34,15 @@ import tpcwithdnn.check_root # pylint: disable=unused-import
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.debug_utils import log_time, log_total_memory_usage
 from tpcwithdnn.common_settings import CommonSettings, XGBoostSettings, DNNSettings
+# Currently, DataValidator is used for old data (used by DNN).
+# It should be removed once DNN is adapted to the IDC data.
 # from tpcwithdnn.data_validator import DataValidator
 from tpcwithdnn.idc_data_validator import IDCDataValidator
 
 def setup_tf():
-    # optionally limit GPU memory usage
+    """
+    Limit GPU memory usage.
+    """
     if os.environ.get('TPCwithDNNSETMEMLIMIT'):
         gpus = tf.config.experimental.list_physical_devices('GPU')
         if gpus:
@@ -52,6 +57,13 @@ def setup_tf():
                 logger.error(e)
 
 def init_models(config_parameters):
+    """
+    Initialize the models and/or intermediate correction activated in the config file.
+
+    :param dict config_parameters: dictionary of values read from the config file
+    :return: prepared models, correction algorithm and data validator
+    :rtype: tuple(list, obj, obj)
+    """
     models = []
     corr = None
     common_settings = CommonSettings(config_parameters["common"])
@@ -74,12 +86,30 @@ def init_models(config_parameters):
     return models, corr, dataval
 
 def get_events_counts(train_events, val_events, apply_events):
+    """
+    Verify and zip requested numbers of events.
+
+    :param list train_events: list of numbers of train events from the config file
+    :param list val_events: list of numbers of validation events from the config file
+    :param list apply_events: list of numbers of apply events from the config file
+    :return: zipped (train, validation, apply) numbers
+    :rtype: zip
+    """
     if len(train_events) != len(val_events) or \
        len(train_events) != len(apply_events):
         raise ValueError("Different number of ranges specified for train/val/apply")
     return zip(train_events, val_events, apply_events)
 
 def run_model_and_val(model, dataval, default, config_parameters):
+    """
+    Launch the correction and validation steps activated in the config files,
+    for a single set of triain/validation/apply numbers of events.
+
+    :param obj model: instance of the current model (optimizer)
+    :param obj dataval: instance of data validator
+    :param dict default: dictionary with values from the default.yml configuration file
+    :param dict config_parameters: dictionary of values read from the config file
+    """
     dataval.set_model(model)
     if default["dotrain"] is True:
         start = timer()
