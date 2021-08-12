@@ -5,7 +5,6 @@ Check whether ROOT deps are present
 import sys
 import importlib
 
-
 def check_import(mod_name, add_message=""):
     try:
         importlib.import_module(mod_name)

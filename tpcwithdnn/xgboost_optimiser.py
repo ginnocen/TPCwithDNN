@@ -14,7 +14,7 @@ from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 from tpcwithdnn import plot_utils
 from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
 from tpcwithdnn.optimiser import Optimiser
-from tpcwithdnn.data_loader import load_event_idc, get_input_names_oned_idc
+from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc
 
 class XGBoostOptimiser(Optimiser):
     name = "xgboost"
@@ -125,12 +125,12 @@ class XGBoostOptimiser(Optimiser):
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
-            inputs_single, exp_outputs_single = load_event_idc(self.config.dirinput_train,
-                                                               indexev, self.config.z_range,
-                                                               self.config.opt_predout,
-                                                               downsample,
-                                                               self.config.downsample_frac,
-                                                               self.config.rnd_augment)
+            inputs_single, exp_outputs_single = load_data_oned_idc(self.config.dirinput_train,
+                                                                   indexev, self.config.z_range,
+                                                                   self.config.opt_predout,
+                                                                   downsample,
+                                                                   self.config.downsample_frac,
+                                                                   self.config.rnd_augment)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)

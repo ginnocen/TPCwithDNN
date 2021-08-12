@@ -299,7 +299,31 @@ def get_input_names_oned_idc():
 def load_data_oned_idc(dirinput, event_index, z_range,
                        opt_pred, downsample, downsample_frac, use_rnd_augment):
     """
+    Load inputs and outputs for one event for 1D IDC correction.
+
+    :param str dirinput: the directory with the input data, value taken from the config file
+    :param list event_index: a list of [random_index, second_map_index] indices of the random
+                             and the second reference map, respectively. The second map can be mean
+                             or random, depending on use_rnd_augment.
+    :param list z_range: a list of [min_z, max_z] values, the input and output data is taken
+                         from this interval
+    :param int grid_r: grid granularity (number of voxels) along r-axis
+    :param int grid_rphi: grid granularity (number of voxels) along rphi-axis
+    :param int grid_z: grid granularity (number of voxels) along z-axis
+    :param list opt_pred: list of 3 binary values corresponding to activating the prediction of
+                          r, rphi and z distortion corrections, taken from the config file
+    :param bool downsample: whether to downsample the data
+    :param double downsample_frac: fraction of the data to be sampled
+    :param bool use_rnd_augment: if True, (random-random) map pairs are used,
+                                 if False, (random-mean)
+    :return: tuple of inputs and expected outputs
+    :rtype: tuple
     """
+    dim_output = sum(opt_pred)
+    if dim_output > 1:
+        logger = get_logger()
+        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
+
     [vec_r_pos, vec_phi_pos, vec_z_pos,
      *_,
      vec_mean_corr_r, vec_random_corr_r,
@@ -375,26 +399,28 @@ def load_data(dirinput, event_index, z_range):
             vec_fluctuation_dist_rphi, vec_fluctuation_dist_z]
 
 
-def load_event_idc(dirinput, event_index, z_range,
-                   opt_pred, downsample, downsample_frac, use_rnd_augment):
-
-    inputs, exp_outputs = load_data_oned_idc(dirinput, event_index, z_range,
-                                             opt_pred, downsample, downsample_frac, use_rnd_augment)
-
-    dim_output = sum(opt_pred)
-    if dim_output > 1:
-        logger = get_logger()
-        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
-
-    #print("DIMENSION INPUT TRAINING", inputs.shape)
-    #print("DIMENSION OUTPUT TRAINING", exp_outputs.shape)
-
-    return inputs, exp_outputs
-
-
 def load_train_apply(dirinput, event_index, z_range,
                      grid_r, grid_rphi, grid_z, opt_train, opt_pred):
+    """
+    Load inputs and outputs for training / apply for one event.
+    NOTE: Function for the old data, will be deprecated.
 
+    :param str dirinput: the directory with the input data, value taken from the config file
+    :param list event_index: a list of [random_index, mean_map_index] indices of the random
+                             and the mean map, respectively.
+    :param list z_range: a list of [min_z, max_z] values, the input and output data is taken
+                         from this interval
+    :param int grid_r: grid granularity (number of voxels) along r-axis
+    :param int grid_rphi: grid granularity (number of voxels) along rphi-axis
+    :param int grid_z: grid granularity (number of voxels) along z-axis
+    :param list opt_train: list of 2 binary values corresponding to activating the train input of
+                           average space charge and space-charge fluctuations, respectively,
+                           taken from the config file
+    :param list opt_pred: list of 3 binary values corresponding to activating the prediction of
+                          r, rphi and z distortion corrections, taken from the config file
+    :return: tuple of inputs and expected outputs
+    :rtype: tuple
+    """
     [vec_mean_sc, vec_fluctuation_sc, vec_fluctuation_dist_r,
      vec_fluctuation_dist_rphi, vec_fluctuation_dist_z] = \
         load_data(dirinput, event_index, z_range)
@@ -421,9 +447,6 @@ def load_train_apply(dirinput, event_index, z_range,
     for ind, vec_fluctuation_dist in enumerate(sel_flucs):
         exp_outputs[:, :, :, ind] = \
                 vec_fluctuation_dist.reshape(grid_rphi, grid_r, grid_z)
-
-    #print("DIMENSION INPUT TRAINING", inputs.shape)
-    #print("DIMENSION OUTPUT TRAINING", exp_outputs.shape)
 
     return inputs, exp_outputs
 

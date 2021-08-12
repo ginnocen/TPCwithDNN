@@ -22,8 +22,8 @@ common:
   grid_r: 33
   z_range: [0, 251] # train for distortions with min <= z < max
   opt_train: [1, 1] # first position = meanSC, second = SCfluctuations
-  opt_predout: [1, 0, 0] # R, Rphi, z output distorsion predictions
-  nameopt_predout: [R, RPhi, Z] # R, RPhi, Z output distorsion predictions
+  opt_predout: [1, 0, 0] # R, Rphi, z output distortion predictions
+  nameopt_predout: [R, RPhi, Z] # R, RPhi, Z output distortion predictions
   maxrandomfiles: 1000 # this is the total number of random events generated
   range_rnd_index_train: [0, 999] # min and max index of random SC configurations for training
   range_rnd_index_nd_val: [0, 999] # min and max index of random SC configurations for nd validation
