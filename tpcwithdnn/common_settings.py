@@ -83,7 +83,7 @@ class CommonSettings:
         self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
                                self.grid_z, self.grid_r, self.grid_phi)
 
-        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree):
+        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree, self.dirhist):
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
 
@@ -180,9 +180,9 @@ class DNNSettings:
             self.metrics = data_param["metrics"]
         self.adamlr = data_param["adamlr"]
 
-        self.params = {'phi_slice': self.grid_phi,
-                       'r_row' : self.grid_r,
-                       'z_col' : self.grid_z,
+        self.params = {'grid_phi': self.grid_phi,
+                       'grid_r' : self.grid_r,
+                       'grid_z' : self.grid_z,
                        'batch_size': self.batch_size,
                        'shuffle': self.shuffle,
                        'opt_train' : self.opt_train,
@@ -190,7 +190,7 @@ class DNNSettings:
                        'z_range' : self.z_range,
                        'use_scaler': self.use_scaler}
 
-        self.suffix = "phi%d_r%d_z%d_filter%d_poo%d_drop%.2f_depth%d_batch%d_scaler%d" % \
+        self.suffix = "phi%d_r%d_z%d_filter%d_poo%s_drop%.2f_depth%d_batch%d_scaler%d" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.filters, self.pool_type,
                  self.dropout, self.depth, 1 if self.batch_normalization else 0,
                  1 if self.use_scaler else 0)

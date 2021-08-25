@@ -45,10 +45,10 @@ class DnnOptimiser(Optimiser):
         self.config.logger.info("DnnOptimiser::train")
 
         training_generator = FluctuationDataGenerator(self.config.partition['train'],
-                                                      data_dir=self.config.dirinput_train,
+                                                      dirinput=self.config.dirinput_train,
                                                       **self.config.params)
         validation_generator = FluctuationDataGenerator(self.config.partition['validation'],
-                                                        data_dir=self.config.dirinput_test,
+                                                        dirinput=self.config.dirinput_val,
                                                         **self.config.params)
         model = u_net((self.config.grid_phi, self.config.grid_r, self.config.grid_z,
                        self.config.dim_input),
