@@ -225,18 +225,17 @@ def mat_to_vec(opt_pred, mat_tuple):
     res = tuple(np.hstack(mat[sel_opts]) for mat in mat_tuple)
     return res
 
-def downsample_data(data_size, downsample_frac):
+def downsample_data(data_size, downsample_npoints):
     """
-    Downsample data - select randomly a downsample_frac fraction of the input data
+    Downsample data - select randomly downsample_npoints voxels from the input data
 
     :param int data_size: size of the data to be downsampled
-    :param double downsample_frac: fraction of the data to be sampled
+    :param int downsample_npoints: number of data voxels to be sampled
     :return: boolean vector that can be used as a mask for sampling 1D data
     :rtype: list
     """
     chosen = [False] * data_size
-    num_points = int(round(downsample_frac * data_size))
-    for _ in range(num_points):
+    for _ in range(downsample_npoints):
         sel_ind = random.randrange(0, data_size)
         while chosen[sel_ind]:
             sel_ind = random.randrange(0, data_size)
@@ -295,7 +294,7 @@ def get_input_names_oned_idc():
 
 
 def load_data_oned_idc(dirinput, event_index, z_range,
-                       opt_pred, downsample, downsample_frac, use_rnd_augment):
+                       opt_pred, downsample, downsample_npoints, use_rnd_augment):
     """
     Load inputs and outputs for one event for 1D IDC correction.
 
@@ -311,7 +310,7 @@ def load_data_oned_idc(dirinput, event_index, z_range,
     :param list opt_pred: list of 3 binary values corresponding to activating the prediction of
                           r, rphi and z distortion corrections, taken from the config file
     :param bool downsample: whether to downsample the data
-    :param double downsample_frac: fraction of the data to be sampled
+    :param int downsample_npoints: number of data voxels to be sampled
     :param bool use_rnd_augment: if True, (random-random) map pairs are used,
                                  if False, (random-mean)
     :return: tuple of inputs and expected outputs
@@ -348,7 +347,7 @@ def load_data_oned_idc(dirinput, event_index, z_range,
     # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
     # distortion direction
     if downsample:
-        chosen_points = downsample_data(len(vec_z_pos), downsample_frac)
+        chosen_points = downsample_data(len(vec_z_pos), downsample_npoints)
         vec_r_pos = vec_r_pos[chosen_points]
         vec_phi_pos = vec_phi_pos[chosen_points]
         vec_z_pos = vec_z_pos[chosen_points]

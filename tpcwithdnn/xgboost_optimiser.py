@@ -175,7 +175,7 @@ class XGBoostOptimiser(Optimiser):
                                                                    indexev, self.config.z_range,
                                                                    self.config.opt_predout,
                                                                    downsample,
-                                                                   self.config.downsample_frac,
+                                                                   self.config.downsample_npoints,
                                                                    self.config.rnd_augment)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
