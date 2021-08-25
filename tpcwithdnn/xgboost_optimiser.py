@@ -195,7 +195,7 @@ class XGBoostOptimiser(Optimiser):
                             (self.config.dirapply, self.config.suffix, self.config.train_events),
                             "recreate")
         h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events =\
-                plot_utils.create_apply_histos(self.config)
+                plot_utils.create_apply_histos(self.config, self.config.suffix, infix="all_events_")
         distortion_numeric_flat_m, distortion_predict_flat_m, deltas_flat_a, deltas_flat_m =\
             plot_utils.get_apply_results_single_event(pred_outputs, exp_outputs)
         plot_utils.fill_apply_tree(h_dist_all_events, h_deltas_all_events,
@@ -207,8 +207,8 @@ class XGBoostOptimiser(Optimiser):
             hist.Write()
         plot_utils.fill_profile_apply_hist(h_deltas_vs_dist_all_events, self.config.profile_name,
                                            self.config.suffix)
-        plot_utils.fill_std_dev_apply_hist(h_deltas_vs_dist_all_events,
-                                           self.config.h_deltas_vs_dist_name, self.config.suffix)
+        plot_utils.fill_std_dev_apply_hist(h_deltas_vs_dist_all_events, self.config.h_std_dev_name,
+                                           self.config.suffix, "all_events_")
 
         myfile.Close()
 

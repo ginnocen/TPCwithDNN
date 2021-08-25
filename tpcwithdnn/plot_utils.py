@@ -19,33 +19,38 @@ gStyle.SetTextFont(42)
 gStyle.SetLabelFont(42, "xyz")
 gStyle.SetTitleFont(42, "xyz")
 
-def create_apply_histos(config):
+def create_apply_histos(config, suffix, infix=""):
     """
     Create histogram objects for apply results.
 
     :param CommonSettings config: a singleton settings object
+    :param str suffix: suffix to append to histogram names
+    :param str infix: the middle part of a histogram name, empty or "all_events_", default empty
     :return: tuple of 3 ROOT histograms
     :rtype: tuple
     """
-    h_dist = TH2F("%s_all_events_%s" % (config.h_dist_name, config.suffix),
+    h_dist = TH2F("%s_%s%s" % (config.h_dist_name, infix, suffix),
                   "", 500, -5, 5, 500, -5, 5)
-    h_deltas = TH1F("%s_all_events_%s" % (config.h_deltas_name, config.suffix),  "", 1000, -1., 1.)
-    h_deltas_vs_dist = TH2F("%s_all_events_%s" % \
-                            (config.h_deltas_vs_dist_name, config.suffix),
+    h_deltas = TH1F("%s_%s%s" % (config.h_deltas_name, infix, suffix),  "", 1000, -1., 1.)
+    h_deltas_vs_dist = TH2F("%s_%s%s" % \
+                            (config.h_deltas_vs_dist_name, infix, suffix),
                             "", 500, -5.0, 5.0, 100, -0.5, 0.5)
     return h_dist, h_deltas, h_deltas_vs_dist
 
-def fill_std_dev_apply_hist(h_deltas_vs_dist, h_std_dev_name, suffix):
+def fill_std_dev_apply_hist(h_deltas_vs_dist, h_std_dev_name, suffix, infix=""):
     """
     Create a std dev histogram object for apply results.
 
     :param TH2F h_deltas_vs_dist: 2D histogram with expected distortion fluctuation
                                   vs prediction error (predicted - expected)
+    :param str h_std_dev_name: basename for the newly created histogram
+    :param str suffix: suffix to append to histogram name
+    :param str infix: the middle part of a histogram name, empty or "all_events_", default empty
     :return: histogram of std dev of the prediction error
     :rtype: TH1F ROOT histogram
     """
     h1tmp = h_deltas_vs_dist.ProjectionX("h1tmp")
-    h_std_dev = h1tmp.Clone("%s_all_events_%s" % (h_std_dev_name, suffix))
+    h_std_dev = h1tmp.Clone("%s_%s%s" % (h_std_dev_name, infix, suffix))
     h_std_dev.Reset()
     h_std_dev.SetXTitle("d#it{%s}_{true} (cm)")
     h_std_dev.SetYTitle("std.dev. of (d#it{%s}_{pred} - d#it{%s}_{true}) (cm)")
@@ -66,7 +71,7 @@ def fill_profile_apply_hist(h_deltas_vs_dist_all_events, profile_name, suffix):
 def fill_apply_tree_single_event(config, indexev, distortion_numeric_flat_m,
                                  distortion_predict_flat_m, deltas_flat_a, deltas_flat_m):
     h_suffix = "Ev%d_Mean%d_%s" % (indexev[0], indexev[1], config.suffix)
-    h_dist, h_deltas, h_deltas_vs_dist = create_apply_histos(config)
+    h_dist, h_deltas, h_deltas_vs_dist = create_apply_histos(config, h_suffix)
 
     fill_hist(h_dist, np.concatenate((distortion_numeric_flat_m,
                                       distortion_predict_flat_m), axis=1))

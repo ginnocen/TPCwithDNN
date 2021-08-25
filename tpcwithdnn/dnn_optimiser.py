@@ -91,7 +91,7 @@ class DnnOptimiser(Optimiser):
                             (self.config.dirapply, self.config.suffix, self.config.train_events),
                             "recreate")
         h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events =\
-                plot_utils.create_apply_histos(self.config)
+                plot_utils.create_apply_histos(self.config, self.config.suffix, infix="all_events_")
 
         for indexev in self.config.partition['apply']:
             inputs_, exp_outputs_ = load_train_apply(self.config.dirinput_apply, indexev,
@@ -125,8 +125,8 @@ class DnnOptimiser(Optimiser):
             hist.Write()
         plot_utils.fill_profile_apply_hist(h_deltas_vs_dist_all_events, self.config.profile_name,
                                            self.config.suffix)
-        plot_utils.fill_std_dev_apply_hist(h_deltas_vs_dist_all_events,
-                                           self.config.h_deltas_vs_dist_name, self.config.suffix)
+        plot_utils.fill_std_dev_apply_hist(h_deltas_vs_dist_all_events, self.config.h_std_dev_name,
+                                           self.config.suffix, "all_events_")
 
         myfile.Close()
         self.config.logger.info("Done apply")
