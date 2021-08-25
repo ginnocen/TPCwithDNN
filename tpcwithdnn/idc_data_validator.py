@@ -1,4 +1,9 @@
-# pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+"""
+Validation module for IDC input and optimization output.
+
+It is adapted to both DNN and XGBoost optimizers, but, since DNN does not use IDC data yet,
+the old validator must be used for DNN validation.
+"""
 # pylint: disable=too-many-statements, fixme
 import os
 import shutil
@@ -13,28 +18,50 @@ from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.utilities import pandas_to_tree, tree_to_pandas
+from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original_idc, get_input_oned_idc_single_map
 from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coeffs
 
-class IDCDataValidator():
+class IDCDataValidator:
+    """
+    The class for an IDC data validator.
+    """
     name = "IDC data validator"
     mean_ids = (0, 9, 18, 27, 36)
     mean_factors = (1.00, 1.03, 0.97, 1.06, 0.94)
 
     def __init__(self):
-        super().__init__()
+        """
+        Initialize the validator
+        """
         logger = get_logger()
         logger.info("IDCDataValidator::Init")
         self.model = None
         self.config = None
 
     def set_model(self, model):
+        """
+        Set model and configuration to be tested.
+
+        :param Optimizer model: an Optimizer class instance (DNN or XGBoost)
+        """
         self.model = model
         self.config = model.config
 
     # pylint: disable=too-many-locals
     def create_data_for_event(self, index_mean_id, irnd, column_names, loaded_model, dir_name):
+        """
+        Generate and save into file the input validation data for a given event pair
+
+        :param int index_mean_id: index of a mean map
+        :param int irnd: index of a random map
+        :param list column_names: list of names of data properties to be saved
+        :param obj loaded_model: the proper loaded model - either keras.Model or
+                                 xgboost.sklearn.XGBModel
+        :param str dir_name: name of the main output directory under which the data should be saved
+        :return: tuple of 1D IDC fluctuations and means, and DFT coefficients
+        :rtype: tuple(np.ndarray)
+        """
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          vec_mean_sc, vec_random_sc,
          vec_mean_dist_r, vec_random_dist_r,
@@ -256,9 +283,10 @@ class IDCDataValidator():
     def create_nd_histogram(self, var, mean_id):
         """
         Create nd histograms for given variable and mean id
-        var: string of the variable name
-        mean_id: index of mean map.
-        Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+        Note: Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+
+        :param str var: variable name
+        :param int mean_id: index of mean map.
         """
         self.config.logger.info("DataValidator::create_nd_histogram, var = %s, mean_id = %d",
                                 var, mean_id)
@@ -304,8 +332,9 @@ class IDCDataValidator():
     def create_nd_histograms_meanid(self, mean_id):
         """
         Create nd histograms for given mean id
-        mean_id: index of mean map.
         Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+
+        :param int mean_id: index of mean map.
         """
         for var in self.get_pdf_map_variables_list():
             self.create_nd_histogram(var, mean_id)
@@ -320,9 +349,10 @@ class IDCDataValidator():
     def create_pdf_map(self, var, mean_id):
         """
         Create a pdf map for given variable and mean id
-        var: string of the variable name
-        mean_id: index of mean map.
         Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+
+        :param str var: variable name
+        :param int mean_id: index of mean map.
         """
         self.config.logger.info("DataValidator::create_pdf_map, var = %s, mean_id = %d",
                                 var, mean_id)
@@ -353,8 +383,9 @@ class IDCDataValidator():
     def create_pdf_maps_meanid(self, mean_id):
         """
         Create pdf maps for given mean id
-        mean_id: index of mean map.
         Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+
+        :param int mean_id: index of mean map.
         """
         for var in self.get_pdf_map_variables_list():
             self.create_pdf_map(var, mean_id)
@@ -369,6 +400,9 @@ class IDCDataValidator():
     def merge_pdf_maps(self, mean_ids=None):
         """
         Merge pdf maps for different variables into one file
+
+        :param list mean_ids: list of indices of mean maps, whose corresponding pdf maps
+                              will be merged
         """
         self.config.logger.info("DataValidator::merge_pdf_maps")
 
@@ -401,16 +435,30 @@ class IDCDataValidator():
     def merge_pdf_maps_meanid(self, mean_id):
         """
         Merge pdf maps for given mean id
-        mean_id: index of mean map.
         Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+
+        :param int mean_id: index of mean map.
         """
         self.check_mean_id_(mean_id)
         self.merge_pdf_maps([mean_id])
 
     def check_mean_id_(self, mean_id):
+        """
+        A shortcut to check mean map id, as many functions are designed only for specific ids.
+
+        :param int mean_id: index of mean map
+        """
         if mean_id not in self.mean_ids:
-            self.config.logger.error("Code implementation only designed for mean ids 0, 27, 36.")
+            self.config.logger.error("Code implementation only designed for mean ids",
+                                     self.mean_ids)
             self.config.logger.fatal("Exiting...")
 
     def get_mean_factor_(self, mean_id):
+        """
+        Convert mean map id to a mean factor
+
+        :param int mean_id: index of mean map
+        :return: mean factor
+        :rtype: double
+        """
         return self.mean_factors[self.mean_ids.index(mean_id)]

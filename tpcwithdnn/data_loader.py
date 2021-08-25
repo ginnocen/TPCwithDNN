@@ -9,9 +9,7 @@ import scipy.constants
 
 from tpcwithdnn.logger import get_logger
 
-"""
-Constants to calculate map file name based on its ordinal index.
-"""
+# Constants to calculate map file name based on its ordinal index.
 SCALES_CONST = [0, 3, -3, 6, -6] # Indices of constant scaling of the mean maps
 SCALES_LINEAR = [0, 3, -3] # Indices of linear scaling of the mean maps
 SCALES_PARABOLIC = [0, 3, -3] # Indices of parabolic scaling of the mean maps
@@ -460,7 +458,8 @@ def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_
     :param dict ranges: dictionary of lists of event ranges for train / validation / apply
     :param bool use_rnd_augment: if True, (random-random) map pairs are used,
                                  if False, (random-mean)
-    :return: list of all selected map indices and dictionary with selected train / validation / apply indices
+    :return: list of all selected map indices and dictionary with selected
+             train / validation / apply indices
     :rtype: tuple(list, dict)
     """
     all_indices_events_means = []

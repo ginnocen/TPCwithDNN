@@ -11,8 +11,8 @@ def log_time(start, end, comment):
     """
     Write elapsed time to the console.
 
-    :param float stat: start time
-    :param float end: end time
+    :param double stat: start time
+    :param double end: end time
     :param str comment: string attached to the console output
     """
     logger = get_logger()
@@ -24,10 +24,10 @@ def log_time(start, end, comment):
 def get_memory_usage(obj):
     """
     Get memory used by the object obj.
-    
+
     :param obj obj: object for inspection
     :return: size of the object
-    :rtype: float
+    :rtype: double
     """
     return sys.getsizeof(obj)
 
@@ -35,7 +35,7 @@ def format_memory(size):
     """
     Convert memory size to a pretty string.
 
-    :param float size: memory size
+    :param double size: memory size
     :return: rounded size and the corresponding value prefix
     :rtype: tuple(int, char)
     """

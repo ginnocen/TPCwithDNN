@@ -11,7 +11,7 @@ from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
 from tpcwithdnn.logger import get_logger
-from tpcwithdnn.utilities import pandas_to_tree, tree_to_pandas
+from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original
 from tpcwithdnn.data_loader import load_data_derivatives_ref_mean
 

@@ -1,3 +1,6 @@
+"""
+Convert between ROOT files and Python pandas dataframes
+"""
 import re
 import pandas as pd
 import uproot3

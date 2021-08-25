@@ -83,14 +83,9 @@ class CommonSettings:
         self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
                                self.grid_z, self.grid_r, self.grid_phi)
 
-        if not os.path.isdir(self.dirmodel):
-            os.makedirs(self.dirmodel)
-        if not os.path.isdir(self.dirapply):
-            os.makedirs(self.dirapply)
-        if not os.path.isdir(self.dirplots):
-            os.makedirs(self.dirplots)
-        if not os.path.isdir(self.dirtree):
-            os.makedirs(self.dirtree)
+        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree):
+            if not os.path.isdir(dirname):
+                os.makedirs(dirname)
 
         self.suffix = None
         self.suffix_ds = "phi%d_r%d_z%d" % \

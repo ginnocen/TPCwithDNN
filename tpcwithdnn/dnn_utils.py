@@ -38,8 +38,7 @@ def level_block(m, dim, depth, inc_rate, activation, dropout, batchnorm, pool_ty
     Recursively create U-Net blocks, starting from the top level (network input / output)
     and increasing depth by one with each recursive call.
 
-    
-    ;param keras.Layer m: the network input layer
+    :param keras.Layer m: the network input layer
     :param int dim: dimension of the convolutional layer,
                     the convolution kernel will have dimension dim x dim x dim
     :param int depth: number of convolutional blocks
@@ -98,8 +97,10 @@ def u_net(input_shape, start_channels=4, depth=4, inc_rate=2.0, activation="relu
     :param double inc_rate: rate of dimension increment for the convolutional block, default: 2.0
                             E.g., if the first conv block has layers 4x4x4, the next blocks
                             will have layers 8x8x8, 16x16x16, and so on.
-    :param str activation: name of the activation function in the convolutional layers, default: relu
-    :param double dropout: dropout magnitude from the range [0, 1), 0 means no dropout, default: 0.2
+    :param str activation: name of the activation function in the convolutional layers,
+                           default: relu
+    :param double dropout: dropout magnitude from the range [0, 1), 0 means no dropout,
+                           default: 0.2
     :param bool batchnorm: whether to apply batch normalization, default: False
     :param str pool_type: short name of the pooling function, from: max, avg, conv, default: max
     :param bool upconv: whether to use the upsampling or transposed convolution, default: True
