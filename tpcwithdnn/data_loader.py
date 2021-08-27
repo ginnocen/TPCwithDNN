@@ -13,7 +13,6 @@ from tpcwithdnn.logger import get_logger
 SCALES_CONST = [0, 3, -3, 6, -6] # Indices of constant scaling of the mean maps
 SCALES_LINEAR = [0, 3, -3] # Indices of linear scaling of the mean maps
 SCALES_PARABOLIC = [0, 3, -3] # Indices of parabolic scaling of the mean maps
-NUM_FOURIER_COEFFS = 40 # Number of Fourier coefficients to take from the 1D IDC input
 NELE_PER_ADC = 670 # A constant for charge-to-ADC (digitized value) normalization
 
 def get_mean_desc(mean_id):
@@ -242,20 +241,24 @@ def downsample_data(data_size, downsample_npoints):
         chosen[sel_ind] = True
     return chosen
 
-def get_fourier_coeffs(vec_oned_idc):
+def get_fourier_coeffs(vec_oned_idc, is_train, num_fourier_coeffs_train, num_fourier_coeffs_apply):
     """
     Calculate Fourier transform and real and imaginary Fourier coefficients for a given vector.
 
     :param list vec_oned_idc: vector of 1D IDC values
-    :param int NUM_FOURIER_COEFFS: number of Fourier coefficients
+    :param bool is_train: whether the data is computed for training
+    :param int num_fourier_coeffs_train: number of Fourier coefficients for training
+    :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
     :return: numpy 1D array of interleaved real and imaginary Fourier coefficients
     :rtype: np.ndarray
     """
     dft = np.fft.fft(vec_oned_idc)
-    dft_real = np.real(dft)[:NUM_FOURIER_COEFFS]
-    dft_imag = np.imag(dft)[:NUM_FOURIER_COEFFS]
-
-    return np.dstack((dft_real, dft_imag)).reshape(2 * NUM_FOURIER_COEFFS)
+    dft_real = np.real(dft)[:num_fourier_coeffs_train]
+    dft_imag = np.imag(dft)[:num_fourier_coeffs_train]
+    if not is_train:
+        dft_real[num_fourier_coeffs_apply:num_fourier_coeffs_train] = 0.
+        dft_imag[num_fourier_coeffs_apply:num_fourier_coeffs_train] = 0.
+    return np.dstack((dft_real, dft_imag)).reshape(2 * num_fourier_coeffs_train)
 
 
 def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
@@ -280,7 +283,7 @@ def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
     return inputs
 
 
-def get_input_names_oned_idc():
+def get_input_names_oned_idc(num_fourier_coeffs):
     """
     Get an array with names of the input parameters.
 
@@ -288,13 +291,14 @@ def get_input_names_oned_idc():
     :rtype: list
     """
     input_names = ['r', 'phi', 'z', 'der_corr_r']
-    for i in range(NUM_FOURIER_COEFFS):
+    for i in range(num_fourier_coeffs):
         input_names = input_names + ['c_real%d' % i, 'c_imag%d' % i]
     return input_names
 
 
-def load_data_oned_idc(dirinput, event_index, z_range,
-                       opt_pred, downsample, downsample_npoints, use_rnd_augment):
+def load_data_oned_idc(dirinput, event_index, z_range, opt_pred, downsample, downsample_npoints,
+                       use_rnd_augment, is_train, num_fourier_coeffs_train,
+                       num_fourier_coeffs_apply):
     """
     Load inputs and outputs for one event for 1D IDC correction.
 
@@ -313,6 +317,9 @@ def load_data_oned_idc(dirinput, event_index, z_range,
     :param int downsample_npoints: number of data voxels to be sampled
     :param bool use_rnd_augment: if True, (random-random) map pairs are used,
                                  if False, (random-mean)
+    :param bool is_train: whether the data is loaded for training
+    :param int num_fourier_coeffs_train: number of Fourier coefficients for training
+    :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
     :return: tuple of inputs and expected outputs
     :rtype: tuple
     """
@@ -336,7 +343,8 @@ def load_data_oned_idc(dirinput, event_index, z_range,
     vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
               (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
               (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), z_range)
-    dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc)
+    dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, is_train, num_fourier_coeffs_train,
+                                    num_fourier_coeffs_apply)
 
     mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
                               vec_random_corr_phi - vec_mean_corr_phi,

@@ -55,6 +55,9 @@ class CommonSettings:
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
 
+        self.num_fourier_coeffs_train = data_param["num_fourier_coeffs_train"]
+        self.num_fourier_coeffs_apply = data_param["num_fourier_coeffs_apply"]
+
         if self.dim_output > 1:
             self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",

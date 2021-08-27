@@ -96,7 +96,9 @@ class IDCDataValidator:
             filter_idc_data(data_a, data_c, self.config.z_range) # pylint: disable=unbalanced-tuple-unpacking
         vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
         num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
-        dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc)
+        dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc, True, # assumed train (all) coefficients
+                                        self.config.num_fourier_coeffs_train,
+                                        self.config.num_fourier_coeffs_apply)
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd

@@ -94,7 +94,8 @@ class XGBoostOptimiser(Optimiser):
 
         :param xgboost.sklearn.XGBModel model: the XGBoost model to be saved
         """
-        model.get_booster().feature_names = get_input_names_oned_idc()
+        model.get_booster().feature_names = get_input_names_oned_idc(
+            self.config.num_fourier_coeffs_train)
         out_filename_feature_importance = "%s/feature_importance_%s_nEv%d.txt" %\
             (self.config.dirmodel, self.config.suffix, self.config.train_events)
         score_total_gain = model.get_booster().get_score(importance_type='total_gain')
@@ -167,16 +168,24 @@ class XGBoostOptimiser(Optimiser):
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
-        downsample = self.config.downsample if partition == "train" else False
+        if partition == "train":
+            downsample = self.config.downsample
+            is_train = True
+        else:
+            downsample = False
+            is_train = False
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
             inputs_single, exp_outputs_single = load_data_oned_idc(self.config.dirinput_train,
-                                                                   indexev, self.config.z_range,
-                                                                   self.config.opt_predout,
-                                                                   downsample,
-                                                                   self.config.downsample_npoints,
-                                                                   self.config.rnd_augment)
+                                                           indexev, self.config.z_range,
+                                                           self.config.opt_predout,
+                                                           downsample,
+                                                           self.config.downsample_npoints,
+                                                           self.config.rnd_augment,
+                                                           is_train,
+                                                           self.config.num_fourier_coeffs_train,
+                                                           self.config.num_fourier_coeffs_apply)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)
