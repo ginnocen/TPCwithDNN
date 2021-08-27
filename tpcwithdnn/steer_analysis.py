@@ -184,9 +184,9 @@ def main():
 
     logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
 
-    with open(args.steer_file, "r") as steer_data:
+    with open(args.steer_file, "r", encoding="utf-8") as steer_data:
         default = yaml.safe_load(steer_data)
-    with open(args.config_file, "r") as config_data:
+    with open(args.config_file, "r", encoding="utf-8") as config_data:
         config_parameters = yaml.safe_load(config_data)
 
     logger.info("Arguments provided: %s", str(args))

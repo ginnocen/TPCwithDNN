@@ -103,7 +103,7 @@ class XGBoostOptimiser(Optimiser):
         indices_gain = np.flip(np.argsort(list(score_gain.values())))
         score_weight = model.get_booster().get_score(importance_type='weight')
         indices_weight = np.flip(np.argsort(list(score_weight.values())))
-        with open(out_filename_feature_importance, 'w') as file_name:
+        with open(out_filename_feature_importance, 'w', encoding="utf-8") as file_name:
             print("Feature importances", file=file_name)
             print("Total gain   -   Gain   -   Weight", file=file_name)
             for index_total_gain, index_gain, index_weight in zip(indices_total_gain,
@@ -139,7 +139,7 @@ class XGBoostOptimiser(Optimiser):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(out_filename, "wb") as out_file:
+        with open(out_filename, "wb", encoding="utf-8") as out_file:
             pickle.dump(model, out_file, protocol=4)
 
 
@@ -153,7 +153,7 @@ class XGBoostOptimiser(Optimiser):
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(filename, "rb") as file:
+        with open(filename, "rb", encoding="utf-8") as file:
             model = pickle.load(file)
         return model
 

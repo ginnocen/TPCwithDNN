@@ -155,7 +155,7 @@ class DnnOptimiser(Optimiser):
         """
         model_json = model.to_json()
         with open("%s/model_%s_nEv%d.json" % (self.config.dirmodel, self.config.suffix,
-                                              self.config.train_events), "w") \
+                                              self.config.train_events), "w", encoding="utf-8") \
             as json_file:
             json_file.write(model_json)
         model.save_weights("%s/model_%s_nEv%d.h5" % (self.config.dirmodel, self.config.suffix,
@@ -170,7 +170,8 @@ class DnnOptimiser(Optimiser):
         :rtype: tf.keras.Model
         """
         with open("%s/model_%s_nEv%d.json" % \
-                  (self.config.dirmodel, self.config.suffix, self.config.train_events), "r") as f:
+                  (self.config.dirmodel, self.config.suffix, self.config.train_events), "r",
+                  encoding="utf-8") as f:
             loaded_model_json = f.read()
         loaded_model = \
             model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
