@@ -1,4 +1,6 @@
-# pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+"""
+XGBoost optimizer for 1D IDC distortion correction
+"""
 from timeit import default_timer as timer
 
 import pickle
@@ -14,16 +16,27 @@ from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 from tpcwithdnn import plot_utils
 from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
 from tpcwithdnn.optimiser import Optimiser
-from tpcwithdnn.data_loader import load_event_idc, get_input_names_oned_idc
+from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc
 
 class XGBoostOptimiser(Optimiser):
+    """
+    XGBoost optimizer class, with the interface defined by the Optimiser parent class
+    """
     name = "xgboost"
 
     def __init__(self, config):
+        """
+        Initialize the optimizer. No more action needed that in the base class.
+
+        :param CommonSettings config: a singleton settings object
+        """
         super().__init__(config)
         self.config.logger.info("XGBoostOptimiser::Init")
 
     def train(self):
+        """
+        Train the optimizer.
+        """
         self.config.logger.info("XGBoostOptimiser::train")
         model = XGBRFRegressor(verbosity=1, **(self.config.params))
         start = timer()
@@ -44,6 +57,9 @@ class XGBoostOptimiser(Optimiser):
         self.save_model(model)
 
     def apply(self):
+        """
+        Apply the optimizer.
+        """
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
         loaded_model = self.load_model()
         inputs, exp_outputs = self.get_data_("apply")
@@ -57,12 +73,27 @@ class XGBoostOptimiser(Optimiser):
         self.config.logger.info("Done apply")
 
     def search_grid(self):
+        """
+        Perform grid search to find the best model configuration.
+
+        :raises NotImplementedError: the method not implemented yet for XGBoost
+        """
         raise NotImplementedError("Search grid method not implemented yet")
 
     def bayes_optimise(self):
+        """
+        Perform Bayesian optimization to find the best model configuration.
+
+        :raises NotImplementedError: the method not implemented yet for XGBoost
+        """
         raise NotImplementedError("Bayes optimise method not implemented yet")
 
     def save_model(self, model):
+        """
+        Save the model to a JSON file. Saves also plots of feature importances into separate files.
+
+        :param xgboost.sklearn.XGBModel model: the XGBoost model to be saved
+        """
         model.get_booster().feature_names = get_input_names_oned_idc()
         out_filename_feature_importance = "%s/feature_importance_%s_nEv%d.txt" %\
             (self.config.dirmodel, self.config.suffix, self.config.train_events)
@@ -72,7 +103,7 @@ class XGBoostOptimiser(Optimiser):
         indices_gain = np.flip(np.argsort(list(score_gain.values())))
         score_weight = model.get_booster().get_score(importance_type='weight')
         indices_weight = np.flip(np.argsort(list(score_weight.values())))
-        with open(out_filename_feature_importance, 'w') as file_name:
+        with open(out_filename_feature_importance, 'w', encoding="utf-8") as file_name:
             print("Feature importances", file=file_name)
             print("Total gain   -   Gain   -   Weight", file=file_name)
             for index_total_gain, index_gain, index_weight in zip(indices_total_gain,
@@ -108,29 +139,44 @@ class XGBoostOptimiser(Optimiser):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(out_filename, "wb") as out_file:
+        with open(out_filename, "wb", encoding="utf-8") as out_file:
             pickle.dump(model, out_file, protocol=4)
 
 
     def load_model(self):
+        """
+        Load the XGBoost model from a JSON file
+
+        :return: the loaded model
+        :rtype: xgboost.sklearn.XGBModel
+        """
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(filename, "rb") as file:
+        with open(filename, "rb", encoding="utf-8") as file:
             model = pickle.load(file)
         return model
 
     def get_data_(self, partition):
+        """
+        Load the full input data for a XGBoost optimization.
+        Function used internally.
+
+        :param dict partition: dictionary of pairs of event indices
+                               for training / validation / apply
+        :return: tuple of inputs and expected outputs
+        :rtype: tuple(np.ndarray, np.ndarray)
+        """
         downsample = self.config.downsample if partition == "train" else False
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
-            inputs_single, exp_outputs_single = load_event_idc(self.config.dirinput_train,
-                                                               indexev, self.config.z_range,
-                                                               self.config.opt_predout,
-                                                               downsample,
-                                                               self.config.downsample_frac,
-                                                               self.config.rnd_augment)
+            inputs_single, exp_outputs_single = load_data_oned_idc(self.config.dirinput_train,
+                                                                   indexev, self.config.z_range,
+                                                                   self.config.opt_predout,
+                                                                   downsample,
+                                                                   self.config.downsample_frac,
+                                                                   self.config.rnd_augment)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)
@@ -138,6 +184,13 @@ class XGBoostOptimiser(Optimiser):
         return inputs, exp_outputs
 
     def plot_apply_(self, exp_outputs, pred_outputs):
+        """
+        Create result histograms in the output ROOT file after applying the model.
+        Function used internally.
+
+        :param np.ndarray exp_outputs: vector of expected outputs
+        :param np.ndarray pred_outputs: vector of network predictions
+        """
         myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
                             (self.config.dirapply, self.config.suffix, self.config.train_events),
                             "recreate")
@@ -160,6 +213,16 @@ class XGBoostOptimiser(Optimiser):
         myfile.Close()
 
     def plot_train_(self, model, x_train, y_train, x_val, y_val):
+        """
+        Plot the learning curve for 1D calibration.
+        Function used internally.
+
+        :param xgboost.sklearn.XGBModel model: the XGBoost model to be checked
+        :param np.ndarray x_train: input data for training
+        :param np.ndarray y_train: expected training output
+        :param np.ndarray x_train: input data for validation
+        :param np.ndarray y_train: expected validation output
+        """
         plt.figure()
         train_errors, val_errors = [], []
         data_size = len(x_train)
@@ -189,6 +252,14 @@ class XGBoostOptimiser(Optimiser):
         plt.clf()
 
     def plot_results_(self, exp_outputs, pred_outputs, infix):
+        """
+        Plot the diagram of predicted vs expected 1D calibration output after applying the model.
+        Function used internally.
+
+        :param np.ndarray exp_outputs: vector of expected outputs
+        :param np.ndarray pred_outputs: vector of network predictions
+        :param str infix: the string to be inserted into the output file name
+        """
         plt.figure()
         plt.plot(exp_outputs, pred_outputs, ".")
         plt.xlabel("Expected output")

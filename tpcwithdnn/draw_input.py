@@ -1,3 +1,6 @@
+"""
+Plot the results of the input validation.
+"""
 # pylint: disable=too-many-statements
 import os
 

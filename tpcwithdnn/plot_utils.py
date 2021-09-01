@@ -1,5 +1,6 @@
-"""Plotting functions for optimization results"""
-# pylint: disable=missing-function-docstring, missing-class-docstring
+"""
+Plotting functions for optimization results
+"""
 # pylint: disable=fixme
 import datetime
 
@@ -10,6 +11,7 @@ from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: 
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT # pylint: disable=import-error, no-name-in-module
 
+# Set global ROOT style
 gROOT.SetStyle("Plain")
 gROOT.SetBatch()
 gStyle.SetOptStat(0)
@@ -18,6 +20,15 @@ gStyle.SetLabelFont(42, "xyz")
 gStyle.SetTitleFont(42, "xyz")
 
 def create_apply_histos(config, suffix, infix=""):
+    """
+    Create histogram objects for apply results.
+
+    :param CommonSettings config: a singleton settings object
+    :param str suffix: suffix to append to histogram names
+    :param str infix: the middle part of a histogram name, empty or "all_events_", default empty
+    :return: tuple of 3 ROOT histograms
+    :rtype: tuple
+    """
     h_dist = TH2F("%s_%s%s" % (config.h_dist_name, infix, suffix),
                   "", 500, -5, 5, 500, -5, 5)
     h_deltas = TH1F("%s_%s%s" % (config.h_deltas_name, infix, suffix),  "", 1000, -1., 1.)
@@ -26,9 +37,20 @@ def create_apply_histos(config, suffix, infix=""):
                             "", 500, -5.0, 5.0, 100, -0.5, 0.5)
     return h_dist, h_deltas, h_deltas_vs_dist
 
-def fill_std_dev_apply_hist(h_deltas_vs_dist, hist_name, suffix, infix=""):
+def fill_std_dev_apply_hist(h_deltas_vs_dist, h_std_dev_name, suffix, infix=""):
+    """
+    Create a std dev histogram object for apply results.
+
+    :param TH2F h_deltas_vs_dist: 2D histogram with expected distortion fluctuation
+                                  vs prediction error (predicted - expected)
+    :param str h_std_dev_name: basename for the newly created histogram
+    :param str suffix: suffix to append to histogram name
+    :param str infix: the middle part of a histogram name, empty or "all_events_", default empty
+    :return: histogram of std dev of the prediction error
+    :rtype: TH1F ROOT histogram
+    """
     h1tmp = h_deltas_vs_dist.ProjectionX("h1tmp")
-    h_std_dev = h1tmp.Clone("%s_%s%s" % (hist_name, infix, suffix))
+    h_std_dev = h1tmp.Clone("%s_%s%s" % (h_std_dev_name, infix, suffix))
     h_std_dev.Reset()
     h_std_dev.SetXTitle("d#it{%s}_{true} (cm)")
     h_std_dev.SetYTitle("std.dev. of (d#it{%s}_{pred} - d#it{%s}_{true}) (cm)")
@@ -250,6 +272,18 @@ def add_desc_to_canvas(config, xmin, ymin, xmax, ymax, size, content):
     return txt1
 
 def draw_multievent_hist(config, events_counts, func_label, hist_name, source_hist):
+    """
+    Draw a profile of hist_name of error of predicted - expected distortion vs expected distortion.
+    It can be either mean error, std dev or both.
+
+    :param CommonSettings config: a singleton settings object with settings from yml config file
+    :param list events_counts: list of tuples (train_events, val_events, apply_events,
+                               total_events) with the numbers of events used
+    :param str func_label: label of y-axis
+    :param str hist_name: name of the profile to be plotted, one of: mean, std_dev, mean_std_dev
+    :param str source_hist: name of the input histogram with data for the profile.
+                            The histogram is read from the apply results ROOT file.
+    """
     gROOT.ForceStyle()
     gran_str = "%d#times %d #times %d" % (config.grid_phi, config.grid_r,
                                           config.grid_z)
@@ -322,12 +356,33 @@ def draw_multievent_hist(config, events_counts, func_label, hist_name, source_hi
                     hist_name, file_formats)
 
 def draw_mean(config, events_counts):
+    """
+    Draw the profile of mean error of predicted - expected distortion vs expected distortion.
+
+    :param CommonSettings config: a singleton settings object with settings from yml config file
+    :param list events_counts: list of tuples (train_events, val_events, apply_events,
+                               total_events) with the numbers of events used
+    """
     draw_multievent_hist(config, events_counts, "#it{#mu}", "mean", config.profile_name)
 
 def draw_std_dev(config, events_counts):
+    """
+    Draw the profile of std dev of predicted - expected distortion vs expected distortion.
+
+    :param CommonSettings config: a singleton settings object with settings from yml config file
+    :param list events_counts: list of tuples (train_events, val_events, apply_events,
+                               total_events) with the numbers of events used
+    """
     draw_multievent_hist(config, events_counts, "#it{#sigma}_{std}", "std_dev",
                          config.h_std_dev_name)
 
 def draw_mean_std_dev(config, events_counts):
+    """
+    Draw the profile of mean and std dev of predicted - expected distortion vs expected distortion.
+
+    :param CommonSettings config: a singleton settings object with settings from yml config file
+    :param list events_counts: list of tuples (train_events, val_events, apply_events,
+                               total_events) with the numbers of events used
+    """
     draw_multievent_hist(config, events_counts, "#it{#mu} #pm #it{#sigma}_{std}",
                          "mean_std_dev", config.profile_name)

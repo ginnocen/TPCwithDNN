@@ -1,4 +1,8 @@
-# pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
+"""
+Deep neural network for 3D IDC distortion correction.
+
+NOTE: This code is based on old data, it needs to be adjusted to IDC.
+"""
 # pylint: disable=protected-access
 import matplotlib.pyplot as plt
 
@@ -16,24 +20,35 @@ from tpcwithdnn import plot_utils
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.symmetry_padding_3d import SymmetryPadding3d
 from tpcwithdnn.fluctuation_data_generator import FluctuationDataGenerator
-from tpcwithdnn.utilities_dnn import u_net
+from tpcwithdnn.dnn_utils import u_net
 from tpcwithdnn.data_loader import load_train_apply
 
 class DnnOptimiser(Optimiser):
+    """
+    DNN optimizer class, with the interface defined by the Optimiser parent class
+    """
     name = "dnn"
 
     def __init__(self, config):
+        """
+        Initialize the optimizer. No more action needed that in the base class.
+
+        :param CommonSettings config: a singleton settings object
+        """
         super().__init__(config)
         self.config.logger.info("DnnOptimiser::Init")
 
     def train(self):
+        """
+        Train the optimizer.
+        """
         self.config.logger.info("DnnOptimiser::train")
 
         training_generator = FluctuationDataGenerator(self.config.partition['train'],
-                                                      data_dir=self.config.dirinput_train,
+                                                      dirinput=self.config.dirinput_train,
                                                       **self.config.params)
         validation_generator = FluctuationDataGenerator(self.config.partition['validation'],
-                                                        data_dir=self.config.dirinput_test,
+                                                        dirinput=self.config.dirinput_val,
                                                         **self.config.params)
         model = u_net((self.config.grid_phi, self.config.grid_r, self.config.grid_z,
                        self.config.dim_input),
@@ -66,6 +81,9 @@ class DnnOptimiser(Optimiser):
         self.save_model(model)
 
     def apply(self):
+        """
+        Apply the optimizer.
+        """
         self.config.logger.info("DnnOptimiser::apply, input size: %d", self.config.dim_input)
         loaded_model = self.load_model()
 
@@ -114,15 +132,30 @@ class DnnOptimiser(Optimiser):
         self.config.logger.info("Done apply")
 
     def search_grid(self):
+        """
+        Perform grid search to find the best model configuration.
+
+        :raises NotImplementedError: the method not implemented yet for DNN
+        """
         raise NotImplementedError("Search grid method not implemented yet")
 
     def bayes_optimise(self):
+        """
+        Perform Bayesian optimization to find the best model configuration.
+
+        :raises NotImplementedError: the method not implemented yet for DNN
+        """
         raise NotImplementedError("Bayes optimise method not implemented yet")
 
     def save_model(self, model):
+        """
+        Save the model to a JSON file, and the weights to a h5 file.
+
+        :param tf.keras.Model model: the tf.keras model to be saved
+        """
         model_json = model.to_json()
         with open("%s/model_%s_nEv%d.json" % (self.config.dirmodel, self.config.suffix,
-                                              self.config.train_events), "w") \
+                                              self.config.train_events), "w", encoding="utf-8") \
             as json_file:
             json_file.write(model_json)
         model.save_weights("%s/model_%s_nEv%d.h5" % (self.config.dirmodel, self.config.suffix,
@@ -130,8 +163,15 @@ class DnnOptimiser(Optimiser):
         self.config.logger.info("Saved trained DNN model to disk")
 
     def load_model(self):
+        """
+        Load the DNN model from a JSON file, with weights from a h5 file
+
+        :return: the loaded model
+        :rtype: tf.keras.Model
+        """
         with open("%s/model_%s_nEv%d.json" % \
-                  (self.config.dirmodel, self.config.suffix, self.config.train_events), "r") as f:
+                  (self.config.dirmodel, self.config.suffix, self.config.train_events), "r",
+                  encoding="utf-8") as f:
             loaded_model_json = f.read()
         loaded_model = \
             model_from_json(loaded_model_json, {'SymmetryPadding3d' : SymmetryPadding3d})
@@ -141,6 +181,13 @@ class DnnOptimiser(Optimiser):
         return loaded_model
 
     def plot_train_(self, his):
+        """
+        Plot the learning curve for 3D calibration.
+        Function used internally.
+
+        :param tf.keras.History his: a history object of the network training,
+                                     returned by model.fit()
+        """
         plt.style.use("ggplot")
         plt.figure()
         plt.yscale('log')

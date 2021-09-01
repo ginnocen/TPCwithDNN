@@ -1,3 +1,7 @@
+"""
+Plot TensorBoard comparison of models learning curves,
+with a prettier formatting than the TensorBoard's one.
+"""
 import os
 import datetime
 import re
