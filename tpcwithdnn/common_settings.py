@@ -115,7 +115,7 @@ class CommonSettings:
         Update the event indices ranges for train / validation / apply.
         To be used internally.
 
-        :param dict ranges: dictionary of lists with event indices ranges for train / val / apply
+        :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param str suffix: suffix of the output file
         :param int total_events: number of all events used
         :param int train_events: number of events used for training
@@ -226,7 +226,7 @@ class DNNSettings:
         """
         A wrapper around internal set_ranges_().
 
-        :param dict ranges: dictionary of lists with event indices ranges for train / val / apply
+        :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param int total_events: number of all events used
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
@@ -298,7 +298,7 @@ class XGBoostSettings:
         """
         A wrapper around internal set_ranges_().
 
-        :param dict ranges: dictionary of lists with event indices ranges for train / val / apply
+        :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param int total_events: number of all events used
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation

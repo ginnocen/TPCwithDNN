@@ -97,7 +97,7 @@ def get_events_counts(train_events, val_events, apply_events):
     """
     if len(train_events) != len(val_events) or \
        len(train_events) != len(apply_events):
-        raise ValueError("Different number of ranges specified for train/val/apply")
+        raise ValueError("Different number of ranges specified for train/validation/apply")
     return zip(train_events, val_events, apply_events)
 
 def run_model_and_val(model, dataval, default, config_parameters):
@@ -246,7 +246,7 @@ def main():
             all_events_counts.append((train_events, val_events, apply_events, total_events))
 
             ranges = {"train": [0, train_events],
-                      "val": [train_events, train_events + val_events],
+                      "validation": [train_events, train_events + val_events],
                       "apply": [train_events + val_events, total_events]}
             model.config.set_ranges(ranges, total_events, train_events, val_events, apply_events)
 

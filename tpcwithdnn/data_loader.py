@@ -33,7 +33,7 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
     """
     The base function to load IDC data and filter it according to z_range.
 
-    :param str dirinput: the directory with the input data, value taken from the config file
+    :param str dirinput: the directory with the input data
     :param list event_index: a list of [random_index, second_map_index] indices of the random
                              and the second reference map, respectively. The second map can be mean
                              or random, depending on use_rnd_augment.
@@ -46,6 +46,7 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
              - random and reference space charge
              - random and reference r, rphi and z distortion
              - random and reference r, rphi and z distortion correction
+    :rtype: list
     """
     if use_rnd_augment:
         ref_prefix = "Random"
@@ -295,32 +296,23 @@ def get_input_names_oned_idc(num_fourier_coeffs):
     return input_names
 
 
-def load_data_oned_idc(dirinput, event_index, z_range, opt_pred, downsample, downsample_npoints,
-                       use_rnd_augment, num_fourier_coeffs_train, num_fourier_coeffs_apply):
+def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_coeffs_train,
+                       num_fourier_coeffs_apply):
     """
     Load inputs and outputs for one event for 1D IDC correction.
 
-    :param str dirinput: the directory with the input data, value taken from the config file
+    :param CommonSettings config: a singleton settings object
+    :param str dirinput: the directory with the input data
     :param list event_index: a list of [random_index, second_map_index] indices of the random
                              and the second reference map, respectively. The second map can be mean
                              or random, depending on use_rnd_augment.
-    :param list z_range: a list of [min_z, max_z] values, the input and output data is taken
-                         from this interval
-    :param int grid_r: grid granularity (number of voxels) along r-axis
-    :param int grid_rphi: grid granularity (number of voxels) along rphi-axis
-    :param int grid_z: grid granularity (number of voxels) along z-axis
-    :param list opt_pred: list of 3 binary values corresponding to activating the prediction of
-                          r, rphi and z distortion corrections, taken from the config file
     :param bool downsample: whether to downsample the data
-    :param int downsample_npoints: number of data voxels to be sampled
-    :param bool use_rnd_augment: if True, (random-random) map pairs are used,
-                                 if False, (random-mean)
     :param int num_fourier_coeffs_train: number of Fourier coefficients for training
     :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
     :return: tuple of inputs and expected outputs
     :rtype: tuple
     """
-    dim_output = sum(opt_pred)
+    dim_output = sum(config.opt_pred)
     if dim_output > 1:
         logger = get_logger()
         logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
@@ -334,12 +326,12 @@ def load_data_oned_idc(dirinput, event_index, z_range, opt_pred, downsample, dow
      _, _, _, _,
      vec_mean_oned_idc_a, vec_mean_oned_idc_c,
      vec_random_oned_idc_a, vec_random_oned_idc_c] = load_data_original_idc(dirinput, event_index,
-                                                                            z_range,
-                                                                            use_rnd_augment)
+                                                                            config.z_range,
+                                                                            config.use_rnd_augment)
 
     vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
               (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
-              (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), z_range)
+              (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), config.z_range)
     dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, num_fourier_coeffs_train,
                                     num_fourier_coeffs_apply)
 
@@ -348,11 +340,11 @@ def load_data_oned_idc(dirinput, event_index, z_range, opt_pred, downsample, dow
                               vec_random_corr_z - vec_mean_corr_z))
 
     vec_exp_corr_fluc, vec_der_ref_mean_corr =\
-        mat_to_vec(opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
+        mat_to_vec(config.opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
     # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
     # distortion direction
     if downsample:
-        chosen_points = downsample_data(len(vec_z_pos), downsample_npoints)
+        chosen_points = downsample_data(len(vec_z_pos), config.downsample_npoints)
         vec_r_pos = vec_r_pos[chosen_points]
         vec_phi_pos = vec_phi_pos[chosen_points]
         vec_z_pos = vec_z_pos[chosen_points]
@@ -478,7 +470,7 @@ def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_
     sel_indices_events_means = random.sample(all_indices_events_means, ranges["apply"][1] + 1)
 
     indices_train = sel_indices_events_means[ranges["train"][0]:ranges["train"][1]]
-    indices_val = sel_indices_events_means[ranges["val"][0]:ranges["val"][1]]
+    indices_val = sel_indices_events_means[ranges["validation"][0]:ranges["validation"][1]]
     indices_apply = sel_indices_events_means[ranges["apply"][0]:ranges["apply"][1]]
 
     partition = {"train": indices_train,
