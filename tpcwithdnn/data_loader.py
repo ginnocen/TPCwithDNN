@@ -255,9 +255,10 @@ def get_fourier_coeffs(vec_oned_idc, is_train, num_fourier_coeffs_train, num_fou
     dft = np.fft.fft(vec_oned_idc)
     dft_real = np.real(dft)[:num_fourier_coeffs_train]
     dft_imag = np.imag(dft)[:num_fourier_coeffs_train]
-    if not is_train:
-        dft_real[num_fourier_coeffs_apply:num_fourier_coeffs_train] = 0.
-        dft_imag[num_fourier_coeffs_apply:num_fourier_coeffs_train] = 0.
+    if num_fourier_coeffs_apply > num_fourier_coeffs_train:
+        num_fourier_coeffs_apply = num_fourier_coeffs_train
+    dft_real[num_fourier_coeffs_apply:num_fourier_coeffs_train] = 0.
+    dft_imag[num_fourier_coeffs_apply:num_fourier_coeffs_train] = 0.
     return np.dstack((dft_real, dft_imag)).reshape(2 * num_fourier_coeffs_train)
 
 

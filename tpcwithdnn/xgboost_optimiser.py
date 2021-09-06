@@ -168,12 +168,13 @@ class XGBoostOptimiser(Optimiser):
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
+        num_fourier_coeffs_apply = self.config.num_fourier_coeffs_apply
         if partition == "train":
             downsample = self.config.downsample
-            is_train = True
+            # Take all Fourier coefficients for training
+            num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
         else:
             downsample = False
-            is_train = False
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
@@ -183,7 +184,6 @@ class XGBoostOptimiser(Optimiser):
                                                            downsample,
                                                            self.config.downsample_npoints,
                                                            self.config.rnd_augment,
-                                                           is_train,
                                                            self.config.num_fourier_coeffs_train,
                                                            self.config.num_fourier_coeffs_apply)
             inputs.append(inputs_single)
