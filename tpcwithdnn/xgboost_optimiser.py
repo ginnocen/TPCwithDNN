@@ -140,7 +140,7 @@ class XGBoostOptimiser(Optimiser):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(out_filename, "wb", encoding="utf-8") as out_file:
+        with open(out_filename, "wb") as out_file:
             pickle.dump(model, out_file, protocol=4)
 
 
@@ -154,7 +154,7 @@ class XGBoostOptimiser(Optimiser):
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(filename, "rb", encoding="utf-8") as file:
+        with open(filename, "rb") as file:
             model = pickle.load(file)
         return model
 

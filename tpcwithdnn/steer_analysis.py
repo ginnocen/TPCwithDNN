@@ -174,18 +174,18 @@ def main():
                         help="Set custom number of training events")
     parser.add_argument("--nval", dest="nd_val_events", type=int, default=argparse.SUPPRESS,
                         help="Set custom number of max nd validation events")
-    parser.add_argument("--dnpoints", dest="downsample_npoints", type=int, default=argparse.SUPPRESS,
-                        help="Set number of downsampling points")
+    parser.add_argument("--dnpoints", dest="downsample_npoints", type=int,
+                        default=argparse.SUPPRESS, help="Set number of downsampling points")
     parser.add_argument("--nestimators", dest="n_estimators", type=int, default=argparse.SUPPRESS,
                         help="Set the number of trees for xgboost models")
     parser.add_argument("--maxdepth", dest="max_depth", type=int, default=argparse.SUPPRESS,
                         help="Set maximum depth of trees for xgboost models")
-    parser.add_argument("--nfouriertrain", dest="num_fourier_coeffs_train", type=int, default=argparse.SUPPRESS,
-                        help="Set number of Fourier coefficients to take from the 1D IDC" \
-                             " train input")
-    parser.add_argument("--nfourierapply", dest="num_fourier_coeffs_apply", type=int, default=argparse.SUPPRESS,
-                        help="Set number of Fourier coefficients to take from the 1D IDC" \
-                             " apply input")
+    parser.add_argument("--nfouriertrain", dest="num_fourier_coeffs_train", type=int,
+                        default=argparse.SUPPRESS, help="Set number of Fourier coefficients" \
+                        " to take from the 1D IDC train input")
+    parser.add_argument("--nfourierapply", dest="num_fourier_coeffs_apply", type=int,
+                        default=argparse.SUPPRESS, help="Set number of Fourier coefficients" \
+                        " to take from the 1D IDC apply input")
     args = parser.parse_args()
 
     logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
