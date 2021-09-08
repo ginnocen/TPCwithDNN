@@ -94,7 +94,8 @@ class XGBoostOptimiser(Optimiser):
 
         :param xgboost.sklearn.XGBModel model: the XGBoost model to be saved
         """
-        model.get_booster().feature_names = get_input_names_oned_idc()
+        model.get_booster().feature_names = get_input_names_oned_idc(
+            self.config.num_fourier_coeffs_train)
         out_filename_feature_importance = "%s/feature_importance_%s_nEv%d.txt" %\
             (self.config.dirmodel, self.config.suffix, self.config.train_events)
         score_total_gain = model.get_booster().get_score(importance_type='total_gain')
@@ -139,7 +140,7 @@ class XGBoostOptimiser(Optimiser):
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(out_filename, "wb", encoding="utf-8") as out_file:
+        with open(out_filename, "wb") as out_file:
             pickle.dump(model, out_file, protocol=4)
 
 
@@ -153,7 +154,7 @@ class XGBoostOptimiser(Optimiser):
         # Loading a snapshot
         filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        with open(filename, "rb", encoding="utf-8") as file:
+        with open(filename, "rb") as file:
             model = pickle.load(file)
         return model
 
@@ -167,16 +168,23 @@ class XGBoostOptimiser(Optimiser):
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
-        downsample = self.config.downsample if partition == "train" else False
+        num_fourier_coeffs_apply = self.config.num_fourier_coeffs_apply
+        downsample = False
+        if partition == "train":
+            downsample = self.config.downsample
+            # Take all Fourier coefficients for training
+            num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
             inputs_single, exp_outputs_single = load_data_oned_idc(self.config.dirinput_train,
-                                                                   indexev, self.config.z_range,
-                                                                   self.config.opt_predout,
-                                                                   downsample,
-                                                                   self.config.downsample_frac,
-                                                                   self.config.rnd_augment)
+                                                           indexev, self.config.z_range,
+                                                           self.config.opt_predout,
+                                                           downsample,
+                                                           self.config.downsample_npoints,
+                                                           self.config.rnd_augment,
+                                                           self.config.num_fourier_coeffs_train,
+                                                           num_fourier_coeffs_apply)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)

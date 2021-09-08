@@ -13,7 +13,7 @@ import math
 from array import array
 import numpy as np
 import pandas as pd
-import ROOT  # pylint: disable=import-error
+from ROOT import TFile, TTree, std # pylint: disable=import-error, no-name-in-module
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
@@ -96,7 +96,9 @@ class IDCDataValidator:
             filter_idc_data(data_a, data_c, self.config.z_range) # pylint: disable=unbalanced-tuple-unpacking
         vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
         num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
-        dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc)
+        dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc,
+                                        self.config.num_fourier_coeffs_train,
+                                        self.config.num_fourier_coeffs_apply)
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
@@ -189,14 +191,14 @@ class IDCDataValidator:
         # define IDC tree
         name_file_idc = "%s/treeIDCs_%s.root" \
             % (self.config.dirtree, self.config.suffix_ds)
-        file_idc = ROOT.TFile(name_file_idc, "recreate")
-        tree_idc = ROOT.TTree("idc", "idc")
+        file_idc = TFile(name_file_idc, "recreate")
+        tree_idc = TTree("idc", "idc")
         index_random = array('I', [0])
         index_mean = array('I', [0])
         index = array('I', [0])
-        std_vec_fluc_oned_idc = ROOT.std.vector('float')()
-        std_vec_mean_oned_idc = ROOT.std.vector('float')()
-        std_vec_fourier_coeffs = ROOT.std.vector('float')()
+        std_vec_fluc_oned_idc = std.vector('float')()
+        std_vec_mean_oned_idc = std.vector('float')()
+        std_vec_fourier_coeffs = std.vector('float')()
         tree_idc.Branch(column_names[0], index, '%s/i' % (column_names[0]))
         tree_idc.Branch(column_names[1], index_mean, '%s/i' % (column_names[1]))
         tree_idc.Branch(column_names[2], index_random, '%s/i' % (column_names[2]))

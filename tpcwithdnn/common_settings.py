@@ -55,6 +55,9 @@ class CommonSettings:
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
 
+        self.num_fourier_coeffs_train = data_param["num_fourier_coeffs_train"]
+        self.num_fourier_coeffs_apply = data_param["num_fourier_coeffs_apply"]
+
         if self.dim_output > 1:
             self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
@@ -246,7 +249,7 @@ class XGBoostSettings:
 
         self.per_event_hists = False
         self.downsample = data_param["downsample"]
-        self.downsample_frac = data_param["downsample_fraction"]
+        self.downsample_npoints = data_param["downsample_npoints"]
         self.plot_train = data_param["plot_train"]
         self.train_plot_npoints = data_param["train_plot_npoints"]
 
@@ -269,8 +272,8 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
-        self.suffix = "%s_down_frac%.3f" % \
-            (self.suffix, self.downsample_frac)
+        self.suffix = "%s_down_npoints%.3f" % \
+            (self.suffix, self.downsample_npoints)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
             os.makedirs("%s/%s" % (self.dirtree, self.suffix))

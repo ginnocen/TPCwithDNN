@@ -12,7 +12,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 
 # Set only once for full workflow
 SEED = 12345
-os.environ['PYTHONHASHSEED'] = str(SEED)
+os.environ["PYTHONHASHSEED"] = str(SEED)
 import random
 random.seed(SEED)
 
@@ -43,13 +43,13 @@ def setup_tf():
     """
     Limit GPU memory usage.
     """
-    if os.environ.get('TPCwithDNNSETMEMLIMIT'):
-        gpus = tf.config.experimental.list_physical_devices('GPU')
+    if os.environ.get("TPCwithDNNSETMEMLIMIT"):
+        gpus = tf.config.experimental.list_physical_devices("GPU")
         if gpus:
             try:
                 tf.config.experimental.set_virtual_device_configuration(gpus[0], \
                     [tf.config.experimental.VirtualDeviceConfiguration(memory_limit= \
-                    int(os.environ.get('TPCwithDNNSETMEMLIMIT')))])
+                    int(os.environ.get("TPCwithDNNSETMEMLIMIT")))])
                 # for gpu in gpus:
                 #     tf.config.experimental.set_memory_growth(gpu, True)
             except RuntimeError as e:
@@ -161,25 +161,31 @@ def main():
     parser.add_argument("-s", "--steer", dest="steer_file", default="default.yml",
                         type=str, help="path to the *.yml steering file")
     # parameters for steer file
-    parser.add_argument("--dotrain", action='store_true', default=argparse.SUPPRESS,
+    parser.add_argument("--dotrain", action="store_true", default=argparse.SUPPRESS,
                         help="Perform the training")
-    parser.add_argument("--docreateinputdata", action='store_true', default=argparse.SUPPRESS,
+    parser.add_argument("--docreateinputdata", action="store_true", default=argparse.SUPPRESS,
                         help="Create input data trees")
-    parser.add_argument("--docreatendvaldata", action='store_true', default=argparse.SUPPRESS,
+    parser.add_argument("--docreatendvaldata", action="store_true", default=argparse.SUPPRESS,
                         help="Create validation data trees")
     # parameters for config file
-    parser.add_argument("--rndaugment", action='store_true', default=argparse.SUPPRESS,
+    parser.add_argument("--rndaugment", action="store_true", default=argparse.SUPPRESS,
                         help="Use random-random augmentation for training")
-    parser.add_argument("--ntrain1d", dest='train_events_oned', type=int, default=argparse.SUPPRESS,
+    parser.add_argument("--ntrain1d", dest="train_events_oned", type=int, default=argparse.SUPPRESS,
                         help="Set custom number of training events")
-    parser.add_argument("--nval", dest='nd_val_events', type=int, default=argparse.SUPPRESS,
+    parser.add_argument("--nval", dest="nd_val_events", type=int, default=argparse.SUPPRESS,
                         help="Set custom number of max nd validation events")
-    parser.add_argument("--frac", dest='downsample_fraction', type=float, default=argparse.SUPPRESS,
-                        help="Set downsampling fraction if --downsample is set")
-    parser.add_argument("--nestimators", dest='n_estimators', type=int, default=argparse.SUPPRESS,
+    parser.add_argument("--dnpoints", dest="downsample_npoints", type=int,
+                        default=argparse.SUPPRESS, help="Set number of downsampling points")
+    parser.add_argument("--nestimators", dest="n_estimators", type=int, default=argparse.SUPPRESS,
                         help="Set the number of trees for xgboost models")
-    parser.add_argument("--maxdepth", dest='max_depth', type=int, default=argparse.SUPPRESS,
+    parser.add_argument("--maxdepth", dest="max_depth", type=int, default=argparse.SUPPRESS,
                         help="Set maximum depth of trees for xgboost models")
+    parser.add_argument("--nfouriertrain", dest="num_fourier_coeffs_train", type=int,
+                        default=argparse.SUPPRESS, help="Set number of Fourier coefficients" \
+                        " to take from the 1D IDC train input")
+    parser.add_argument("--nfourierapply", dest="num_fourier_coeffs_apply", type=int,
+                        default=argparse.SUPPRESS, help="Set number of Fourier coefficients" \
+                        " to take from the 1D IDC apply input")
     args = parser.parse_args()
 
     logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
@@ -191,25 +197,29 @@ def main():
 
     logger.info("Arguments provided: %s", str(args))
     if "dotrain" in args:
-        default['dotrain'] = True
+        default["dotrain"] = True
     if "docreateinputdata" in args or "docreatendvaldata" in args:
-        default['docreatendvaldata'] = True
-        config_parameters['common']['nd_validate_model'] = False
+        default["docreatendvaldata"] = True
+        config_parameters["common"]["nd_validate_model"] = False
     if "docreatendvaldata" in args:
-        config_parameters['common']['nd_validate_model'] = True
+        config_parameters["common"]["nd_validate_model"] = True
     if "rndaugment" in args:
-        config_parameters['common']['rnd_augment'] = True
+        config_parameters["common"]["rnd_augment"] = True
     if "train_events_oned" in args:
-        config_parameters['xgboost']['train_events'] = [args.train_events_oned]
+        config_parameters["xgboost"]["train_events"] = [args.train_events_oned]
     if "nd_val_events" in args:
-        config_parameters['common']['nd_val_events'] = args.nd_val_events
-    if "downsample_fraction" in args:
-        config_parameters['xgboost']['downsample'] = True
-        config_parameters['xgboost']['downsample_fraction'] = args.downsample_fraction
+        config_parameters["common"]["nd_val_events"] = args.nd_val_events
+    if "downsample_npoints" in args:
+        config_parameters["xgboost"]["downsample"] = True
+        config_parameters["xgboost"]["downsample_npoints"] = args.downsample_npoints
     if "n_estimators" in args:
-        config_parameters['xgboost']['params']['n_estimators'] = args.n_estimators
+        config_parameters["xgboost"]["params"]["n_estimators"] = args.n_estimators
     if "max_depth" in args:
-        config_parameters['xgboost']['params']['max_depth'] = args.max_depth
+        config_parameters["xgboost"]["params"]["max_depth"] = args.max_depth
+    if "nfouriertrain" in args:
+        config_parameters["common"]["nfouriertrain"] = args.nfouriertrain
+    if "nfourierapply" in args:
+        config_parameters["common"]["nfourierapply"] = args.nfourierapply
 
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
