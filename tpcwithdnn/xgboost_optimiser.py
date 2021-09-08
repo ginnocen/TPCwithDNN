@@ -47,8 +47,9 @@ class XGBoostOptimiser(Optimiser):
         log_total_memory_usage("Memory usage after loading data")
         if self.config.plot_train:
             inputs_val, outputs_val = self.get_data_("validation")
-            log_memory_usage(((inputs_val, "Input val data"), (outputs_val, "Output val data")))
-            log_total_memory_usage("Memory usage after loading val data")
+            log_memory_usage(((inputs_val, "Input validation data"),
+                              (outputs_val, "Output validation data")))
+            log_total_memory_usage("Memory usage after loading validation data")
             self.plot_train_(model, inputs, exp_outputs, inputs_val, outputs_val)
         start = timer()
         model.fit(inputs, exp_outputs)
@@ -170,6 +171,7 @@ class XGBoostOptimiser(Optimiser):
         """
         num_fourier_coeffs_apply = self.config.num_fourier_coeffs_apply
         downsample = False
+        dirinput = getattr(self.config, "dirinput_" + partition)
         if partition == "train":
             downsample = self.config.downsample
             # Take all Fourier coefficients for training
@@ -177,12 +179,8 @@ class XGBoostOptimiser(Optimiser):
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
-            inputs_single, exp_outputs_single = load_data_oned_idc(self.config.dirinput_train,
-                                                           indexev, self.config.z_range,
-                                                           self.config.opt_predout,
-                                                           downsample,
-                                                           self.config.downsample_npoints,
-                                                           self.config.rnd_augment,
+            inputs_single, exp_outputs_single = load_data_oned_idc(self.config, dirinput,
+                                                           indexev, downsample,
                                                            self.config.num_fourier_coeffs_train,
                                                            num_fourier_coeffs_apply)
             inputs.append(inputs_single)
