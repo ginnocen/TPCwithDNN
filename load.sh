@@ -9,8 +9,10 @@
 
 
 VIRTUALENV_PATH=~/.virtualenvs/tpcwithdnn
-PYTHON_BIN=/usr/bin/python3.6
-PYTHON_VERSION=3.6
+export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH;
+export ALICE_ROOT=/home/pyadmin/alice/sw/ubuntu1804_x86-64/AliRoot/master-1
+
+python3 -c 'import sys; sys.exit(1 if sys.version_info < (3, 6) else 0)' || { printf "You need to have at least Python 3.6 installed"; exit 1; }
 
 create-virtualenv ()
 {
@@ -36,7 +38,7 @@ create-virtualenv ()
             return 1;
         fi;
     fi;
-    virtualenv -p $PYTHON_BIN $VIRTUALENV_PATH
+    virtualenv -p /usr/bin/python3 $VIRTUALENV_PATH
 }
 
 activate-virtualenv ()
@@ -88,13 +90,11 @@ then
             echo "Creating virtual environment"
             create-virtualenv --force
         fi
-        export LD_LIBRARY_PATH=/usr/local/cuda/lib64/:$LD_LIBRARY_PATH;
-        export ALICE_ROOT=/home/pyadmin/alice/sw/ubuntu1804_x86-64/AliRoot/master-1
         activate-virtualenv
 
-        # If not on aliceml inform user to source own ROOT
         ml-activate-root > /dev/null 2>&1
-        export PYTHONPATH=$VIRTUALENV_PATH/lib/python$PYTHON_VERSION/site-packages/:$PYTHONPATH
-        [[ "$?" != "0" ]] &&  echo "PLEASE SOURCE YOUR OWN ROOT PACKAGE"
+
+        VIRT_LIBS=$(find $VIRTUALENV_PATH/lib/python*/site-packages -maxdepth 0)
+        export PYTHONPATH=$VIRT_LIBS:$PYTHONPATH
     fi
 fi
