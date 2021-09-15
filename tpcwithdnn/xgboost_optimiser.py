@@ -3,13 +3,14 @@ XGBoost optimizer for 1D IDC distortion correction
 """
 from timeit import default_timer as timer
 
+import math
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from xgboost import XGBRFRegressor
 
 from sklearn.metrics import mean_squared_error
-import xgboost
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
@@ -55,6 +56,9 @@ class XGBoostOptimiser(Optimiser):
         model.fit(inputs, exp_outputs)
         end = timer()
         log_time(start, end, "actual train")
+        model.get_booster().feature_names = get_input_names_oned_idc(
+            self.config.num_fourier_coeffs_train)
+        self.plot_feature_importance(model)
         self.save_model(model)
 
     def apply(self):
@@ -95,49 +99,6 @@ class XGBoostOptimiser(Optimiser):
 
         :param xgboost.sklearn.XGBModel model: the XGBoost model to be saved
         """
-        model.get_booster().feature_names = get_input_names_oned_idc(
-            self.config.num_fourier_coeffs_train)
-        out_filename_feature_importance = "%s/feature_importance_%s_nEv%d.txt" %\
-            (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        score_total_gain = model.get_booster().get_score(importance_type='total_gain')
-        indices_total_gain = np.flip(np.argsort(list(score_total_gain.values())))
-        score_gain = model.get_booster().get_score(importance_type='gain')
-        indices_gain = np.flip(np.argsort(list(score_gain.values())))
-        score_weight = model.get_booster().get_score(importance_type='weight')
-        indices_weight = np.flip(np.argsort(list(score_weight.values())))
-        with open(out_filename_feature_importance, 'w', encoding="utf-8") as file_name:
-            print("Feature importances", file=file_name)
-            print("Total gain   -   Gain   -   Weight", file=file_name)
-            for index_total_gain, index_gain, index_weight in zip(indices_total_gain,
-                                                                  indices_gain,
-                                                                  indices_weight):
-                print("%s: %.4f   -" % (list(score_total_gain.keys())[index_total_gain],
-                                        list(score_total_gain.values())[index_total_gain]),
-                      "   %s: %.4f   -" % (list(score_gain.keys())[index_gain],
-                                           list(score_gain.values())[index_gain]),
-                      "   %s: %.4f" % (list(score_weight.keys())[index_weight],
-                                       list(score_weight.values())[index_weight]),
-                      file=file_name)
-
-        font_size = 5
-        for importance_type, score, indices in zip(['total_gain', 'gain', 'weight'],
-                                        [score_total_gain, score_gain, score_weight],
-                                        [indices_total_gain, indices_gain, indices_weight]):
-            num_features = min(40, len(indices))
-            xgboost.plot_importance(model, importance_type=importance_type, xlabel=importance_type,
-                                    log=True, max_num_features=num_features, grid=False,
-                                    show_values=False, height=0.5)
-            plt.yticks(fontsize=font_size)
-            plt.gca().grid(b=True, which='both', axis='x', linewidth=0.4)
-            for i, index in enumerate(indices[:num_features]):
-                plt.text(list(score.values())[index],
-                         num_features - 1.275 + 1 / num_features - i,
-                         str("%.3e" % list(score.values())[index]),
-                        fontsize=font_size)
-            plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
-                        (self.config.dirplots, importance_type, self.config.suffix,
-                         self.config.train_events))
-
         # Snapshot - can be used for further training
         out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
                 (self.config.dirmodel, self.config.suffix, self.config.train_events)
@@ -188,6 +149,61 @@ class XGBoostOptimiser(Optimiser):
         inputs = np.concatenate(inputs)
         exp_outputs = np.concatenate(exp_outputs)
         return inputs, exp_outputs
+
+
+    def plot_feature_importance(self, model):
+        """
+        Create plots and text file of feature importances (total gain, weight, gain).
+
+        :param xgboost.sklearn.XGBModel model: the XGBoost model to use
+        """
+        score_total_gain = model.get_booster().get_score(importance_type='total_gain')
+        score_gain = model.get_booster().get_score(importance_type='gain')
+        score_weight = model.get_booster().get_score(importance_type='weight')
+        out_filename_feature_importance = "%s/feature_importance_%s_nEv%d.txt" %\
+            (self.config.dirmodel, self.config.suffix, self.config.train_events)
+
+        # importances sorted according to list of feature names
+        feature_sorted = []
+        total_gain_sorted = []
+        gain_sorted = []
+        weight_sorted = []
+        for feature in model.get_booster().feature_names:
+            if feature in score_total_gain.keys():
+                feature_sorted.append(feature)
+                total_gain_sorted.append(score_total_gain[feature])
+                gain_sorted.append(score_gain[feature])
+                weight_sorted.append(score_weight[feature])
+
+        with open(out_filename_feature_importance, 'w', encoding="utf-8") as file_name:
+            print("Feature importances", file=file_name)
+            print("Feature:   Total gain   -   Gain   -   Weight", file=file_name)
+            for index, feature in enumerate(feature_sorted):
+                print("%s:   %.4f   -  %.4f   -   %.4f" %
+                      (feature, total_gain_sorted[index],
+                       gain_sorted[index], weight_sorted[index]),
+                      file=file_name)
+
+        df_importance = pd.DataFrame({'total_gain': total_gain_sorted,
+                                      'gain': gain_sorted,
+                                      'weight': weight_sorted}, index=feature_sorted)
+        bar_colors = ['tab:orange', 'tab:green', 'tab:blue']
+        for importance_type, bar_color in zip(df_importance.columns, bar_colors):
+            px = 1/plt.rcParams['figure.dpi']
+            df_importance.plot(kind='bar', y=importance_type, log=True,
+                                    color=bar_color, figsize=(1200*px, 400*px))
+            plt.title("n_estimators: %d, max_depth: %d, down_frac: %.3f, train_maps: %d" %
+                      (self.config.params["n_estimators"],
+                       self.config.params["max_depth"],
+                       self.config.downsample_frac,
+                       self.config.train_events))
+            plt.tight_layout()
+            plt.ylim(
+                bottom=math.pow(10, math.floor(math.log(df_importance[importance_type].min(), 10))))
+            plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
+                        (self.config.dirplots, importance_type, self.config.suffix,
+                         self.config.train_events))
+
 
     def plot_apply_(self, exp_outputs, pred_outputs):
         """
