@@ -79,8 +79,8 @@ class CommonSettings:
                     else data_param["dirinput_nobias"]
         self.dirinput_train = "%s/SC-%d-%d-%d" % \
                               (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_val = "%s/SC-%d-%d-%d" % \
-                             (val_dir, self.grid_z, self.grid_r, self.grid_phi)
+        self.dirinput_validation = "%s/SC-%d-%d-%d" % \
+                                   (val_dir, self.grid_z, self.grid_r, self.grid_phi)
         self.dirinput_apply = "%s/SC-%d-%d-%d" % \
                               (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
         self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],

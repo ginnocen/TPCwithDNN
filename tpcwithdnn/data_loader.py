@@ -312,7 +312,7 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
     :return: tuple of inputs and expected outputs
     :rtype: tuple
     """
-    dim_output = sum(config.opt_pred)
+    dim_output = sum(config.opt_predout)
     if dim_output > 1:
         logger = get_logger()
         logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
@@ -327,7 +327,7 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
      vec_mean_oned_idc_a, vec_mean_oned_idc_c,
      vec_random_oned_idc_a, vec_random_oned_idc_c] = load_data_original_idc(dirinput, event_index,
                                                                             config.z_range,
-                                                                            config.use_rnd_augment)
+                                                                            config.rnd_augment)
 
     vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
               (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
@@ -340,7 +340,7 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
                               vec_random_corr_z - vec_mean_corr_z))
 
     vec_exp_corr_fluc, vec_der_ref_mean_corr =\
-        mat_to_vec(config.opt_pred, (mat_fluc_corr, mat_der_ref_mean_corr))
+        mat_to_vec(config.opt_predout, (mat_fluc_corr, mat_der_ref_mean_corr))
     # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
     # distortion direction
     if downsample:

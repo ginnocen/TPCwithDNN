@@ -285,7 +285,8 @@ class IDCDataValidator:
     def create_nd_histogram(self, var, mean_id):
         """
         Create nd histograms for given variable and mean id
-        Note: Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+        Only 0 (factor=1.00), 9 (factor=1.03), 18 (factor=0.97),
+        27 (factor=1.06) and 36 (factor=0.94) working.
 
         :param str var: variable name
         :param int mean_id: index of mean map.
@@ -334,7 +335,8 @@ class IDCDataValidator:
     def create_nd_histograms_meanid(self, mean_id):
         """
         Create nd histograms for given mean id
-        Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+        Only 0 (factor=1.00), 9 (factor=1.03), 18 (factor=0.97),
+        27 (factor=1.06) and 36 (factor=0.94) working.
 
         :param int mean_id: index of mean map.
         """
@@ -351,7 +353,8 @@ class IDCDataValidator:
     def create_pdf_map(self, var, mean_id):
         """
         Create a pdf map for given variable and mean id
-        Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+        Only 0 (factor=1.00), 9 (factor=1.03), 18 (factor=0.97),
+        27 (factor=1.06) and 36 (factor=0.94) working.
 
         :param str var: variable name
         :param int mean_id: index of mean map.
@@ -385,7 +388,8 @@ class IDCDataValidator:
     def create_pdf_maps_meanid(self, mean_id):
         """
         Create pdf maps for given mean id
-        Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+        Only 0 (factor=1.00), 9 (factor=1.03), 18 (factor=0.97),
+        27 (factor=1.06) and 36 (factor=0.94) working.
 
         :param int mean_id: index of mean map.
         """
@@ -394,7 +398,7 @@ class IDCDataValidator:
 
     def create_pdf_maps(self):
         """
-        Create pdf maps for mean maps with id 0, 27, 36
+        Create pdf maps for mean maps with id 0, 9, 18, 27, 36
         """
         for mean_id in self.mean_ids:
             self.create_pdf_maps_meanid(mean_id)
@@ -437,7 +441,8 @@ class IDCDataValidator:
     def merge_pdf_maps_meanid(self, mean_id):
         """
         Merge pdf maps for given mean id
-        Only 0 (factor=1.00), 27 (factor=1.06) and 36 (factor=0.94) working.
+        Only 0 (factor=1.00), 9 (factor=1.03), 18 (factor=0.97),
+        27 (factor=1.06) and 36 (factor=0.94) working.
 
         :param int mean_id: index of mean map.
         """

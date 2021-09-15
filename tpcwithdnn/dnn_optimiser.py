@@ -48,7 +48,7 @@ class DnnOptimiser(Optimiser):
                                                       dirinput=self.config.dirinput_train,
                                                       **self.config.params)
         validation_generator = FluctuationDataGenerator(self.config.partition['validation'],
-                                                        dirinput=self.config.dirinput_val,
+                                                        dirinput=self.config.dirinput_validation,
                                                         **self.config.params)
         model = u_net((self.config.grid_phi, self.config.grid_r, self.config.grid_z,
                        self.config.dim_input),
