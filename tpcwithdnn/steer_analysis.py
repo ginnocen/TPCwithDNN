@@ -216,10 +216,10 @@ def main():
         config_parameters["xgboost"]["params"]["n_estimators"] = args.n_estimators
     if "max_depth" in args:
         config_parameters["xgboost"]["params"]["max_depth"] = args.max_depth
-    if "nfouriertrain" in args:
-        config_parameters["common"]["nfouriertrain"] = args.nfouriertrain
-    if "nfourierapply" in args:
-        config_parameters["common"]["nfourierapply"] = args.nfourierapply
+    if "num_fourier_coeffs_train" in args:
+        config_parameters["common"]["num_fourier_coeffs_train"] = args.num_fourier_coeffs_train
+    if "num_fourier_coeffs_apply" in args:
+        config_parameters["common"]["num_fourier_coeffs_apply"] = args.num_fourier_coeffs_apply
 
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
