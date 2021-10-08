@@ -192,10 +192,10 @@ class XGBoostOptimiser(Optimiser):
             px = 1/plt.rcParams['figure.dpi']
             df_importance.plot(kind='bar', y=importance_type, log=True,
                                     color=bar_color, figsize=(1200*px, 400*px))
-            plt.title("n_estimators: %d, max_depth: %d, down_frac: %.3f, train_maps: %d" %
+            plt.title("n_estimators: %d, max_depth: %d, down_npoints: %.3f, train_maps: %d" %
                       (self.config.params["n_estimators"],
                        self.config.params["max_depth"],
-                       self.config.downsample_frac,
+                       self.config.downsample_npoints,
                        self.config.train_events))
             plt.tight_layout()
             plt.ylim(
