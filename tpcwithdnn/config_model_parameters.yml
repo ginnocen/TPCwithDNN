@@ -4,6 +4,7 @@ common:
   dirplots: plots
   dirtree: trees
   dirhist: histograms
+  dirinput_cache: cache
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
@@ -41,6 +42,8 @@ xgboost:
   downsample_npoints: 100
   plot_train: false
   train_plot_npoints: 10
+  dump_train: true
+  cache_events: [200]
   params:
     n_estimators: 100 # 850, 100 is better than 500
     max_depth: 3

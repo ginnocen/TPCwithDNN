@@ -71,6 +71,7 @@ class CommonSettings:
         self.dirplots = data_param["dirplots"]
         self.dirtree = data_param["dirtree"]
         self.dirhist = data_param["dirhist"]
+        self.dirinput_cache = data_param["dirinput_cache"]
         train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
                     else data_param["dirinput_nobias"]
         val_dir = data_param["dirinput_bias"] if data_param["validation_bias"] \
@@ -109,8 +110,10 @@ class CommonSettings:
         self.train_events = 0
         self.val_events = 0
         self.apply_events = 0
+        self.cache_events = 0
 
-    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
+    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events,
+                    cache_events):
         """
         Update the event indices ranges for train / validation / apply.
         To be used internally.
@@ -121,11 +124,14 @@ class CommonSettings:
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
+        :param int cache_events: number of events to dump (cache) for future training
+                                 valid only for XGBoost
         """
         self.total_events = total_events
         self.train_events = train_events
         self.val_events = val_events
         self.apply_events = apply_events
+        self.cache_events = cache_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
             self.range_rnd_index_train, self.range_mean_index, ranges, self.rnd_augment)
@@ -222,7 +228,8 @@ class DNNSettings:
         except AttributeError as attr_err:
             raise AttributeError("'DNNSettings' object has no attribute '%s'" % name) from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events,
+                   cache_events):
         """
         A wrapper around internal set_ranges_().
 
@@ -231,8 +238,11 @@ class DNNSettings:
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
+        :param int cache_events: number of events to dump (cache) for future training
+                                 valid only for XGBoost
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events,
+                         cache_events)
 
 class XGBoostSettings:
     name = "xgboost"
@@ -252,8 +262,15 @@ class XGBoostSettings:
         self.downsample_npoints = data_param["downsample_npoints"]
         self.plot_train = data_param["plot_train"]
         self.train_plot_npoints = data_param["train_plot_npoints"]
+        self.dump_train = data_param["dump_train"]
 
         self.params = data_param["params"]
+
+        self.cache_suffix = "phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
+        self.cache_suffix = "%s_down_npoints%d" % \
+            (self.cache_suffix, self.downsample_npoints)
+        self.cache_suffix = "%s_fourier_train%d" % \
+            (self.cache_suffix, self.num_fourier_coeffs_train)
 
         self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.params["n_estimators"],
@@ -296,7 +313,8 @@ class XGBoostSettings:
             raise AttributeError("'XGBoostSettings' object has no attribute '%s'" % name) \
                 from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events,
+                   cache_events):
         """
         A wrapper around internal set_ranges_().
 
@@ -305,5 +323,7 @@ class XGBoostSettings:
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
+        :param int cache_events: number of events to dump (cache) for future training
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events,
+                         cache_events)

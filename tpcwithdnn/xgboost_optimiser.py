@@ -16,6 +16,7 @@ from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
 from tpcwithdnn import plot_utils
 from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
+from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc
 
@@ -58,7 +59,7 @@ class XGBoostOptimiser(Optimiser):
         log_time(start, end, "actual train")
         model.get_booster().feature_names = get_input_names_oned_idc(
             self.config.num_fourier_coeffs_train)
-        self.plot_feature_importance(model)
+        self.plot_feature_importance_(model)
         self.save_model(model)
 
     def apply(self):
@@ -132,11 +133,26 @@ class XGBoostOptimiser(Optimiser):
         """
         num_fourier_coeffs_apply = self.config.num_fourier_coeffs_apply
         downsample = False
-        dirinput = getattr(self.config, "dirinput_" + partition)
         if partition == "train":
             downsample = self.config.downsample
             # Take all Fourier coefficients for training
             num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
+            if self.config.dump_data:
+                return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
+        return self.get_partition_(partition, downsample, num_fourier_coeffs_apply)
+
+    def get_partition_(self, partition, downsample, num_fourier_coeffs_apply):
+        """
+        Load the input data from given partition. Function used internally.
+
+        :param dict partition: dictionary of pairs of event indices
+                               for training / validation / apply
+        :param bool downsample: whether to downsample the data
+        :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
+        :return: tuple of inputs and expected outputs
+        :rtype: tuple(np.ndarray, np.ndarray)
+        """
+        dirinput = getattr(self.config, "dirinput_" + partition)
         inputs = []
         exp_outputs = []
         for indexev in self.config.partition[partition]:
@@ -150,8 +166,35 @@ class XGBoostOptimiser(Optimiser):
         exp_outputs = np.concatenate(exp_outputs)
         return inputs, exp_outputs
 
+    def get_cache_(self, partition, downsample, num_fourier_coeffs_apply):
+        """
+        Get the cached data from given partition. Function used internally.
 
-    def plot_feature_importance(self, model):
+        :param dict partition: dictionary of pairs of event indices
+                               for training / validation / apply
+        :param bool downsample: whether to downsample the data
+        :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
+        :return: tuple of inputs and expected outputs
+        :rtype: tuple(np.ndarray, np.ndarray)
+        """
+        self.config.logger.info("Searching for cached data")
+        filename = "%s_cacheEv%d" % (self.config.cache_suffix, self.config.cache_events)
+        full_path = "%s/%s" % (self.config.dirinput_cache, filename)
+        try:
+            input_data = tree_to_pandas(full_path, "cache", ["*"])
+            inputs = input_data.filter(regex=("d.*")).to_numpy()
+            exp_outputs = input_data.filter(regex=("d.*")).to_numpy()
+            self.config.logger.info("Data read from cache: %s", full_path)
+            print("Inputs size: {} outputs size: {}".format(inputs.shape, exp_outputs.shape))
+            return inputs, exp_outputs
+        except FileNotFoundError:
+            self.config.logger.info("Cache: %s does not exist, saving new cache", full_path)
+            inputs, exp_outputs = self.get_partition_(partition, downsample,
+                                                      num_fourier_coeffs_apply)
+            print("Inputs size: {} outputs size: {}".format(inputs.shape, exp_outputs.shape))
+            return inputs, exp_outputs
+
+    def plot_feature_importance_(self, model):
         """
         Create plots and text file of feature importances (total gain, weight, gain).
 

@@ -85,20 +85,22 @@ def init_models(config_parameters):
     dataval = IDCDataValidator()
     return models, corr, dataval
 
-def get_events_counts(train_events, val_events, apply_events):
+def get_events_counts(train_events, val_events, apply_events, cache_events):
     """
     Verify and zip requested numbers of events.
 
     :param list train_events: list of numbers of train events from the config file
     :param list val_events: list of numbers of validation events from the config file
     :param list apply_events: list of numbers of apply events from the config file
+    :param list cache_events: list of numbers of cache events from the config file
     :return: zipped (train, validation, apply) numbers
     :rtype: zip
     """
     if len(train_events) != len(val_events) or \
-       len(train_events) != len(apply_events):
+       len(train_events) != len(apply_events) or \
+       len(train_events) != len(cache_events):
         raise ValueError("Different number of ranges specified for train/validation/apply")
-    return zip(train_events, val_events, apply_events)
+    return zip(train_events, val_events, apply_events, cache_events)
 
 def run_model_and_val(model, dataval, default, config_parameters):
     """
@@ -130,6 +132,8 @@ def run_model_and_val(model, dataval, default, config_parameters):
         model.plot()
     if default["dogrid"] is True:
         model.search_grid()
+    if default["dodumptraindata"] is True and model.name == "xgboost":
+        model.dump_train_data()
     if default["docreatendvaldata"] is True:
         dataval.create_data()
     if default["docreatepdfmaps"] is True:
@@ -224,7 +228,8 @@ def main():
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
                                        config_parameters[model.name]["validation_events"],
-                                       config_parameters[model.name]["apply_events"])
+                                       config_parameters[model.name]["apply_events"],
+                                       config_parameters[model.name]["cache_events"])
                         for model in models)
     ranges_rnd = config_parameters["common"]["range_rnd_index_train"]
     ranges_mean = config_parameters["common"]["range_mean_index"]
@@ -236,7 +241,7 @@ def main():
 
     for model, model_events_counts in zip(models, events_counts):
         all_events_counts = []
-        for (train_events, val_events, apply_events) in model_events_counts:
+        for (train_events, val_events, apply_events, cache_events) in model_events_counts:
             total_events = train_events + val_events + apply_events
             if total_events > max_available_events:
                 logger.warning("Too big number of events requested: %d available: %d",
@@ -248,7 +253,7 @@ def main():
             ranges = {"train": [0, train_events],
                       "validation": [train_events, train_events + val_events],
                       "apply": [train_events + val_events, total_events]}
-            model.config.set_ranges(ranges, total_events, train_events, val_events, apply_events)
+            model.config.set_ranges(ranges, total_events, train_events, val_events, apply_events, cache_events)
 
             run_model_and_val(model, dataval, default, config_parameters["common"])
 
