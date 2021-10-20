@@ -138,8 +138,8 @@ class XGBoostOptimiser(Optimiser):
             downsample = self.config.downsample
             # Take all Fourier coefficients for training
             num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
-            if self.config.dump_train:
-                return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
+        if self.config.dump_train:
+            return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
         return self.get_partition_(partition, downsample, num_fourier_coeffs_apply)
 
     def get_partition_(self, partition, downsample, num_fourier_coeffs_apply):
@@ -185,7 +185,8 @@ class XGBoostOptimiser(Optimiser):
         :rtype: tuple(np.ndarray, np.ndarray)
         """
         self.config.logger.info("Searching for cached data")
-        filename = "%s_cacheEv%d.root" % (self.config.cache_suffix, self.config.cache_events)
+        events_count = getattr(self.config, "%s_events" % partition)
+        filename = "%s_%sEv%d.root" % (self.config.cache_suffix, partition, events_count)
         full_path = "%s/%s" % (self.config.dirinput_cache, filename)
         try:
             input_data = tree_to_pandas(full_path, "cache", ["*"])

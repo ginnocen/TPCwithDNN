@@ -267,7 +267,7 @@ class XGBoostSettings:
 
         self.params = data_param["params"]
 
-        self.cache_suffix = "phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
+        self.cache_suffix = "cache_phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
         self.cache_suffix = "%s_dpoints%d" % \
             (self.cache_suffix, self.downsample_npoints)
         self.cache_suffix = "%s_ftrain%d" % \
