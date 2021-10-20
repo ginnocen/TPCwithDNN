@@ -3,6 +3,7 @@ XGBoost optimizer for 1D IDC distortion correction
 """
 from timeit import default_timer as timer
 
+from itertools import chain
 import math
 import pickle
 import numpy as np
@@ -137,7 +138,7 @@ class XGBoostOptimiser(Optimiser):
             downsample = self.config.downsample
             # Take all Fourier coefficients for training
             num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
-            if self.config.dump_data:
+            if self.config.dump_train:
                 return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
         return self.get_partition_(partition, downsample, num_fourier_coeffs_apply)
 
@@ -166,6 +167,12 @@ class XGBoostOptimiser(Optimiser):
         exp_outputs = np.concatenate(exp_outputs)
         return inputs, exp_outputs
 
+    def dump_train_data(self):
+        """
+        Cache train data if it is not cached.
+        """
+        self.get_cache_("train", self.config.downsample, self.config.num_fourier_coeffs_train)
+
     def get_cache_(self, partition, downsample, num_fourier_coeffs_apply):
         """
         Get the cached data from given partition. Function used internally.
@@ -178,20 +185,26 @@ class XGBoostOptimiser(Optimiser):
         :rtype: tuple(np.ndarray, np.ndarray)
         """
         self.config.logger.info("Searching for cached data")
-        filename = "%s_cacheEv%d" % (self.config.cache_suffix, self.config.cache_events)
+        filename = "%s_cacheEv%d.root" % (self.config.cache_suffix, self.config.cache_events)
         full_path = "%s/%s" % (self.config.dirinput_cache, filename)
         try:
             input_data = tree_to_pandas(full_path, "cache", ["*"])
-            inputs = input_data.filter(regex=("d.*")).to_numpy()
-            exp_outputs = input_data.filter(regex=("d.*")).to_numpy()
+            inputs = input_data.filter(regex="^(?!exp).*").to_numpy()
+            exp_outputs = input_data.filter(like="exp").to_numpy()
             self.config.logger.info("Data read from cache: %s", full_path)
-            print("Inputs size: {} outputs size: {}".format(inputs.shape, exp_outputs.shape))
             return inputs, exp_outputs
         except FileNotFoundError:
             self.config.logger.info("Cache: %s does not exist, saving new cache", full_path)
             inputs, exp_outputs = self.get_partition_(partition, downsample,
                                                       num_fourier_coeffs_apply)
-            print("Inputs size: {} outputs size: {}".format(inputs.shape, exp_outputs.shape))
+            input_data = np.hstack((inputs, exp_outputs.reshape(-1, 1)))
+            fourier_names = list(chain.from_iterable(("Fourier real %d" % i, "Fourier imag %d" % i)
+                                 for i in range(self.config.num_fourier_coeffs_train)))
+            cache_data = pd.DataFrame(input_data,
+                                      columns=["r", "phi", "z", "der mean corr"] +\
+                                              fourier_names + ["exp correction fluctuations"])
+            pandas_to_tree(cache_data, full_path, "cache")
+            self.config.logger.info("Cache: %s saved", full_path)
             return inputs, exp_outputs
 
     def plot_feature_importance_(self, model):

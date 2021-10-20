@@ -87,7 +87,8 @@ class CommonSettings:
         self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
                                self.grid_z, self.grid_r, self.grid_phi)
 
-        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree, self.dirhist):
+        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree, self.dirhist,
+                        self.dirinput_cache):
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
 
@@ -267,9 +268,9 @@ class XGBoostSettings:
         self.params = data_param["params"]
 
         self.cache_suffix = "phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
-        self.cache_suffix = "%s_down_npoints%d" % \
+        self.cache_suffix = "%s_dpoints%d" % \
             (self.cache_suffix, self.downsample_npoints)
-        self.cache_suffix = "%s_fourier_train%d" % \
+        self.cache_suffix = "%s_ftrain%d" % \
             (self.cache_suffix, self.num_fourier_coeffs_train)
 
         self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
@@ -289,7 +290,7 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
-        self.suffix = "%s_down_npoints%d" % \
+        self.suffix = "%s_dpoints%d" % \
             (self.suffix, self.downsample_npoints)
         self.suffix = "%s_n_coeffs_train%d" % \
             (self.suffix, self.num_fourier_coeffs_train)
