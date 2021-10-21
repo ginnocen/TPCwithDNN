@@ -253,7 +253,8 @@ def main():
             ranges = {"train": [0, train_events],
                       "validation": [train_events, train_events + val_events],
                       "apply": [train_events + val_events, total_events]}
-            model.config.set_ranges(ranges, total_events, train_events, val_events, apply_events, cache_events)
+            model.config.set_ranges(ranges, total_events, train_events, val_events, apply_events,
+                                    cache_events)
 
             run_model_and_val(model, dataval, default, config_parameters["common"])
 
