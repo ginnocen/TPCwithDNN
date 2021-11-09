@@ -1,9 +1,9 @@
 common:
-  dirmodel: model_test
-  dirapply: validation_test
-  dirplots: plots_test
-  dirtree: /mnt/temp/mkabus/test
-  dirhist: /mnt/temp/mkabus/test
+  dirmodel: models
+  dirapply: validation
+  dirplots: plots
+  dirtree: trees
+  dirhist: histograms
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
   dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions

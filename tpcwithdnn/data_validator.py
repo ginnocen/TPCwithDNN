@@ -214,7 +214,7 @@ class DataValidator:
         df_val = tree_to_pandas("%s/%s/treeValidation_mean%.1f_nEv%d.root"
                                 % (self.config.dirtree, self.config.suffix, mean_factor,
                                    self.config.train_events),
-                                'validation', column_names)
+                                'validation', columns=column_names)
         if diff_index != -1:
             df_val[var] = \
                 df_val[var[:diff_index] + "Pred"] - df_val[var[:diff_index]]
@@ -325,15 +325,16 @@ class DataValidator:
             input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
                 % (self.config.dirtree, self.config.suffix, mean_factor,
                    self.config.train_events)
-            df = tree_to_pandas(input_file_name_0, 'flucSC', "*Bin*")
+            df = tree_to_pandas(input_file_name_0, 'flucSC', filter_name="*Bin*")
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
             for var in self.get_pdf_map_variables_list():
                 input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
                     % (self.config.dirtree, self.config.suffix, var, mean_factor,
                        self.config.train_events)
-                df_temp = tree_to_pandas(input_file_name, var, "*", ".*Bin")
-                for col in list(df_temp.keys()):
+                df_temp = tree_to_pandas(input_file_name, var,
+                                         filter_name="/(means|medians|rms|entries)/")
+                for col in list(df_temp.columns):
                     df[var + '_' + col] = df_temp[col]
             df_merged = df_merged.append(df, ignore_index=True)
 

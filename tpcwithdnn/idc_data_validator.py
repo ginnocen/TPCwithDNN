@@ -170,11 +170,9 @@ class IDCDataValidator:
                                  "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
                                  "fluc0DIDC", "mean0DIDC", "c0"])
         for dist_name in self.config.nameopt_predout:
-            column_names = np.append(column_names, ["flucDist" + dist_name,
-                                                    "meanDist" + dist_name,
-                                                    "derRefMeanCorr" + dist_name,
-                                                    "flucCorr" + dist_name,
-                                                    "meanCorr" + dist_name])
+            column_names = np.append(column_names, ["flucCorr" + dist_name,
+                                                    "meanCorr" + dist_name,
+                                                    "derRefMeanCorr" + dist_name])
         if self.config.nd_validate_model:
             loaded_model = self.model.load_model()
             for dist_name in dist_names:
@@ -274,11 +272,11 @@ class IDCDataValidator:
 
         var_list = ['flucSC', 'meanSC', 'derRefMeanSC']
         for dist_name in dist_names_list:
-            var_list.append('flucDist' + dist_name + 'Pred')
-            var_list.append('flucDist' + dist_name)
-            var_list.append('meanDist' + dist_name)
-            var_list.append('derRefMeanDist' + dist_name)
-            var_list.append('flucDist' + dist_name + 'Diff')
+            var_list.append('flucCorr' + dist_name + 'Pred')
+            var_list.append('flucCorr' + dist_name)
+            var_list.append('meanCorr' + dist_name)
+            var_list.append('derRefMeanCorr' + dist_name)
+            var_list.append('flucCorr' + dist_name + 'Diff')
 
         return var_list
 
@@ -303,10 +301,10 @@ class IDCDataValidator:
         else:
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
-        df_val = tree_to_pandas("%s/%s/treeValidation_mean%.1f_nEv%d.root"
+        df_val = tree_to_pandas("%s/%s/treeValidation_mean%.2f_nEv%d.root"
                                 % (self.config.dirtree, self.config.suffix, mean_factor,
                                    self.config.train_events),
-                                'validation', column_names)
+                                'validation', columns=column_names)
         if diff_index != -1:
             df_val[var] = \
                 df_val[var[:diff_index] + "Pred"] - df_val[var[:diff_index]]
@@ -324,7 +322,7 @@ class IDCDataValidator:
                        "33,83.5,254.5," + \
                        "40,0,250," + \
                        "%d,%.4f,%.4f)" % (10, df_val['deltaSC'].min(), df_val['deltaSC'].max())
-        output_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
+        output_file_name = "%s/%s/ndHistogram_%s_mean%.2f_nEv%d.gzip" \
             % (self.config.dirhist, self.config.suffix, var, mean_factor,
                self.config.train_events)
         with gzip.open(output_file_name, 'wb') as output_file:
@@ -345,7 +343,7 @@ class IDCDataValidator:
 
     def create_nd_histograms(self):
         """
-        Create nd histograms for mean maps with id 0, 27, 36
+        Create nd histograms for mean maps with id 0, 9, 18, 27, 36
         """
         for mean_id in self.mean_ids:
             self.create_nd_histograms_meanid(mean_id)
@@ -364,13 +362,13 @@ class IDCDataValidator:
         self.check_mean_id_(mean_id)
         mean_factor = self.get_mean_factor_(mean_id)
 
-        input_file_name = "%s/%s/ndHistogram_%s_mean%.1f_nEv%d.gzip" \
+        input_file_name = "%s/%s/ndHistogram_%s_mean%.2f_nEv%d.gzip" \
             % (self.config.dirhist, self.config.suffix, var, mean_factor,
                self.config.train_events)
         with gzip.open(input_file_name, 'rb') as input_file:
             histo = pickle.load(input_file)
 
-        output_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
+        output_file_name = "%s/%s/pdfmap_%s_mean%.2f_nEv%d.root" \
             % (self.config.dirtree, self.config.suffix, var, mean_factor,
                self.config.train_events)
         dim_var = 0
@@ -418,18 +416,19 @@ class IDCDataValidator:
 
         df_merged = pd.DataFrame()
         for mean_factor in mean_factors:
-            input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.1f_nEv%d.root" \
+            input_file_name_0 = "%s/%s/pdfmap_flucSC_mean%.2f_nEv%d.root" \
                 % (self.config.dirtree, self.config.suffix, mean_factor,
                    self.config.train_events)
-            df = tree_to_pandas(input_file_name_0, 'flucSC', "*Bin*")
+            df = tree_to_pandas(input_file_name_0, 'flucSC', filter_name="*Bin*")
             df['fsector'] = df['phiBinCenter'] / math.pi * 9
             df['meanMap'] = mean_factor
             for var in self.get_pdf_map_variables_list():
-                input_file_name = "%s/%s/pdfmap_%s_mean%.1f_nEv%d.root" \
+                input_file_name = "%s/%s/pdfmap_%s_mean%.2f_nEv%d.root" \
                     % (self.config.dirtree, self.config.suffix, var, mean_factor,
                        self.config.train_events)
-                df_temp = tree_to_pandas(input_file_name, var, "*", ".*Bin")
-                for col in list(df_temp.keys()):
+                df_temp = tree_to_pandas(input_file_name, var,
+                                         filter_name="/(means|medians|rms|entries)/")
+                for col in list(df_temp.columns):
                     df[var + '_' + col] = df_temp[col]
             df_merged = df_merged.append(df, ignore_index=True)
 
