@@ -4,6 +4,8 @@ Convert between ROOT files and Python pandas dataframes
 import re
 import pandas as pd
 import uproot3
+import uproot
+
 from RootInteractive.Tools.aliTreePlayer import LoadTrees, tree2Panda
 
 
@@ -64,24 +66,46 @@ def tree_to_pandas_ri(file_name, tree_name, columns, exclude_columns=[], **kwarg
     return data
 
 
-def tree_to_pandas(file_name, tree_name, columns, exclude_columns="", **kwargs):  # pylint: disable=dangerous-default-value
+def tree_to_pandas(file_name, tree_name, **kwargs):
     """
-    Read a TTree from a ROOT file and convert it to a pandas dataframe using uproot3.
+    Read a TTree from a ROOT file and convert it to a pandas DataFrame using uproot.
+    Can be used for
+        - TTrees with branches of single values.
+        - TTrees containing std::vectors. Vectors of selected branches have to be of the same size.
+        - TTrees with a combination of std::vector and single value branches.
 
     :param str file_name: path to the root file
     :param str tree_name: name of the TTree
-    :param list[str] columns: names of branches or aliases to be read.
-                              They can also be regular expression like ['.*'] for all branches
-                              or ['.*fluc'] for all branches containing the string "fluc".
-    :param list[str] exclude_columns: optional names of branches or aliases to be ignored.
-                                      They can also be regular expression like ['.*fluc']
-                                      for all branches containing the string "fluc".
+    :param dictionary kwargs: optional parameters to filter branches
+        - list[str] 'columns': names of branches to be read from the tree.
+        - str 'filter_name': regex string in "/pattern/i" syntax to select branches to be read from
+                             the tree.
+        - str 'exclude': names of branches or aliases to be ignored.
+                         They can also be regular expression like '.*fluc'
+                         for all branches containing the string "fluc".
     :return: dataframe with the specified columns
     :rtype: pandas.DataFrame
     """
-    with uproot3.open(file_name) as file:
-        data = file[tree_name].pandas.df(columns, **kwargs)
-    if exclude_columns != "":
+    options = {'columns': None,
+               'filter_name': None,
+               'exclude': None}
+    options.update(kwargs)
+    data = uproot.open("%s:%s" % (file_name, tree_name)).arrays(options['columns'],
+                                                                filter_name=options['filter_name'],
+                                                                library='pd')
+
+    # check whether a single pandas DataFrame is returned or a tuple of DataFrames most likely due
+    # to vectors of different length in the TTree
+    if isinstance(data, tuple):
+        raise TypeError("Return value is a tuple of DataFrames. " + \
+            "Please check that vectors of selected branches have the same size.")
+
+    # drop entry and subentry columns from std::vectors and reset index
+    if data.index.nlevels > 1:
+        data = data.droplevel('entry').reset_index().drop(columns="subentry")
+
+    # exclude columns
+    if options['exclude']:
         data = data.filter([col for col in data.columns
-                            if not re.compile(exclude_columns).match(col)])
+                            if not re.compile(options['exclude']).match(col)])
     return data

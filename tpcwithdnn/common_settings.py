@@ -272,7 +272,7 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
-        self.suffix = "%s_down_npoints%.3f" % \
+        self.suffix = "%s_down_npoints%d" % \
             (self.suffix, self.downsample_npoints)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
