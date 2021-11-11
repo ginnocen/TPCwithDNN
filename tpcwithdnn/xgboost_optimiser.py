@@ -209,7 +209,7 @@ class XGBoostOptimiser(Optimiser):
         data_size = len(self.config.partition[partition])
         last_full_end = int(np.floor(data_size / batch_size)) * batch_size
         for i in range(0, last_full_end, batch_size):
-            yield slice(i, i + 1)
+            yield slice(i, i + batch_size)
         if last_full_end < data_size:
             yield slice(last_full_end, data_size)
 
@@ -240,6 +240,7 @@ class XGBoostOptimiser(Optimiser):
             for i, part_range in enumerate(self.get_batch_range_(partition, batch_size)):
                 inputs, exp_outputs = self.get_partition_(partition, downsample,
                                                           num_fourier_coeffs_apply, part_range)
+
                 input_data = np.hstack((inputs, exp_outputs.reshape(-1, 1)))
                 cache_data = pd.DataFrame(input_data,
                                           columns=["r", "phi", "z", "der mean corr"] +\
