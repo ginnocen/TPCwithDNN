@@ -5,10 +5,12 @@ from timeit import default_timer as timer
 
 from itertools import chain
 import math
+import os
 import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
+import uproot3
 from xgboost import XGBRFRegressor
 
 from sklearn.metrics import mean_squared_error
@@ -20,6 +22,7 @@ from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_
 from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.optimiser import Optimiser
 from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc
+from tpcwithdnn.hadd import hadd
 
 class XGBoostOptimiser(Optimiser):
     """
@@ -127,8 +130,7 @@ class XGBoostOptimiser(Optimiser):
         Load the full input data for a XGBoost optimization.
         Function used internally.
 
-        :param dict partition: dictionary of pairs of event indices
-                               for training / validation / apply
+        :param str partition: name of partition, one from "train", "validation", "apply"
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
@@ -138,25 +140,26 @@ class XGBoostOptimiser(Optimiser):
             downsample = self.config.downsample
             # Take all Fourier coefficients for training
             num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
-        if self.config.dump_train:
-            return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
-        return self.get_partition_(partition, downsample, num_fourier_coeffs_apply)
+            if self.config.dump_train and self.config.train_events <= self.config.cache_events:
+                return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
+        return self.get_partition_(partition, downsample, num_fourier_coeffs_apply, slice(None))
 
-    def get_partition_(self, partition, downsample, num_fourier_coeffs_apply):
+    def get_partition_(self, partition, downsample, num_fourier_coeffs_apply, part_range):
         """
         Load the input data from given partition. Function used internally.
 
-        :param dict partition: dictionary of pairs of event indices
-                               for training / validation / apply
+        :param str partition: name of partition, one from "train", "validation", "apply"
         :param bool downsample: whether to downsample the data
         :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
+        :param slice part_range: range of data to be taken from the partition,
+                                 e.g., slice(0, 10) for first 10 event indices from the partition
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
         dirinput = getattr(self.config, "dirinput_" + partition)
         inputs = []
         exp_outputs = []
-        for indexev in self.config.partition[partition]:
+        for indexev in self.config.partition[partition][part_range]:
             inputs_single, exp_outputs_single = load_data_oned_idc(self.config, dirinput,
                                                            indexev, downsample,
                                                            self.config.num_fourier_coeffs_train,
@@ -165,48 +168,91 @@ class XGBoostOptimiser(Optimiser):
             exp_outputs.append(exp_outputs_single)
         inputs = np.concatenate(inputs)
         exp_outputs = np.concatenate(exp_outputs)
+
         return inputs, exp_outputs
 
-    def dump_train_data(self):
+    def cache_train_data(self):
         """
         Cache train data if it is not cached.
         """
         self.get_cache_("train", self.config.downsample, self.config.num_fourier_coeffs_train)
 
+    def read_cache_from_file(self, filepath):
+        """
+        Read the cached data from the file specified. Function used internally.
+
+        :param str filepath: full path to the cache file
+        :return: tuple of inputs and expected outputs
+        :rtype: tuple(np.ndarray, np.ndarray)
+        """
+        self.config.logger.info("Reading cache from %s", filepath)
+        with uproot3.open(filepath) as root_file:
+            print("File keys: {}".format(root_file.keys()))
+            print("Tree: {}".format(root_file["cache"]))
+            input_data = root_file["cache"].pandas.df(["*"])
+        #input_data = tree_to_pandas(filepath, "cache", ["*"])
+        print(input_data)
+        inputs = input_data.filter(regex="^(?!exp).*").to_numpy()
+        exp_outputs = input_data.filter(like="exp").to_numpy()
+        self.config.logger.info("Data read from cache: %s", filepath)
+        return inputs, exp_outputs
+
+    def get_batch_range_(self, partition, batch_size):
+        """
+        A generator to calculate the next batch of data from the partition.
+
+        :param str partition: name of partition, one from "train", "validation", "apply"
+        :param int batch_size: size of one batch
+        :return: a slice with minimum (inclusive) and maximum (exclusive) indices for the batch
+        :rtype: slice
+        """
+        data_size = len(self.config.partition[partition])
+        last_full_end = int(np.floor(data_size / batch_size)) * batch_size
+        for i in range(0, last_full_end, batch_size):
+            yield slice(i, i + 1)
+        if last_full_end < data_size:
+            yield slice(last_full_end, data_size)
+
     def get_cache_(self, partition, downsample, num_fourier_coeffs_apply):
         """
         Get the cached data from given partition. Function used internally.
 
-        :param dict partition: dictionary of pairs of event indices
-                               for training / validation / apply
+        :param str partition: name of partition, one from "train", "validation", "apply"
         :param bool downsample: whether to downsample the data
         :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
         self.config.logger.info("Searching for cached data")
-        events_count = getattr(self.config, "%s_events" % partition)
-        filename = "%s_%sEv%d.root" % (self.config.cache_suffix, partition, events_count)
+        filename = "%s_%sEv%d" % (self.config.cache_suffix, partition, self.config.cache_events)
         full_path = "%s/%s" % (self.config.dirinput_cache, filename)
+        cache_file = "%s.root" % full_path
         try:
-            input_data = tree_to_pandas(full_path, "cache", ["*"])
-            inputs = input_data.filter(regex="^(?!exp).*").to_numpy()
-            exp_outputs = input_data.filter(like="exp").to_numpy()
-            self.config.logger.info("Data read from cache: %s", full_path)
+            inputs, exp_outputs = self.read_cache_from_file(cache_file)
+            self.config.logger.info("Found cache: %s", cache_file)
             return inputs, exp_outputs
         except FileNotFoundError:
-            self.config.logger.info("Cache: %s does not exist, saving new cache", full_path)
-            inputs, exp_outputs = self.get_partition_(partition, downsample,
-                                                      num_fourier_coeffs_apply)
-            input_data = np.hstack((inputs, exp_outputs.reshape(-1, 1)))
+            self.config.logger.info("Cache: %s does not exist, saving new cache", cache_file)
             fourier_names = list(chain.from_iterable(("Fourier real %d" % i, "Fourier imag %d" % i)
                                  for i in range(self.config.num_fourier_coeffs_train)))
-            cache_data = pd.DataFrame(input_data,
-                                      columns=["r", "phi", "z", "der mean corr"] +\
-                                              fourier_names + ["exp correction fluctuations"])
-            pandas_to_tree(cache_data, full_path, "cache")
-            self.config.logger.info("Cache: %s saved", full_path)
-            return inputs, exp_outputs
+            batch_file_names = []
+            batch_size = self.config.cache_file_size
+            for i, part_range in enumerate(self.get_batch_range_(partition, batch_size)):
+                inputs, exp_outputs = self.get_partition_(partition, downsample,
+                                                          num_fourier_coeffs_apply, part_range)
+                input_data = np.hstack((inputs, exp_outputs.reshape(-1, 1)))
+                cache_data = pd.DataFrame(input_data,
+                                          columns=["r", "phi", "z", "der mean corr"] +\
+                                                  fourier_names + ["exp correction fluctuations"])
+                batch_file = "%s_%d.root" % (full_path, i)
+                batch_file_names.append(batch_file)
+                pandas_to_tree(cache_data, batch_file, "cache")
+                self.config.logger.info("Cache: %s saved", batch_file)
+            hadd(batch_file_names, cache_file)
+            #for batch_file in batch_file_names:
+            #    os.remove(batch_file)
+            self.config.logger.info("Merged cache: %s saved", cache_file)
+            return self.read_cache_from_file(cache_file)
 
     def plot_feature_importance_(self, model):
         """

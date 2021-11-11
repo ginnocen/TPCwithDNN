@@ -71,7 +71,6 @@ class CommonSettings:
         self.dirplots = data_param["dirplots"]
         self.dirtree = data_param["dirtree"]
         self.dirhist = data_param["dirhist"]
-        self.dirinput_cache = data_param["dirinput_cache"]
         train_dir = data_param["dirinput_bias"] if data_param["train_bias"] \
                     else data_param["dirinput_nobias"]
         val_dir = data_param["dirinput_bias"] if data_param["validation_bias"] \
@@ -87,8 +86,7 @@ class CommonSettings:
         self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
                                self.grid_z, self.grid_r, self.grid_phi)
 
-        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree, self.dirhist,
-                        self.dirinput_cache):
+        for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree, self.dirhist):
             if not os.path.isdir(dirname):
                 os.makedirs(dirname)
 
@@ -111,10 +109,8 @@ class CommonSettings:
         self.train_events = 0
         self.val_events = 0
         self.apply_events = 0
-        self.cache_events = 0
 
-    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events,
-                    cache_events):
+    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
         """
         Update the event indices ranges for train / validation / apply.
         To be used internally.
@@ -125,14 +121,11 @@ class CommonSettings:
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
-        :param int cache_events: number of events to dump (cache) for future training
-                                 valid only for XGBoost
         """
         self.total_events = total_events
         self.train_events = train_events
         self.val_events = val_events
         self.apply_events = apply_events
-        self.cache_events = cache_events
 
         self.indices_events_means, self.partition = get_event_mean_indices(
             self.range_rnd_index_train, self.range_mean_index, ranges, self.rnd_augment)
@@ -229,8 +222,7 @@ class DNNSettings:
         except AttributeError as attr_err:
             raise AttributeError("'DNNSettings' object has no attribute '%s'" % name) from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events,
-                   cache_events):
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
         A wrapper around internal set_ranges_().
 
@@ -239,11 +231,8 @@ class DNNSettings:
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
-        :param int cache_events: number of events to dump (cache) for future training
-                                 valid only for XGBoost
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events,
-                         cache_events)
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
 
 class XGBoostSettings:
     name = "xgboost"
@@ -258,6 +247,8 @@ class XGBoostSettings:
         self.common_settings = common_settings
         self.logger.info("XGBoostSettings::Init")
 
+        self.params = data_param["params"]
+
         self.per_event_hists = False
         self.downsample = data_param["downsample"]
         self.downsample_npoints = data_param["downsample_npoints"]
@@ -265,7 +256,11 @@ class XGBoostSettings:
         self.train_plot_npoints = data_param["train_plot_npoints"]
         self.dump_train = data_param["dump_train"]
 
-        self.params = data_param["params"]
+        self.cache_events = data_param["cache_events"]
+        self.cache_file_size = data_param["cache_file_size"]
+        self.dirinput_cache = data_param["dirinput_cache"]
+        if not os.path.isdir(self.dirinput_cache):
+            os.makedirs(self.dirinput_cache)
 
         self.cache_suffix = "cache_phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
         self.cache_suffix = "%s_dpoints%d" % \
@@ -314,8 +309,7 @@ class XGBoostSettings:
             raise AttributeError("'XGBoostSettings' object has no attribute '%s'" % name) \
                 from attr_err
 
-    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events,
-                   cache_events):
+    def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
         A wrapper around internal set_ranges_().
 
@@ -324,7 +318,5 @@ class XGBoostSettings:
         :param int train_events: number of events used for training
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
-        :param int cache_events: number of events to dump (cache) for future training
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events,
-                         cache_events)
+        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)

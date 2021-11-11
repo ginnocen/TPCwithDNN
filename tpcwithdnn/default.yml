@@ -4,7 +4,7 @@ doplot: false
 dogrid: false
 dobayes: false
 doprofile: false
-dodumptraindata: false
+docache: true
 docreatendvaldata: false
 docreatepdfmaps: false
 docreatepdfmapforvariable: false
