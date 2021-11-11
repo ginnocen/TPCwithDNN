@@ -19,7 +19,7 @@ def merge_root_file(target, source_list):
     logger = get_logger()
     raw_path = target.GetPath()
     path = raw_path[raw_path.find(":")+1:]
-    logger.info("Target path: %s processed: %s" % (raw_path, path))
+    logger.info("Target path: %s processed: %s", raw_path, path)
 
     first_source = source_list.First()
     first_source.cd(path)
@@ -44,7 +44,7 @@ def merge_root_file(target, source_list):
 
         if obj.IsA().InheritsFrom(TH1.Class()):
             # descendant of TH1 -> merge it
-            logger.info("Merging histogram %s" % obj.GetName())
+            logger.info("Merging histogram %s", obj.GetName())
             h1 = TH1(obj)
 
             # loop over all source files and add the content of the
@@ -61,7 +61,7 @@ def merge_root_file(target, source_list):
                 next_source = source_list.After(next_source)
 
         elif obj.IsA().InheritsFrom(TTree.Class()):
-            logger.info("Merging tree %s" % obj.GetName())
+            logger.info("Merging tree %s", obj.GetName())
             # loop over all source files and create a chain of Trees "global_chain"
             obj_name = obj.GetName()
             global_chain = TChain(obj_name)
@@ -72,7 +72,7 @@ def merge_root_file(target, source_list):
                 next_source = source_list.After(next_source)
 
         elif obj.IsA().InheritsFrom(TDirectory.Class()):
-            logger.info("Found subdirectory %s" % obj.GetName())
+            logger.info("Found subdirectory %s", obj.GetName())
             # create a new subdir of same name and title in the target file
             target.cd()
             new_dir = target.mkdir(obj.GetName(), obj.GetTitle())
@@ -82,7 +82,7 @@ def merge_root_file(target, source_list):
             merge_root_file(new_dir, source_list)
 
         else:
-            logger.info("Unknown object type, name: %s, title: %s" % (obj.GetName(), obj.GetTitle()))
+            logger.info("Unknown object type, name: %s, title: %s", obj.GetName(), obj.GetTitle())
 
         # now write the merged histogram (which is "in" obj) to the target file
         # note that this will just store obj in the current directory level,
