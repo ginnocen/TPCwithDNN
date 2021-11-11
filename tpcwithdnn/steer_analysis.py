@@ -96,7 +96,7 @@ def get_events_counts(train_events, val_events, apply_events):
     :rtype: zip
     """
     if len(train_events) != len(val_events) or \
-            len(train_events) != len(apply_events):
+       len(train_events) != len(apply_events):
         raise ValueError("Different number of ranges specified for train/validation/apply")
     return zip(train_events, val_events, apply_events)
 
@@ -131,7 +131,10 @@ def run_model_and_val(model, dataval, default, config_parameters):
     if default["dogrid"] is True:
         model.search_grid()
     if default["docache"] is True and model.name == "xgboost":
+        start = timer()
         model.cache_train_data()
+        end = timer()
+        log_time(start, end, "cache")
     if default["docreatendvaldata"] is True:
         dataval.create_data()
     if default["docreatepdfmaps"] is True:

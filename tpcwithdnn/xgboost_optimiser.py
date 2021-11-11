@@ -10,7 +10,6 @@ import pickle
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-import uproot3
 from xgboost import XGBRFRegressor
 
 from sklearn.metrics import mean_squared_error
@@ -140,8 +139,9 @@ class XGBoostOptimiser(Optimiser):
             downsample = self.config.downsample
             # Take all Fourier coefficients for training
             num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
-            if self.config.dump_train and self.config.train_events <= self.config.cache_events:
-                return self.get_cache_(partition, downsample, num_fourier_coeffs_apply)
+            if self.config.cache_train and self.config.train_events <= self.config.cache_events:
+                return self.get_cache_(partition, downsample, num_fourier_coeffs_apply,
+                                       resave=False)
         return self.get_partition_(partition, downsample, num_fourier_coeffs_apply, slice(None))
 
     def get_partition_(self, partition, downsample, num_fourier_coeffs_apply, part_range):
@@ -175,7 +175,8 @@ class XGBoostOptimiser(Optimiser):
         """
         Cache train data if it is not cached.
         """
-        self.get_cache_("train", self.config.downsample, self.config.num_fourier_coeffs_train)
+        self.get_cache_("train", self.config.downsample, self.config.num_fourier_coeffs_train,
+                        resave=True)
 
     def read_cache_from_file(self, filepath):
         """
@@ -186,12 +187,7 @@ class XGBoostOptimiser(Optimiser):
         :rtype: tuple(np.ndarray, np.ndarray)
         """
         self.config.logger.info("Reading cache from %s", filepath)
-        with uproot3.open(filepath) as root_file:
-            print("File keys: {}".format(root_file.keys()))
-            print("Tree: {}".format(root_file["cache"]))
-            input_data = root_file["cache"].pandas.df(["*"])
-        #input_data = tree_to_pandas(filepath, "cache", ["*"])
-        print(input_data)
+        input_data = tree_to_pandas(filepath, "cache")
         inputs = input_data.filter(regex="^(?!exp).*").to_numpy()
         exp_outputs = input_data.filter(like="exp").to_numpy()
         self.config.logger.info("Data read from cache: %s", filepath)
@@ -213,25 +209,29 @@ class XGBoostOptimiser(Optimiser):
         if last_full_end < data_size:
             yield slice(last_full_end, data_size)
 
-    def get_cache_(self, partition, downsample, num_fourier_coeffs_apply):
+    def get_cache_(self, partition, downsample, num_fourier_coeffs_apply, resave):
         """
         Get the cached data from given partition. Function used internally.
 
         :param str partition: name of partition, one from "train", "validation", "apply"
         :param bool downsample: whether to downsample the data
         :param int num_fourier_coeffs_apply: number of Fourier coefficients for applying
+        :param bool resave: whether to save the cache if a matching cache file does not exist
         :return: tuple of inputs and expected outputs
         :rtype: tuple(np.ndarray, np.ndarray)
         """
         self.config.logger.info("Searching for cached data")
         filename = "%s_%sEv%d" % (self.config.cache_suffix, partition, self.config.cache_events)
-        full_path = "%s/%s" % (self.config.dirinput_cache, filename)
+        full_path = "%s/%s" % (self.config.dircache, filename)
         cache_file = "%s.root" % full_path
         try:
             inputs, exp_outputs = self.read_cache_from_file(cache_file)
             self.config.logger.info("Found cache: %s", cache_file)
             return inputs, exp_outputs
         except FileNotFoundError:
+            if not resave:
+                self.config.logger.fatal("Cache: %s does not exist, no data for training!",
+                                            cache_file)
             self.config.logger.info("Cache: %s does not exist, saving new cache", cache_file)
             fourier_names = list(chain.from_iterable(("Fourier real %d" % i, "Fourier imag %d" % i)
                                  for i in range(self.config.num_fourier_coeffs_train)))
@@ -250,8 +250,8 @@ class XGBoostOptimiser(Optimiser):
                 pandas_to_tree(cache_data, batch_file, "cache")
                 self.config.logger.info("Cache: %s saved", batch_file)
             hadd(batch_file_names, cache_file)
-            #for batch_file in batch_file_names:
-            #    os.remove(batch_file)
+            for batch_file in batch_file_names:
+                os.remove(batch_file)
             self.config.logger.info("Merged cache: %s saved", cache_file)
             return self.read_cache_from_file(cache_file)
 

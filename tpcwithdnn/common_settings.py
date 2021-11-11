@@ -254,13 +254,13 @@ class XGBoostSettings:
         self.downsample_npoints = data_param["downsample_npoints"]
         self.plot_train = data_param["plot_train"]
         self.train_plot_npoints = data_param["train_plot_npoints"]
-        self.dump_train = data_param["dump_train"]
 
+        self.cache_train = data_param["cache_train"]
         self.cache_events = data_param["cache_events"]
         self.cache_file_size = data_param["cache_file_size"]
-        self.dirinput_cache = data_param["dirinput_cache"]
-        if not os.path.isdir(self.dirinput_cache):
-            os.makedirs(self.dirinput_cache)
+        self.dircache = data_param["dircache"]
+        if not os.path.isdir(self.dircache):
+            os.makedirs(self.dircache)
 
         self.cache_suffix = "cache_phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
         self.cache_suffix = "%s_dpoints%d" % \
