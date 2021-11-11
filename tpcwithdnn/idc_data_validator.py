@@ -6,14 +6,11 @@ the old validator must be used for DNN validation.
 """
 # pylint: disable=too-many-statements, fixme
 import os
-import shutil
 import gzip
 import pickle
 import math
-from array import array
 import numpy as np
 import pandas as pd
-from ROOT import TFile, TTree, std # pylint: disable=import-error, no-name-in-module
 from RootInteractive.Tools.histoNDTools import makeHistogram  # pylint: disable=import-error, unused-import
 from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=import-error, unused-import
 
@@ -49,11 +46,11 @@ class IDCDataValidator:
         self.config = model.config
 
     # pylint: disable=too-many-locals
-    def create_data_for_event(self, index_mean_id, irnd, column_names, loaded_model, dir_name):
+    def create_data_for_event(self, mean_id, irnd, loaded_model):
         """
         Generate and save into file the input validation data for a given event pair
 
-        :param int index_mean_id: index of a mean map
+        :param int mean_id: index of a mean map
         :param int irnd: index of a random map
         :param list column_names: list of names of data properties to be saved
         :param obj loaded_model: the proper loaded model - either keras.Model or
@@ -64,9 +61,7 @@ class IDCDataValidator:
         """
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          vec_mean_sc, vec_random_sc,
-         vec_mean_dist_r, vec_random_dist_r,
-         vec_mean_dist_rphi, vec_random_dist_rphi,
-         vec_mean_dist_z, vec_random_dist_z,
+         *_,
          vec_mean_corr_r, vec_random_corr_r,
          vec_mean_corr_rphi, vec_random_corr_rphi,
          vec_mean_corr_z, vec_random_corr_z,
@@ -74,13 +69,10 @@ class IDCDataValidator:
          num_mean_zerod_idc_a, num_mean_zerod_idc_c, num_random_zerod_idc_a, num_random_zerod_idc_c,
          vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
             load_data_original_idc(self.config.dirinput_nd_val,
-                                   [irnd, self.mean_ids[index_mean_id]],
+                                   [irnd, mean_id],
                                    self.config.z_range, False)
                                    # here we still use mean maps as references (hardcoded)
 
-        mat_mean_dist = np.array((vec_mean_dist_r, vec_mean_dist_rphi, vec_mean_dist_z))
-        mat_random_dist = np.array((vec_random_dist_r, vec_random_dist_rphi, vec_random_dist_z))
-        mat_fluc_dist = mat_random_dist - mat_mean_dist
 
         mat_mean_corr = np.array((vec_mean_corr_r, vec_mean_corr_rphi, vec_mean_corr_z))
         mat_random_corr = np.array((vec_random_corr_r, vec_random_corr_rphi, vec_random_corr_z))
@@ -103,108 +95,62 @@ class IDCDataValidator:
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
         vec_index_mean = np.empty(vec_z_pos.size)
-        vec_index_mean[:] = self.mean_ids[index_mean_id]
+        vec_index_mean[:] = mean_id
         vec_index = np.empty(vec_z_pos.size)
-        vec_index[:] = irnd + 1000 * self.mean_ids[index_mean_id]
+        vec_index[:] = irnd + 1000 * mean_id
 
         vec_fluc_sc = vec_random_sc - vec_mean_sc
         vec_delta_sc = sum(vec_fluc_sc) / sum(vec_mean_sc)
 
-        df_single_map = pd.DataFrame({column_names[0]: vec_index.astype('int32'),
-                                      column_names[1]: vec_index_mean.astype('int32'),
-                                      column_names[2]: vec_index_random.astype('int32'),
-                                      column_names[3]: vec_r_pos.astype('float32'),
-                                      column_names[4]: vec_phi_pos.astype('float32'),
-                                      column_names[5]: vec_z_pos.astype('float32'),
-                                      column_names[6]: vec_fluc_sc.astype('float32'),
-                                      column_names[7]: vec_mean_sc.astype('float32'),
-                                      column_names[8]: np.tile((vec_delta_sc),
-                                                               vec_z_pos.size).astype('float32'),
-                                      column_names[9]: vec_der_ref_mean_sc.astype('float32'),
-                                      column_names[10]: np.tile((num_fluc_zerod_idc),
-                                                                vec_z_pos.size).astype('float32'),
-                                      column_names[11]: np.tile((num_mean_zerod_idc),
-                                                                vec_z_pos.size).astype('float32'),
-                                      column_names[12]: np.tile((dft_coeffs[0]),
-                                                                vec_z_pos.size).astype('float32')})
-
-        n_col_tmp = len(df_single_map.columns)
-        for ind_dist in range(len(self.config.nameopt_predout)):
-            df_single_map[column_names[n_col_tmp + ind_dist * 5]] = \
-                mat_fluc_dist[ind_dist, :].astype('float32')
-            df_single_map[column_names[n_col_tmp + 1 + ind_dist * 5]] = \
-                mat_mean_dist[ind_dist, :].astype('float32')
-            df_single_map[column_names[n_col_tmp + 2 + ind_dist * 5]] = \
-                mat_der_ref_mean_corr[ind_dist, :].astype('float32')
-            df_single_map[column_names[n_col_tmp + 3 + ind_dist * 5]] = \
+        df_single_map = pd.DataFrame({"eventId": vec_index.astype('int32'),
+                                      "meanId": vec_index_mean.astype('int32'),
+                                      "randomId": vec_index_random.astype('int32'),
+                                      "r": vec_r_pos.astype('float32'),
+                                      "phi": vec_phi_pos.astype('float32'),
+                                      "z": vec_z_pos.astype('float32'),
+                                      "flucSC": vec_fluc_sc.astype('float32'),
+                                      "meanSC": vec_mean_sc.astype('float32'),
+                                      "deltaSC": np.tile((vec_delta_sc),
+                                                         vec_z_pos.size).astype('float32'),
+                                      "derRefMeanSC": vec_der_ref_mean_sc.astype('float32'),
+                                      "fluc0DIDC": np.tile((num_fluc_zerod_idc),
+                                                           vec_z_pos.size).astype('float32'),
+                                      "mean0DIDC": np.tile((num_mean_zerod_idc),
+                                                           vec_z_pos.size).astype('float32')})
+        for ind_dist, dist_name in enumerate(self.config.nameopt_predout):
+            df_single_map["flucCorr" + dist_name] = \
                 mat_fluc_corr[ind_dist, :].astype('float32')
-            df_single_map[column_names[n_col_tmp + 4 + ind_dist * 5]] = \
+            df_single_map["meanCorr" + dist_name] = \
                 mat_mean_corr[ind_dist, :].astype('float32')
+            df_single_map["derRefMeanCorr" + dist_name] = \
+                mat_der_ref_mean_corr[ind_dist, :].astype('float32')
+        for i_coeff, (coeff_real, coeff_imag) in enumerate(zip(dft_coeffs[0::2], dft_coeffs[1::2])):
+            df_single_map["c%d_real" % i_coeff] = np.tile((coeff_real),
+                                                          vec_z_pos.size).astype('float32')
+            df_single_map["c%d_imag" % i_coeff] = np.tile((coeff_imag),
+                                                          vec_z_pos.size).astype('float32')
 
-        if self.config.nd_validate_model:
-            vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
-            inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                                   vec_der_ref_mean_corr, dft_coeffs)
-            df_single_map[column_names[len(df_single_map.columns)]] = \
-                loaded_model.predict(inputs).astype('float32')
+        vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
+        inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
+                                                vec_der_ref_mean_corr, dft_coeffs)
+        df_single_map["flucCorrRPred"] = loaded_model.predict(inputs).astype('float32')
 
-        tree_filename = "%s/%d/treeInput_mean%.2f_%s.root" \
-            % (dir_name, irnd, self.mean_factors[index_mean_id], self.config.suffix_ds)
-        if self.config.nd_validate_model:
-            tree_filename = "%s/%d/treeValidation_mean%.2f_nEv%d.root" \
-                            % (dir_name, irnd, self.mean_factors[index_mean_id],
-                            self.config.train_events)
-
-        if not os.path.isdir("%s/%d" % (dir_name, irnd)):
-            os.makedirs("%s/%d" % (dir_name, irnd))
-
+        dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
+        if not os.path.isdir(dir_name):
+            os.makedirs(dir_name)
+        tree_filename = "%s/validation_mean%.2f_nEv%d.root" \
+            % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events)
         pandas_to_tree(df_single_map, tree_filename, 'validation')
 
-        return (vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs)
 
     # pylint: disable=too-many-locals, too-many-branches
     def create_data(self):
         self.config.logger.info("DataValidator::create_data")
-        dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
-        column_names = np.array(["eventId", "meanId", "randomId", "r", "phi", "z",
-                                 "flucSC", "meanSC", "deltaSC", "derRefMeanSC",
-                                 "fluc0DIDC", "mean0DIDC", "c0"])
-        for dist_name in self.config.nameopt_predout:
-            column_names = np.append(column_names, ["flucCorr" + dist_name,
-                                                    "meanCorr" + dist_name,
-                                                    "derRefMeanCorr" + dist_name])
-        if self.config.nd_validate_model:
-            loaded_model = self.model.load_model()
-            for dist_name in dist_names:
-                column_names = np.append(column_names, ["flucCorr" + dist_name + "Pred"])
-        else:
-            loaded_model = None
 
-        dir_name = "%s/parts" % (self.config.dirtree)
-        if self.config.nd_validate_model:
-            dir_name = "%s/%s/parts" % (self.config.dirtree, self.config.suffix)
-        if os.path.isdir(dir_name):
-            shutil.rmtree(dir_name)
+        loaded_model = self.model.load_model()
+        dir_name = "%s/%s" % (self.config.dirtree, self.config.suffix)
 
-        # define IDC tree
-        name_file_idc = "%s/treeIDCs_%s.root" \
-            % (self.config.dirtree, self.config.suffix_ds)
-        file_idc = TFile(name_file_idc, "recreate")
-        tree_idc = TTree("idc", "idc")
-        index_random = array('I', [0])
-        index_mean = array('I', [0])
-        index = array('I', [0])
-        std_vec_fluc_oned_idc = std.vector('float')()
-        std_vec_mean_oned_idc = std.vector('float')()
-        std_vec_fourier_coeffs = std.vector('float')()
-        tree_idc.Branch(column_names[0], index, '%s/i' % (column_names[0]))
-        tree_idc.Branch(column_names[1], index_mean, '%s/i' % (column_names[1]))
-        tree_idc.Branch(column_names[2], index_random, '%s/i' % (column_names[2]))
-        tree_idc.Branch('fluc1DIDC', std_vec_fluc_oned_idc)
-        tree_idc.Branch('mean1DIDC', std_vec_mean_oned_idc)
-        tree_idc.Branch('coeffs', std_vec_fourier_coeffs)
-
-        for index_mean_id, mean_id in enumerate(self.mean_ids):
+        for mean_id in self.mean_ids:
             counter = 0
 
             if self.config.nd_val_partition != 'random':
@@ -214,22 +160,7 @@ class IDCDataValidator:
                     irnd = ind_ev[0]
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, mean_id, irnd)
-                    vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
-                        self.create_data_for_event(index_mean_id, irnd, column_names,
-                                                   loaded_model, dir_name)
-
-                    # fill IDC tree
-                    std_vec_fluc_oned_idc.resize(0)
-                    std_vec_mean_oned_idc.resize(0)
-                    std_vec_fourier_coeffs.resize(0)
-                    index_random[0] = irnd
-                    index[0] = irnd + 1000 * mean_id
-                    for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
-                        std_vec_fluc_oned_idc.push_back(val_fluc)
-                        std_vec_mean_oned_idc.push_back(val_mean)
-                    for val_coeff in dft_coeffs:
-                        std_vec_fourier_coeffs.push_back(val_coeff)
-                    tree_idc.Fill()
+                    self.create_data_for_event(mean_id, irnd, loaded_model)
 
                     counter = counter + 1
                     if counter == self.config.nd_val_events:
@@ -239,29 +170,11 @@ class IDCDataValidator:
                                       self.config.range_rnd_index_nd_val[1] + 1):
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, mean_id, irnd)
-                    vec_fluc_oned_idc, vec_mean_oned_idc, dft_coeffs = \
-                        self.create_data_for_event(index_mean_id, irnd, column_names,
-                                                   loaded_model, dir_name)
-
-                    # fill IDC tree
-                    std_vec_fluc_oned_idc.resize(0)
-                    std_vec_mean_oned_idc.resize(0)
-                    std_vec_fourier_coeffs.resize(0)
-                    index_random[0] = irnd
-                    index[0] = irnd + 1000 * mean_id
-                    for val_fluc, val_mean in np.nditer([vec_fluc_oned_idc, vec_mean_oned_idc]):
-                        std_vec_fluc_oned_idc.push_back(val_fluc)
-                        std_vec_mean_oned_idc.push_back(val_mean)
-                    for val_coeff in dft_coeffs:
-                        std_vec_fourier_coeffs.push_back(val_coeff)
-                    tree_idc.Fill()
+                    self.create_data_for_event(mean_id, irnd, loaded_model)
 
                     counter = counter + 1
                     if counter == self.config.nd_val_events:
                         break
-
-        tree_idc.Write()
-        file_idc.Close()
 
         self.config.logger.info("Trees written in %s", dir_name)
 

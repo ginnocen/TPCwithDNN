@@ -274,6 +274,8 @@ class XGBoostSettings:
                 (self.suffix, self.z_range[0], self.z_range[1])
         self.suffix = "%s_down_npoints%d" % \
             (self.suffix, self.downsample_npoints)
+        self.suffix = "%s_n_coeffs_train%d" % \
+            (self.suffix, self.num_fourier_coeffs_train)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
             os.makedirs("%s/%s" % (self.dirtree, self.suffix))

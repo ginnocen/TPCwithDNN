@@ -19,6 +19,7 @@ if [ $# -eq 2 ]; then
   [[ -z $(ls $(ls -d ${inputDir}/parts/* | head -n 1) | grep "_nEv${nTrainEvents}.root") ]] && echo "No files exist for number of training events specified in arguments!" && exit
   for ifile in $(ls $(ls -d ${inputDir}/parts/* | head -n 1) | grep nEv${nTrainEvents}); do
     hadd -f ${inputDir}/${ifile} $(ls ${inputDir}/parts/*/${ifile})
+    rm ${inputDir}/parts/*/${ifile}
   done
   exit
 fi
@@ -26,4 +27,5 @@ fi
 # case for one argument (inputDir) provided
 for ifile in $(ls $(ls -d ${inputDir}/parts/* | head -n 1)); do
   hadd -f ${inputDir}/${ifile} $(ls ${inputDir}/parts/*/${ifile})
+  rm ${inputDir}/parts/*/${ifile}
 done
