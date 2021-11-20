@@ -142,6 +142,9 @@ class XGBoostOptimiser(Optimiser):
             if self.config.cache_train and self.config.train_events <= self.config.cache_events:
                 return self.get_cache_(partition, downsample, num_fourier_coeffs_apply,
                                        resave=False)
+            elif self.config.cache_train:
+                self.logger.warning("Cache insufficient, the train data will be read \
+                                    from the original files")
         return self.get_partition_(partition, downsample, num_fourier_coeffs_apply, slice(None))
 
     def get_partition_(self, partition, downsample, num_fourier_coeffs_apply, part_range):
@@ -235,6 +238,8 @@ class XGBoostOptimiser(Optimiser):
             self.config.logger.info("Cache: %s does not exist, saving new cache", cache_file)
             fourier_names = list(chain.from_iterable(("Fourier real %d" % i, "Fourier imag %d" % i)
                                  for i in range(self.config.num_fourier_coeffs_train)))
+            dist_names = np.array(self.config.nameopt_predout)[np.array(self.config.opt_predout) > 0]
+            fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names]
             batch_file_names = []
             batch_size = self.config.cache_file_size
             for i, part_range in enumerate(self.get_batch_range_(partition, batch_size)):
@@ -243,8 +248,9 @@ class XGBoostOptimiser(Optimiser):
 
                 input_data = np.hstack((inputs, exp_outputs.reshape(-1, 1)))
                 cache_data = pd.DataFrame(input_data,
-                                          columns=["r", "phi", "z", "der mean corr"] +\
-                                                  fourier_names + ["exp correction fluctuations"])
+                                          columns=["eventId", "meanId", "randomId",
+                                                   "r", "phi", "z", "derRefMeanCorr"] +\
+                                                  fourier_names + fluc_corr_names)
                 batch_file = "%s_%d.root" % (full_path, i)
                 batch_file_names.append(batch_file)
                 pandas_to_tree(cache_data, batch_file, "cache")
@@ -317,8 +323,9 @@ class XGBoostOptimiser(Optimiser):
         :param np.ndarray exp_outputs: vector of expected outputs
         :param np.ndarray pred_outputs: vector of network predictions
         """
-        myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
-                            (self.config.dirapply, self.config.suffix, self.config.train_events),
+        myfile = TFile.Open("%s/output_%s_fapply%d_nEv%d.root" % \
+                            (self.config.dirapply, self.config.suffix,
+                             self.num_fourier_coeffs_apply, self.config.train_events),
                             "recreate")
         h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events =\
                 plot_utils.create_apply_histos(self.config, self.config.suffix, infix="all_events_")
@@ -390,6 +397,6 @@ class XGBoostOptimiser(Optimiser):
         plt.plot(exp_outputs, pred_outputs, ".")
         plt.xlabel("Expected output")
         plt.ylabel("Predicted output")
-        plt.savefig("%s/num-exp-%s_%s_nEv%d.png" % (self.config.dirplots, infix, self.config.suffix,
-                                                   self.config.train_events))
+        plt.savefig("%s/num-exp-%s_%s_fapply%d_nEv%d.png" % (self.config.dirplots, infix,
+                    self.config.suffix, self.num_fourier_coeffs_apply, self.config.train_events))
         plt.clf()

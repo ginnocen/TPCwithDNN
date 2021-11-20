@@ -263,8 +263,9 @@ class XGBoostSettings:
             os.makedirs(self.dircache)
 
         self.cache_suffix = "cache_phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
-        self.cache_suffix = "%s_dpoints%d" % \
-            (self.cache_suffix, self.downsample_npoints)
+        if self.downsample:
+            self.cache_suffix = "%s_dpoints%d" % \
+                (self.cache_suffix, self.downsample_npoints)
         self.cache_suffix = "%s_ftrain%d" % \
             (self.cache_suffix, self.num_fourier_coeffs_train)
 
@@ -285,9 +286,10 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
-        self.suffix = "%s_dpoints%d" % \
-            (self.suffix, self.downsample_npoints)
-        self.suffix = "%s_n_coeffs_train%d" % \
+        if self.downsample:
+            self.suffix = "%s_dpoints%d" % \
+                (self.suffix, self.downsample_npoints)
+        self.suffix = "%s_ftrain%d" % \
             (self.suffix, self.num_fourier_coeffs_train)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
