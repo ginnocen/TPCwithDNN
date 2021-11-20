@@ -212,9 +212,6 @@ def main():
         default["dotrain"] = True
     if "docreateinputdata" in args or "docreatendvaldata" in args:
         default["docreatendvaldata"] = True
-        config_parameters["common"]["nd_validate_model"] = False
-    if "docreatendvaldata" in args:
-        config_parameters["common"]["nd_validate_model"] = True
     if "rndaugment" in args:
         config_parameters["common"]["rnd_augment"] = True
     if "train_events_oned" in args:

@@ -14,7 +14,6 @@ common:
   nd_val_events: 1000 # Number of events for validation (random events for nd_validation)
   nd_val_partition: random # Whether the validator uses only the events from given partition
                            # 'random' is for choosing events randomly
-  nd_validate_model: true
   pdf_map_var: flucSC
   pdf_map_mean_id: 0
   grid_phi: 180

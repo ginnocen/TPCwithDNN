@@ -63,8 +63,6 @@ class CommonSettings:
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
 
-        self.nd_validate_model = data_param["nd_validate_model"]
-
         # Directories
         self.dirmodel = data_param["dirmodel"]
         self.dirapply = data_param["dirapply"]
