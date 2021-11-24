@@ -130,11 +130,6 @@ def run_model_and_val(model, dataval, default, config_parameters):
         model.plot()
     if default["dogrid"] is True:
         model.search_grid()
-    if default["docache"] is True and model.name == "xgboost":
-        start = timer()
-        model.cache_train_data()
-        end = timer()
-        log_time(start, end, "cache")
     if default["docreatendvaldata"] is True:
         dataval.create_data()
     if default["docreatepdfmaps"] is True:
@@ -196,7 +191,8 @@ def main():
                         help="Set the number of events to cache")
     parser.add_argument("--cache-train", action="store_true", default=argparse.SUPPRESS,
                         help="Use cached data for training")
-    parser.add_argument("--cache-file-size", dest="cache_file_size", type=int, default=argparse.SUPPRESS,
+    parser.add_argument("--cache-file-size", dest="cache_file_size", type=int,
+                        default=argparse.SUPPRESS,
                         help="Set the number of events per single temporary cache file")
     args = parser.parse_args()
 
@@ -249,6 +245,12 @@ def main():
         max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * \
             (ranges_mean[1] + 1 - ranges_mean[0])
 
+    for model in models:
+        if default["docache"] is True and model.name == "xgboost":
+            start = timer()
+            model.cache_train_data()
+            end = timer()
+            log_time(start, end, "cache")
     for model, model_events_counts in zip(models, events_counts):
         all_events_counts = []
         for (train_events, val_events, apply_events) in model_events_counts:

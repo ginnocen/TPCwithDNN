@@ -19,7 +19,6 @@ def merge_root_file(target, source_list):
     logger = get_logger()
     raw_path = target.GetPath()
     path = raw_path[raw_path.find(":")+1:]
-    logger.info("Target path: %s processed: %s", raw_path, path)
 
     first_source = source_list.First()
     first_source.cd(path)

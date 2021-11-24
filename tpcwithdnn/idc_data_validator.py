@@ -204,8 +204,8 @@ class IDCDataValidator:
         """
         self.config.logger.info("DataValidator::create_nd_histogram, var = %s, mean_id = %d",
                                 var, mean_id)
-        self.check_mean_id_(mean_id)
-        mean_factor = self.get_mean_factor_(mean_id)
+        self.__check_mean_id(mean_id)
+        mean_factor = self.__get_mean_factor(mean_id)
 
         column_names = ['phi', 'r', 'z', 'deltaSC']
         diff_index = var.find("Diff")
@@ -272,8 +272,8 @@ class IDCDataValidator:
         """
         self.config.logger.info("DataValidator::create_pdf_map, var = %s, mean_id = %d",
                                 var, mean_id)
-        self.check_mean_id_(mean_id)
-        mean_factor = self.get_mean_factor_(mean_id)
+        self.__check_mean_id(mean_id)
+        mean_factor = self.__get_mean_factor(mean_id)
 
         input_file_name = "%s/%s/ndHistogram_%s_mean%.2f_nEv%d.gzip" \
             % (self.config.dirhist, self.config.suffix, var, mean_factor,
@@ -358,10 +358,10 @@ class IDCDataValidator:
 
         :param int mean_id: index of mean map.
         """
-        self.check_mean_id_(mean_id)
+        self.__check_mean_id(mean_id)
         self.merge_pdf_maps([mean_id])
 
-    def check_mean_id_(self, mean_id):
+    def __check_mean_id(self, mean_id):
         """
         A shortcut to check mean map id, as many functions are designed only for specific ids.
 
@@ -372,7 +372,7 @@ class IDCDataValidator:
                                      self.mean_ids)
             self.config.logger.fatal("Exiting...")
 
-    def get_mean_factor_(self, mean_id):
+    def __get_mean_factor(self, mean_id):
         """
         Convert mean map id to a mean factor
 

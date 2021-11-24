@@ -1,7 +1,7 @@
 """
 User settings from the config_model_parameters.yml
 """
-# pylint: disable=too-many-instance-attributes, too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-few-public-methods, unused-private-member
 import os
 
 import numpy as np
@@ -108,7 +108,7 @@ class CommonSettings:
         self.val_events = 0
         self.apply_events = 0
 
-    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
+    def __set_ranges(self, ranges, suffix, total_events, train_events, val_events, apply_events):
         """
         Update the event indices ranges for train / validation / apply.
         To be used internally.
@@ -222,7 +222,7 @@ class DNNSettings:
 
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
-        A wrapper around internal set_ranges_().
+        A wrapper around internal set_ranges().
 
         :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param int total_events: number of all events used
@@ -230,7 +230,8 @@ class DNNSettings:
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
+        self._CommonSettings__set_ranges(ranges, self.suffix, total_events, train_events,
+                                         val_events, apply_events)
 
 class XGBoostSettings:
     name = "xgboost"
@@ -311,7 +312,7 @@ class XGBoostSettings:
 
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
-        A wrapper around internal set_ranges_().
+        A wrapper around internal set_ranges().
 
         :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param int total_events: number of all events used
@@ -319,4 +320,14 @@ class XGBoostSettings:
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
+        self._CommonSettings__set_ranges(ranges, self.suffix, total_events, train_events,
+                                         val_events, apply_events)
+
+    def set_cache_ranges(self):
+        """
+        Set ranges for caching.
+        """
+        ranges = {"train": [0, self.cache_events],
+                  "validation": [self.cache_events, self.cache_events],
+                  "apply": [self.cache_events, self.cache_events]}
+        self.set_ranges(ranges, self.cache_events, self.cache_events, 0, 0)
