@@ -186,6 +186,14 @@ def main():
     parser.add_argument("--nfourierapply", dest="num_fourier_coeffs_apply", type=int,
                         default=argparse.SUPPRESS, help="Set number of Fourier coefficients" \
                         " to take from the 1D IDC apply input")
+    # parameters for caching
+    parser.add_argument("--cache-events", dest="cache_events", type=int, default=argparse.SUPPRESS,
+                        help="Set the number of events to cache")
+    parser.add_argument("--cache-train", action="store_true", default=argparse.SUPPRESS,
+                        help="Use cached data for training")
+    parser.add_argument("--cache-file-size", dest="cache_file_size", type=int,
+                        default=argparse.SUPPRESS,
+                        help="Set the number of events per single temporary cache file")
     args = parser.parse_args()
 
     logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
@@ -200,9 +208,6 @@ def main():
         default["dotrain"] = True
     if "docreateinputdata" in args or "docreatendvaldata" in args:
         default["docreatendvaldata"] = True
-        config_parameters["common"]["nd_validate_model"] = False
-    if "docreatendvaldata" in args:
-        config_parameters["common"]["nd_validate_model"] = True
     if "rndaugment" in args:
         config_parameters["common"]["rnd_augment"] = True
     if "train_events_oned" in args:
@@ -220,6 +225,12 @@ def main():
         config_parameters["common"]["num_fourier_coeffs_train"] = args.num_fourier_coeffs_train
     if "num_fourier_coeffs_apply" in args:
         config_parameters["common"]["num_fourier_coeffs_apply"] = args.num_fourier_coeffs_apply
+    if "cache_events" in args:
+        config_parameters["xgboost"]["cache_events"] = args.cache_events
+    if "cache_train" in args:
+        config_parameters["xgboost"]["cache_train"] = True
+    if "cache_file_size" in args:
+        config_parameters["xgboost"]["cache_file_size"] = args.cache_file_size
 
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
@@ -234,6 +245,12 @@ def main():
         max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * \
             (ranges_mean[1] + 1 - ranges_mean[0])
 
+    for model in models:
+        if default["docache"] is True and model.name == "xgboost":
+            start = timer()
+            model.cache_train_data()
+            end = timer()
+            log_time(start, end, "cache")
     for model, model_events_counts in zip(models, events_counts):
         all_events_counts = []
         for (train_events, val_events, apply_events) in model_events_counts:

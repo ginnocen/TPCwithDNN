@@ -1,7 +1,7 @@
 """
 User settings from the config_model_parameters.yml
 """
-# pylint: disable=too-many-instance-attributes, too-few-public-methods
+# pylint: disable=too-many-instance-attributes, too-few-public-methods, unused-private-member
 import os
 
 import numpy as np
@@ -63,8 +63,6 @@ class CommonSettings:
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
 
-        self.nd_validate_model = data_param["nd_validate_model"]
-
         # Directories
         self.dirmodel = data_param["dirmodel"]
         self.dirapply = data_param["dirapply"]
@@ -110,7 +108,7 @@ class CommonSettings:
         self.val_events = 0
         self.apply_events = 0
 
-    def set_ranges_(self, ranges, suffix, total_events, train_events, val_events, apply_events):
+    def __set_ranges(self, ranges, suffix, total_events, train_events, val_events, apply_events):
         """
         Update the event indices ranges for train / validation / apply.
         To be used internally.
@@ -224,7 +222,7 @@ class DNNSettings:
 
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
-        A wrapper around internal set_ranges_().
+        A wrapper around internal set_ranges().
 
         :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param int total_events: number of all events used
@@ -232,7 +230,8 @@ class DNNSettings:
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
+        self._CommonSettings__set_ranges(ranges, self.suffix, total_events, train_events,
+                                         val_events, apply_events)
 
 class XGBoostSettings:
     name = "xgboost"
@@ -247,13 +246,27 @@ class XGBoostSettings:
         self.common_settings = common_settings
         self.logger.info("XGBoostSettings::Init")
 
+        self.params = data_param["params"]
+
         self.per_event_hists = False
         self.downsample = data_param["downsample"]
         self.downsample_npoints = data_param["downsample_npoints"]
         self.plot_train = data_param["plot_train"]
         self.train_plot_npoints = data_param["train_plot_npoints"]
 
-        self.params = data_param["params"]
+        self.cache_train = data_param["cache_train"]
+        self.cache_events = data_param["cache_events"]
+        self.cache_file_size = data_param["cache_file_size"]
+        self.dircache = data_param["dircache"]
+        if not os.path.isdir(self.dircache):
+            os.makedirs(self.dircache)
+
+        self.cache_suffix = "cache_phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
+        if self.downsample:
+            self.cache_suffix = "%s_dpoints%d" % \
+                (self.cache_suffix, self.downsample_npoints)
+        self.cache_suffix = "%s_ftrain%d" % \
+            (self.cache_suffix, self.num_fourier_coeffs_train)
 
         self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.params["n_estimators"],
@@ -272,9 +285,10 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
-        self.suffix = "%s_down_npoints%d" % \
-            (self.suffix, self.downsample_npoints)
-        self.suffix = "%s_n_coeffs_train%d" % \
+        if self.downsample:
+            self.suffix = "%s_dpoints%d" % \
+                (self.suffix, self.downsample_npoints)
+        self.suffix = "%s_ftrain%d" % \
             (self.suffix, self.num_fourier_coeffs_train)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
@@ -298,7 +312,7 @@ class XGBoostSettings:
 
     def set_ranges(self, ranges, total_events, train_events, val_events, apply_events):
         """
-        A wrapper around internal set_ranges_().
+        A wrapper around internal set_ranges().
 
         :param dict ranges: dictionary of lists of event indices ranges for train/validation/apply
         :param int total_events: number of all events used
@@ -306,4 +320,14 @@ class XGBoostSettings:
         :param int val_events: number of events used for validation
         :param int apply_events: number of events used for prediction
         """
-        self.set_ranges_(ranges, self.suffix, total_events, train_events, val_events, apply_events)
+        self._CommonSettings__set_ranges(ranges, self.suffix, total_events, train_events,
+                                         val_events, apply_events)
+
+    def set_cache_ranges(self):
+        """
+        Set ranges for caching.
+        """
+        ranges = {"train": [0, self.cache_events],
+                  "validation": [self.cache_events, self.cache_events],
+                  "apply": [self.cache_events, self.cache_events]}
+        self.set_ranges(ranges, self.cache_events, self.cache_events, 0, 0)

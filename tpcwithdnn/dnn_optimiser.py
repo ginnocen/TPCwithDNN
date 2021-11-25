@@ -77,7 +77,7 @@ class DnnOptimiser(Optimiser):
                         use_multiprocessing=False,
                         epochs=self.config.epochs, callbacks=[tensorboard_callback])
 
-        self.plot_train_(his)
+        self.__plot_train(his)
         self.save_model(model)
 
     def apply(self):
@@ -180,7 +180,7 @@ class DnnOptimiser(Optimiser):
                                    self.config.train_events))
         return loaded_model
 
-    def plot_train_(self, his):
+    def __plot_train(self, his):
         """
         Plot the learning curve for 3D calibration.
         Function used internally.
