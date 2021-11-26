@@ -262,6 +262,8 @@ class XGBoostSettings:
             os.makedirs(self.dircache)
 
         self.cache_suffix = "cache_phi%d_r%d_z%d" % (self.grid_phi, self.grid_r, self.grid_z)
+        if self.rnd_augment:
+            self.cache_suffix = "%s_rndaugment" % self.cache_suffix
         if self.downsample:
             self.cache_suffix = "%s_dpoints%d" % \
                 (self.cache_suffix, self.downsample_npoints)
@@ -285,6 +287,8 @@ class XGBoostSettings:
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
                 (self.suffix, self.z_range[0], self.z_range[1])
+        if self.rnd_augment:
+            self.suffix = "%s_rndaugment" % self.suffix
         if self.downsample:
             self.suffix = "%s_dpoints%d" % \
                 (self.suffix, self.downsample_npoints)

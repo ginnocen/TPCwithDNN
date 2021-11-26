@@ -45,13 +45,13 @@ class XGBoostOptimiser(Optimiser):
         self.config.logger.info("XGBoostOptimiser::train")
         model = XGBRFRegressor(verbosity=1, **(self.config.params))
         start = timer()
-        inputs, exp_outputs = self.__get_data("train")
+        inputs, exp_outputs, _ = self.__get_data("train")
         end = timer()
         log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
         log_total_memory_usage("Memory usage after loading data")
         if self.config.plot_train:
-            inputs_val, outputs_val = self.__get_data("validation")
+            inputs_val, outputs_val, _ = self.__get_data("validation")
             log_memory_usage(((inputs_val, "Input validation data"),
                               (outputs_val, "Output validation data")))
             log_total_memory_usage("Memory usage after loading validation data")
@@ -71,7 +71,7 @@ class XGBoostOptimiser(Optimiser):
         """
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
         loaded_model = self.load_model()
-        inputs, exp_outputs = self.__get_data("apply")
+        inputs, exp_outputs, _ = self.__get_data("apply")
         log_memory_usage(((inputs, "Input apply data"), (exp_outputs, "Output apply data")))
         log_total_memory_usage("Memory usage after loading apply data")
         start = timer()
@@ -158,8 +158,8 @@ class XGBoostOptimiser(Optimiser):
             if self.config.cache_train and self.config.train_events <= self.config.cache_events:
                 return self.__get_cache()
             if self.config.cache_train:
-                self.config.logger.warning("Cache insufficient, the train data will be read \
-                                            from the original files")
+                self.config.logger.warning("Cache insufficient, the train data will be read " +
+                                           "from the original files")
         return self.__get_partition(partition, downsample, num_fourier_coeffs_apply, slice(None))
 
     def __get_partition(self, partition, downsample, num_fourier_coeffs_apply, part_range):
@@ -192,10 +192,9 @@ class XGBoostOptimiser(Optimiser):
             vec_index_mean[:] = indexev[1]
             vec_index = np.empty(inputs_single.shape[0])
             vec_index[:] = indexev[0] + 1000 * indexev[1]
-            indices_single = np.array((vec_index.astype('int32'), vec_index_mean.astype('int32'),
-                                       vec_index_random.astype('int32')))
-            indices_stacked = np.vstack(indices_single.reshape(-1, 3))
-            indices.append(indices_stacked)
+            indices_stacked = np.dstack((vec_index.astype('int32'), vec_index_mean.astype('int32'),
+                                         vec_index_random.astype('int32')))
+            indices.append(indices_stacked.reshape(-1, 3))
         inputs = np.concatenate(inputs)
         exp_outputs = np.concatenate(exp_outputs)
         indices = np.concatenate(indices)
@@ -292,11 +291,11 @@ class XGBoostOptimiser(Optimiser):
         full_path = "%s/%s" % (self.config.dircache, filename)
         cache_file = "%s.root" % full_path
         try:
-            inputs, exp_outputs, _ = self.__read_cache_from_file(cache_file,
+            inputs, exp_outputs, indices = self.__read_cache_from_file(cache_file,
                                                                 self.config.train_events)
         except FileNotFoundError:
             self.config.logger.fatal("Cache: %s does not exist, no data for training!", cache_file)
-        return inputs, exp_outputs
+        return inputs, exp_outputs, indices
 
     def __plot_feature_importance(self, model):
         """
