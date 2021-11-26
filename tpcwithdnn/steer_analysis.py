@@ -163,10 +163,10 @@ def main():
     # parameters for steer file
     parser.add_argument("--dotrain", action="store_true", default=argparse.SUPPRESS,
                         help="Perform the training")
-    parser.add_argument("--docreateinputdata", action="store_true", default=argparse.SUPPRESS,
-                        help="Create input data trees")
     parser.add_argument("--docreatendvaldata", action="store_true", default=argparse.SUPPRESS,
                         help="Create validation data trees")
+    parser.add_argument("--docache", action="store_true", default=argparse.SUPPRESS,
+                        help="Cache training data if not already existing")
     # parameters for config file
     parser.add_argument("--rndaugment", action="store_true", default=argparse.SUPPRESS,
                         help="Use random-random augmentation for training")
@@ -206,8 +206,11 @@ def main():
     logger.info("Arguments provided: %s", str(args))
     if "dotrain" in args:
         default["dotrain"] = True
-    if "docreateinputdata" in args or "docreatendvaldata" in args:
+    if "docreatendvaldata" in args:
         default["docreatendvaldata"] = True
+    if "docache" in args:
+        default["docache"] = True
+    #
     if "rndaugment" in args:
         config_parameters["common"]["rnd_augment"] = True
     if "train_events_oned" in args:
@@ -225,6 +228,7 @@ def main():
         config_parameters["common"]["num_fourier_coeffs_train"] = args.num_fourier_coeffs_train
     if "num_fourier_coeffs_apply" in args:
         config_parameters["common"]["num_fourier_coeffs_apply"] = args.num_fourier_coeffs_apply
+    #
     if "cache_events" in args:
         config_parameters["xgboost"]["cache_events"] = args.cache_events
     if "cache_train" in args:
