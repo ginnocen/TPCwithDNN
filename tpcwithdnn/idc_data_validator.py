@@ -18,6 +18,7 @@ from tpcwithdnn.logger import get_logger
 from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original_idc, get_input_oned_idc_single_map
 from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coeffs
+from tpcwithdnn.hadd import hadd
 
 class IDCDataValidator:
     """
@@ -52,12 +53,10 @@ class IDCDataValidator:
 
         :param int mean_id: index of a mean map
         :param int irnd: index of a random map
-        :param list column_names: list of names of data properties to be saved
         :param obj loaded_model: the proper loaded model - either keras.Model or
                                  xgboost.sklearn.XGBModel
-        :param str dir_name: name of the main output directory under which the data should be saved
-        :return: tuple of 1D IDC fluctuations and means, and DFT coefficients
-        :rtype: tuple(np.ndarray)
+        :returns: path to the output file
+        :rtype: str
         """
         [vec_r_pos, vec_phi_pos, vec_z_pos,
          vec_mean_sc, vec_random_sc,
@@ -141,6 +140,7 @@ class IDCDataValidator:
         tree_filename = "%s/validation_mean%.2f_nEv%d.root" \
             % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events)
         pandas_to_tree(df_single_map, tree_filename, 'validation')
+        return tree_filename
 
 
     # pylint: disable=too-many-locals, too-many-branches
@@ -152,6 +152,10 @@ class IDCDataValidator:
 
         for mean_id in self.mean_ids:
             counter = 0
+            out_file_names = []
+            merged_file_name = "%s/treeValidation_mean%.2f_nEv%d.root" %\
+                               (dir_name, self.mean_factors[self.mean_ids.index(mean_id)],
+                                self.config.train_events)
 
             if self.config.nd_val_partition != 'random':
                 for ind_ev in self.config.part_inds:
@@ -160,7 +164,8 @@ class IDCDataValidator:
                     irnd = ind_ev[0]
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, mean_id, irnd)
-                    self.create_data_for_event(mean_id, irnd, loaded_model)
+                    out_name = self.create_data_for_event(mean_id, irnd, loaded_model)
+                    out_file_names.append(out_name)
 
                     counter = counter + 1
                     if counter == self.config.nd_val_events:
@@ -170,13 +175,20 @@ class IDCDataValidator:
                                       self.config.range_rnd_index_nd_val[1] + 1):
                     self.config.logger.info("processing event: %d [%d, %d]",
                                             counter, mean_id, irnd)
-                    self.create_data_for_event(mean_id, irnd, loaded_model)
+                    out_name = self.create_data_for_event(mean_id, irnd, loaded_model)
+                    out_file_names.append(out_name)
 
                     counter = counter + 1
                     if counter == self.config.nd_val_events:
                         break
 
-        self.config.logger.info("Trees written in %s", dir_name)
+            hadd(out_file_names, merged_file_name)
+            #for out_file in out_file_names: # TODO: Do we want to preserve the partial files?
+            #    os.remove(out_file)
+            self.config.logger.info("Merged trees for mean %d written in %s",
+                                    mean_id, merged_file_name)
+
+        self.config.logger.info("All trees written in %s", dir_name)
 
     def get_pdf_map_variables_list(self):
         dist_names_list = np.array(self.config.nameopt_predout) \
