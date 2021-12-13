@@ -153,7 +153,7 @@ class IDCDataValidator:
         for mean_id in self.mean_ids:
             counter = 0
             out_file_names = []
-            merged_file_name = "%s/treeValidation_mean%.2f_nEv%d.root" %\
+            merged_file_name = "%s/validation_mean%.2f_nEv%d.root" %\
                                (dir_name, self.mean_factors[self.mean_ids.index(mean_id)],
                                 self.config.train_events)
 
@@ -183,8 +183,8 @@ class IDCDataValidator:
                         break
 
             hadd(out_file_names, merged_file_name)
-            #for out_file in out_file_names: # TODO: Do we want to preserve the partial files?
-            #    os.remove(out_file)
+            for out_file in out_file_names:
+                os.remove(out_file)
             self.config.logger.info("Merged trees for mean %d written in %s",
                                     mean_id, merged_file_name)
 
