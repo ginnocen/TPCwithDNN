@@ -51,6 +51,7 @@ class CommonSettings:
         self.z_range = data_param["z_range"]
         self.opt_train = data_param["opt_train"]
         self.opt_predout = data_param["opt_predout"]
+        self.opt_usederivative = data_param["opt_usederivative"]
         self.nameopt_predout = data_param["nameopt_predout"]
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
