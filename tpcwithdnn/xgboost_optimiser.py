@@ -45,13 +45,13 @@ class XGBoostOptimiser(Optimiser):
         self.config.logger.info("XGBoostOptimiser::train")
         model = XGBRFRegressor(verbosity=1, **(self.config.params))
         start = timer()
-        inputs, exp_outputs, _ = self.__get_data("train")
+        inputs, exp_outputs, *_ = self.__get_data("train")
         end = timer()
         log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
         log_total_memory_usage("Memory usage after loading data")
         if self.config.plot_train:
-            inputs_val, outputs_val, _ = self.__get_data("validation")
+            inputs_val, outputs_val, *_ = self.__get_data("validation")
             log_memory_usage(((inputs_val, "Input validation data"),
                               (outputs_val, "Output validation data")))
             log_total_memory_usage("Memory usage after loading validation data")
@@ -71,7 +71,7 @@ class XGBoostOptimiser(Optimiser):
         """
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
         loaded_model = self.load_model()
-        inputs, exp_outputs, _ = self.__get_data("apply")
+        inputs, exp_outputs, *_ = self.__get_data("apply")
         log_memory_usage(((inputs, "Input apply data"), (exp_outputs, "Output apply data")))
         log_total_memory_usage("Memory usage after loading apply data")
         start = timer()
@@ -178,13 +178,16 @@ class XGBoostOptimiser(Optimiser):
         inputs = []
         exp_outputs = []
         indices = []
+        mean_values = []
         for indexev in self.config.partition[partition][part_range]:
-            inputs_single, exp_outputs_single = load_data_oned_idc(self.config, dirinput,
-                                                           indexev, downsample,
-                                                           self.config.num_fourier_coeffs_train,
-                                                           num_fourier_coeffs_apply)
+            inputs_single, exp_outputs_single, mean_values_single  = load_data_oned_idc(
+                self.config, dirinput,
+                indexev, downsample,
+                self.config.num_fourier_coeffs_train,
+                num_fourier_coeffs_apply)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
+            mean_values.append(mean_values_single)
 
             vec_index_random = np.empty(inputs_single.shape[0])
             vec_index_random[:] = indexev[0]
@@ -197,9 +200,10 @@ class XGBoostOptimiser(Optimiser):
             indices.append(indices_stacked.reshape(-1, 3))
         inputs = np.concatenate(inputs)
         exp_outputs = np.concatenate(exp_outputs)
+        mean_values = np.concatenate(mean_values)
         indices = np.concatenate(indices)
 
-        return inputs, exp_outputs, indices
+        return inputs, exp_outputs, indices, mean_values
 
     def __save_cache(self, full_path, partition, downsample, num_fourier_coeffs_apply):
         """
@@ -220,16 +224,19 @@ class XGBoostOptimiser(Optimiser):
         fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_dist_names]]
         der_ref_mean_corr_names = ["derRefMeanCorr" +
                                    dist_name for dist_name in dist_names[sel_der_names]]
+        mean_value_names = ["meanCorrR", "meanCorrRPhi", "meanCorrZ", "mean0DIDC"]
         batch_file_names = []
         batch_size = self.config.cache_file_size
         for i, part_range in enumerate(self.__get_batch_range(partition, batch_size)):
-            inputs, exp_outputs, indices = self.__get_partition(partition, downsample,
+            inputs, exp_outputs, indices, mean_values = self.__get_partition(partition, downsample,
                                                                num_fourier_coeffs_apply,
                                                                part_range)
 
-            input_data = np.hstack((indices, inputs, exp_outputs.reshape(-1, 1)))
+            input_data = np.hstack((indices, inputs, mean_values, exp_outputs.reshape(-1, 1)))
             cache_data = pd.DataFrame(input_data,
-                                      columns=["eventId", "meanId", "randomId", "r", "phi", "z"] + der_ref_mean_corr_names + fourier_names + fluc_corr_names)
+                                      columns=["eventId", "meanId", "randomId", "r", "phi", "z"] +
+                                      der_ref_mean_corr_names + fourier_names + mean_value_names +
+                                      fluc_corr_names)
             batch_file = "%s_%d.root" % (full_path, i)
             batch_file_names.append(batch_file)
             pandas_to_tree(cache_data, batch_file, "cache")
@@ -279,7 +286,8 @@ class XGBoostOptimiser(Optimiser):
         der_ref_mean_corr_names = ["derRefMeanCorr" +
                                    dist_name for dist_name in dist_names[unsel_der_names]]
         inputs = inputs.drop(der_ref_mean_corr_names, axis=1)
-        print(inputs.columns)
+        mean_values_names = ["meanCorrR", "meanCorrRPhi", "meanCorrZ", "mean0DIDC"]
+        inputs = inputs.drop(mean_values_names, axis=1)
         inputs = inputs.to_numpy()
         exp_outputs = input_data.filter(like="flucCorr").to_numpy()
         self.config.logger.info("Data read from cache: %s", filepath)
