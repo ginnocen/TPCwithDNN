@@ -16,11 +16,13 @@ from sklearn.metrics import mean_squared_error
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
+from tpcwithdnn.logger import get_logger
 from tpcwithdnn import plot_utils
 from tpcwithdnn.debug_utils import log_time, log_memory_usage, log_total_memory_usage
 from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.optimiser import Optimiser
-from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc
+from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc, \
+    NUM_FOURIER_COEFFS_MAX
 from tpcwithdnn.hadd import hadd
 
 class XGBoostOptimiser(Optimiser):
@@ -43,6 +45,10 @@ class XGBoostOptimiser(Optimiser):
         Train the optimizer.
         """
         self.config.logger.info("XGBoostOptimiser::train")
+        if self.config.dim_output > 1:
+            logger = get_logger()
+            logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. dim_output is bigger than 1.")
+
         model = XGBRFRegressor(verbosity=1, **(self.config.params))
         start = timer()
         inputs, exp_outputs, *_ = self.__get_data("train")
@@ -137,8 +143,7 @@ class XGBoostOptimiser(Optimiser):
                 self.config.logger.info("Found cache: %s", cache_file)
         except FileNotFoundError:
             self.config.set_cache_ranges()
-            self.__save_cache(full_path, "train", self.config.downsample,
-                             self.config.num_fourier_coeffs_train)
+            self.__save_cache(full_path, "train", self.config.downsample)
 
     def __get_data(self, partition):
         """
@@ -160,9 +165,12 @@ class XGBoostOptimiser(Optimiser):
             if self.config.cache_train:
                 self.config.logger.warning("Cache insufficient, the train data will be read " +
                                            "from the original files")
-        return self.__get_partition(partition, downsample, num_fourier_coeffs_apply, slice(None))
+        return self.__get_partition(partition, downsample,
+                                    self.config.num_fourier_coeffs_train, num_fourier_coeffs_apply,
+                                    slice(None))
 
-    def __get_partition(self, partition, downsample, num_fourier_coeffs_apply, part_range):
+    def __get_partition(self, partition, downsample,
+                        num_fourier_coeffs_train, num_fourier_coeffs_apply, part_range):
         """
         Load the input data from given partition. Function used internally.
 
@@ -183,8 +191,7 @@ class XGBoostOptimiser(Optimiser):
             inputs_single, exp_outputs_single, mean_values_single  = load_data_oned_idc(
                 self.config, dirinput,
                 indexev, downsample,
-                self.config.num_fourier_coeffs_train,
-                num_fourier_coeffs_apply)
+                num_fourier_coeffs_train, num_fourier_coeffs_apply)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
             mean_values.append(mean_values_single)
@@ -205,7 +212,7 @@ class XGBoostOptimiser(Optimiser):
 
         return inputs, exp_outputs, indices, mean_values
 
-    def __save_cache(self, full_path, partition, downsample, num_fourier_coeffs_apply):
+    def __save_cache(self, full_path, partition, downsample):
         """
         Save the cache for given partition. Function used internally.
 
@@ -216,23 +223,27 @@ class XGBoostOptimiser(Optimiser):
         """
         cache_file = "%s.root" % full_path
         self.config.logger.info("Saving new cache to %s", cache_file)
-        fourier_names = list(chain.from_iterable(("c%d_real" % i, "c%d_imag" % i)
-                             for i in range(self.config.num_fourier_coeffs_train)))
+
+        # column names
         dist_names = np.array(self.config.nameopt_predout)
-        sel_dist_names = np.array(self.config.opt_predout) > 0
         sel_der_names = np.array(self.config.opt_usederivative) > 0
-        fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_dist_names]]
         der_ref_mean_corr_names = ["derRefMeanCorr" +
                                    dist_name for dist_name in dist_names[sel_der_names]]
+        num_fourier_coeffs = NUM_FOURIER_COEFFS_MAX
+        fourier_names = list(chain.from_iterable(("c%d_real" % i, "c%d_imag" % i)
+                             for i in range(num_fourier_coeffs)))
         mean_value_names = ["meanCorrR", "meanCorrRPhi", "meanCorrZ", "mean0DIDC"]
+        sel_dist_names = np.array(self.config.opt_predout) > 0
+        fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_dist_names]]
+
         batch_file_names = []
         batch_size = self.config.cache_file_size
         for i, part_range in enumerate(self.__get_batch_range(partition, batch_size)):
-            inputs, exp_outputs, indices, mean_values = self.__get_partition(partition, downsample,
-                                                               num_fourier_coeffs_apply,
-                                                               part_range)
+            inputs, exp_outputs, indices, mean_values = self.__get_partition(
+                partition, downsample, num_fourier_coeffs, num_fourier_coeffs, part_range)
 
-            input_data = np.hstack((indices, inputs, mean_values, exp_outputs.reshape(-1, 1)))
+            input_data = np.hstack((indices, inputs, mean_values,
+                                   exp_outputs.reshape(-1, sum(self.config.opt_predout))))
             cache_data = pd.DataFrame(input_data,
                                       columns=["eventId", "meanId", "randomId", "r", "phi", "z"] +
                                       der_ref_mean_corr_names + fourier_names + mean_value_names +
@@ -288,8 +299,14 @@ class XGBoostOptimiser(Optimiser):
         inputs = inputs.drop(der_ref_mean_corr_names, axis=1)
         mean_values_names = ["meanCorrR", "meanCorrRPhi", "meanCorrZ", "mean0DIDC"]
         inputs = inputs.drop(mean_values_names, axis=1)
+        fourier_names = list(chain.from_iterable(("c%d_real" % i, "c%d_imag" % i)
+                             for i in range(
+                                 self.config.num_fourier_coeffs_train, NUM_FOURIER_COEFFS_MAX)))
+        inputs = inputs.drop(fourier_names, axis=1)
         inputs = inputs.to_numpy()
-        exp_outputs = input_data.filter(like="flucCorr").to_numpy()
+        sel_fluc_names = np.array(self.config.opt_predout) == 1
+        fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_fluc_names]]
+        exp_outputs = input_data.filter(items=fluc_corr_names).to_numpy()
         self.config.logger.info("Data read from cache: %s", filepath)
         return inputs, exp_outputs, indices
 
@@ -348,8 +365,10 @@ class XGBoostOptimiser(Optimiser):
         df_importance = pd.DataFrame({'total_gain': total_gain_sorted,
                                       'gain': gain_sorted,
                                       'weight': weight_sorted}, index=feature_sorted)
+        importance_suffixes = ['gtot', 'g', 'w']
         bar_colors = ['tab:orange', 'tab:green', 'tab:blue']
-        for importance_type, bar_color in zip(df_importance.columns, bar_colors):
+        for importance_type, importance_suffix, bar_color in zip(
+                df_importance.columns, importance_suffixes, bar_colors):
             px = 1/plt.rcParams['figure.dpi']
             df_importance.plot(kind='bar', y=importance_type, log=True,
                                     color=bar_color, figsize=(1200*px, 400*px))
@@ -361,8 +380,8 @@ class XGBoostOptimiser(Optimiser):
             plt.tight_layout()
             plt.ylim(
                 bottom=math.pow(10, math.floor(math.log(df_importance[importance_type].min(), 10))))
-            plt.savefig("%s/figImportances_%s_%s_nEv%d.pdf" %
-                        (self.config.dirplots, importance_type, self.config.suffix,
+            plt.savefig("%s/features_%s_%s_nEv%d.pdf" %
+                        (self.config.dirplots, importance_suffix, self.config.suffix,
                          self.config.train_events))
 
 
