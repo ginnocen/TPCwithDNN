@@ -16,6 +16,7 @@ SCALES_PARABOLIC = [0, 3, -3] # Indices of parabolic scaling of the mean maps
 
 NELE_PER_ADC = 670 # A constant for charge-to-ADC (digitized value) normalization
 
+ION_DRIFT_TIME_SIM = 200 # ion drift time (ms), corresponds to number of 1D IDCs to be used for FFT
 NUM_FOURIER_COEFFS_MAX = 40
 
 def get_mean_desc(mean_id):
@@ -245,7 +246,9 @@ def downsample_data(data_size, downsample_npoints):
         chosen[sel_ind] = True
     return chosen
 
-def get_fourier_coeffs(vec_oned_idc, num_fourier_coeffs_train, num_fourier_coeffs_apply):
+
+def get_fourier_coeffs(vec_oned_idc, num_fft_idcs,
+                       num_fourier_coeffs_train, num_fourier_coeffs_apply):
     """
     Calculate Fourier transform and real and imaginary Fourier coefficients for a given vector.
 
@@ -255,6 +258,12 @@ def get_fourier_coeffs(vec_oned_idc, num_fourier_coeffs_train, num_fourier_coeff
     :return: numpy 1D array of interleaved real and imaginary Fourier coefficients
     :rtype: np.ndarray
     """
+    diff_idcs = ION_DRIFT_TIME_SIM - num_fft_idcs
+    if diff_idcs > 0:
+        vec_oned_idc = vec_oned_idc[diff_idcs:ION_DRIFT_TIME_SIM]
+    elif diff_idcs < 0:
+        vec_oned_idc = np.append(vec_oned_idc, np.random.normal(
+            vec_oned_idc.mean(), vec_oned_idc.std(), abs(diff_idcs)))
     dft = np.fft.fft(vec_oned_idc)
     dft_real = np.real(dft)[:num_fourier_coeffs_train]
     dft_imag = np.imag(dft)[:num_fourier_coeffs_train]
@@ -303,8 +312,8 @@ def get_input_names_oned_idc(opt_usederivative, num_fourier_coeffs):
     return input_names
 
 
-def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_coeffs_train,
-                       num_fourier_coeffs_apply):
+def load_data_oned_idc(config, dirinput, event_index, downsample,
+                       num_fft_idcs, num_fourier_coeffs_train, num_fourier_coeffs_apply):
     """
     Load inputs and outputs for one event for 1D IDC correction.
 
@@ -343,7 +352,7 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
     vec_oned_idc_fluc, num_ref_mean_zerod_idc = filter_idc_data(  # pylint: disable=unbalanced-tuple-unpacking
         (vec_random_oned_idc_a - vec_mean_oned_idc_a, num_ref_mean_zerod_idc_a),
         (vec_random_oned_idc_c - vec_mean_oned_idc_c, num_ref_mean_zerod_idc_c), config.z_range)
-    dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, num_fourier_coeffs_train,
+    dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, num_fft_idcs, num_fourier_coeffs_train,
                                     num_fourier_coeffs_apply)
 
     vec_fluc_corr_r = vec_random_corr_r - vec_mean_corr_r
