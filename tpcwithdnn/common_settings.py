@@ -56,6 +56,7 @@ class CommonSettings:
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
 
+        self.num_fft_idcs = data_param["num_fft_idcs"]
         self.num_fourier_coeffs_train = data_param["num_fourier_coeffs_train"]
         self.num_fourier_coeffs_apply = data_param["num_fourier_coeffs_apply"]
 

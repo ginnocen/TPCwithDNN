@@ -29,6 +29,7 @@ common:
   range_rnd_index_nd_val: [0, 999] # min and max index of random SC configurations for nd validation
   range_mean_index: [0, 44] # min and max index of mean SC configurations
   rnd_augment: false # use rnd-rnd augmentation instead of rnd-mean. Only used for model training
+  num_fft_idcs: 200 # number of 1D IDC values used for FFT, should correspond to ion drift time
   num_fourier_coeffs_train: 40 # number of Fourier coefficients to take from the 1D IDC train input
   num_fourier_coeffs_apply: 40 # number of Fourier coefficients to take from the 1D IDC apply input
 

@@ -89,6 +89,7 @@ class IDCDataValidator:
         vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
         num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
         dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc,
+                                        self.config.num_fft_idcs,
                                         self.config.num_fourier_coeffs_train,
                                         self.config.num_fourier_coeffs_apply)
 
@@ -142,9 +143,9 @@ class IDCDataValidator:
         dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
         if not os.path.isdir(dir_name):
             os.makedirs(dir_name)
-        tree_filename = "%s/validation_mean%.2f_nEv%d_fapply%d.root" \
+        tree_filename = "%s/validation_mean%.2f_nEv%d_fapply%d_nfftidcs%d.root" \
             % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events,
-               self.config.num_fourier_coeffs_apply)
+               self.config.num_fourier_coeffs_apply, self.config.num_fft_idcs)
         pandas_to_tree(df_single_map, tree_filename, 'validation')
 
 
@@ -155,6 +156,9 @@ class IDCDataValidator:
         loaded_model = self.model.load_model()
         dir_name = "%s/%s" % (self.config.dirtree, self.config.suffix)
 
+        # TODO: parallelize mean_ids
+        # TODO: provide possibility for rnd-rnd augment and mix
+        # TODO: provide usage of cached data
         for mean_id in self.mean_ids:
             counter = 0
 
