@@ -291,18 +291,24 @@ class XGBoostOptimiser(Optimiser):
         input_data = input_data.iloc[:data_size, :]
         indices = input_data[["eventId", "meanId", "randomId"]].to_numpy()
         inputs = input_data.filter(regex="^(?!flucCorr).*")
-        inputs = inputs.drop(["eventId", "meanId", "randomId"], axis=1)
+        inputs = inputs.drop(["eventId", "meanId", "randomId"], axis=1, errors='ignore')
         dist_names = np.array(self.config.nameopt_predout)
         unsel_der_names = np.array(self.config.opt_usederivative) == 0
         der_ref_mean_corr_names = ["derRefMeanCorr" +
                                    dist_name for dist_name in dist_names[unsel_der_names]]
-        inputs = inputs.drop(der_ref_mean_corr_names, axis=1)
+        inputs = inputs.drop(der_ref_mean_corr_names, axis=1, errors='ignore')
         mean_values_names = ["meanCorrR", "meanCorrRPhi", "meanCorrZ", "mean0DIDC"]
-        inputs = inputs.drop(mean_values_names, axis=1)
+        inputs = inputs.drop(mean_values_names, axis=1, errors='ignore')
         fourier_names = list(chain.from_iterable(("c%d_real" % i, "c%d_imag" % i)
                              for i in range(
                                  self.config.num_fourier_coeffs_train, NUM_FOURIER_COEFFS_MAX)))
-        inputs = inputs.drop(fourier_names, axis=1)
+        inputs = inputs.drop(fourier_names, axis=1, errors='ignore')
+        # check if all required inputs are provided
+        if len(inputs.columns) != len(get_input_names_oned_idc(
+                self.config.opt_usederivative,
+                self.config.num_fourier_coeffs_train)):
+            self.config.logger.fatal("Mismatch between length of loaded input variables and " \
+                "defined number of input variables.")
         inputs = inputs.to_numpy()
         sel_fluc_names = np.array(self.config.opt_predout) == 1
         fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_fluc_names]]
