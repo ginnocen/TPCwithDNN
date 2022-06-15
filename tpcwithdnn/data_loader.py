@@ -262,8 +262,7 @@ def get_fourier_coeffs(vec_oned_idc, num_fft_idcs,
     if diff_idcs > 0:
         vec_oned_idc = vec_oned_idc[diff_idcs:ION_DRIFT_TIME_SIM]
     elif diff_idcs < 0:
-        vec_oned_idc = np.append(vec_oned_idc, np.random.normal(
-            vec_oned_idc.mean(), vec_oned_idc.std(), abs(diff_idcs)))
+        vec_oned_idc = np.append(np.random.choice(vec_oned_idc, size=abs(diff_idcs)), vec_oned_idc)
     dft = np.fft.fft(vec_oned_idc)
     dft_real = np.real(dft)[:num_fourier_coeffs_train]
     dft_imag = np.imag(dft)[:num_fourier_coeffs_train]
