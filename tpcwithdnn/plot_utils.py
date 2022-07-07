@@ -6,7 +6,6 @@ import datetime
 
 import numpy as np
 
-from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TH1F, TH2F, TFile, TCanvas, TLegend, TPaveText, gPad # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kWhite, kBlue, kGreen, kRed, kCyan, kOrange, kMagenta # pylint: disable=import-error, no-name-in-module
 from ROOT import gROOT # pylint: disable=import-error, no-name-in-module
@@ -18,6 +17,14 @@ gStyle.SetOptStat(0)
 gStyle.SetTextFont(42)
 gStyle.SetLabelFont(42, "xyz")
 gStyle.SetTitleFont(42, "xyz")
+
+def fill_hist_1d(hist_1d, array_1d):
+    for entry in array_1d:
+        hist_1d.Fill(entry)
+
+def fill_hist_2d(hist_2d, array_2d):
+    for entries in array_2d:
+        hist_2d.Fill(entries[0], entries[1])
 
 def create_apply_histos(config, suffix, infix=""):
     """
@@ -73,10 +80,10 @@ def fill_apply_tree_single_event(config, indexev, distortion_numeric_flat_m,
     h_suffix = "Ev%d_Mean%d_%s" % (indexev[0], indexev[1], config.suffix)
     h_dist, h_deltas, h_deltas_vs_dist = create_apply_histos(config, h_suffix)
 
-    fill_hist(h_dist, np.concatenate((distortion_numeric_flat_m,
+    fill_hist_2d(h_dist, np.concatenate((distortion_numeric_flat_m,
                                       distortion_predict_flat_m), axis=1))
-    fill_hist(h_deltas, deltas_flat_a)
-    fill_hist(h_deltas_vs_dist,
+    fill_hist_1d(h_deltas, deltas_flat_a)
+    fill_hist_2d(h_deltas_vs_dist,
               np.concatenate((distortion_numeric_flat_m, deltas_flat_m), axis=1))
 
     prof = h_deltas_vs_dist.ProfileX()
@@ -91,10 +98,10 @@ def fill_apply_tree_single_event(config, indexev, distortion_numeric_flat_m,
 def fill_apply_tree(h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events,
                     distortion_numeric_flat_m, distortion_predict_flat_m,
                     deltas_flat_a, deltas_flat_m):
-    fill_hist(h_dist_all_events, np.concatenate((distortion_numeric_flat_m, \
+    fill_hist_2d(h_dist_all_events, np.concatenate((distortion_numeric_flat_m, \
                                                  distortion_predict_flat_m), axis=1))
-    fill_hist(h_deltas_all_events, deltas_flat_a)
-    fill_hist(h_deltas_vs_dist_all_events,
+    fill_hist_1d(h_deltas_all_events, deltas_flat_a)
+    fill_hist_2d(h_deltas_vs_dist_all_events,
               np.concatenate((distortion_numeric_flat_m, deltas_flat_m), axis=1))
 
 
@@ -118,8 +125,9 @@ def plot(config):
     sel_opts_names = np.array(config.nameopt_predout)
     sel_opts_names = sel_opts_names[sel_opts == 1]
     for opt_name in sel_opts_names:
-        myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
+        myfile = TFile.Open("%s/output_%s_fapply%d_nEv%d.root" %
                             (config.dirapply, config.suffix,
+                             config.num_fourier_coeffs_apply,
                              config.train_events), "open")
         h_dist_all_events = myfile.Get("%s_all_events_%s" % (config.h_dist_name,
                                                              config.suffix))
