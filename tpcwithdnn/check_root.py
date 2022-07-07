@@ -16,8 +16,8 @@ def check_import(mod_name, add_message=""):
         return False
 
 
-CHECK_MODULES = "ROOT"
-MESSAGES = "Please source manually if not on aliceml"
+CHECK_MODULES = ("ROOT",)
+MESSAGES = ("Please source manually if not on aliceml",)
 
 IMPORT_OK=True
 
