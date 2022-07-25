@@ -155,17 +155,31 @@ def load_data_original(dirinput, event_index):
              and r, rphi, z mean and random distortions, unrestricted
     :rtype: list
     """
-    files = ["%s/data/Pos/0-vecRPos.npy" % dirinput,
-             "%s/data/Pos/0-vecPhiPos.npy" % dirinput,
-             "%s/data/Pos/0-vecZPos.npy" % dirinput,
-             "%s/data/Mean/%d-vecMeanSC.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistR.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistRPhi.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistZ.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0])]
+
+    ref_map_index = get_mean_desc(event_index[1])
+    files = ["%s/Pos/vecRPos.npy" % dirinput,
+             "%s/Pos/vecPhiPos.npy" % dirinput,
+             "%s/Pos/vecZPos.npy" % dirinput,
+             "%s/Mean/%s-vecMeanSC.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%s-vecMeanDistR.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%s-vecMeanDistRPhi.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%s-vecMeanDistZ.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0])]
+
+    #files = ["%s/data/Pos/0-vecRPos.npy" % dirinput,
+    #         "%s/data/Pos/0-vecPhiPos.npy" % dirinput,
+    #         "%s/data/Pos/0-vecZPos.npy" % dirinput,
+    #         "%s/data/Mean/%d-vecMeanSC.npy" % (dirinput, event_index[1]),
+    #         "%s/data/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
+    #         "%s/data/Mean/%d-vecMeanDistR.npy" % (dirinput, event_index[1]),
+    #         "%s/data/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
+    #         "%s/data/Mean/%d-vecMeanDistRPhi.npy" % (dirinput, event_index[1]),
+    #         "%s/data/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
+    #         "%s/data/Mean/%d-vecMeanDistZ.npy" % (dirinput, event_index[1]),
+    #         "%s/data/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0])]
 
     return [np.load(f) for f in files]
 

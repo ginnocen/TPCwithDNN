@@ -248,11 +248,16 @@ class XGBoostSettings:
 
         self.params = data_param["params"]
 
+        self.xgbtype = data_param["xgbtype"]
+        self.nn_params = data_param["nn_params"]
+
         self.per_event_hists = False
         self.downsample = data_param["downsample"]
         self.downsample_npoints = data_param["downsample_npoints"]
         self.plot_train = data_param["plot_train"]
         self.train_plot_npoints = data_param["train_plot_npoints"]
+
+        self.apply_tree = data_param["apply_tree"]
 
         self.cache_train = data_param["cache_train"]
         self.cache_events = data_param["cache_events"]
@@ -267,8 +272,8 @@ class XGBoostSettings:
         if self.downsample:
             self.cache_suffix = "%s_dpoints%d" % \
                 (self.cache_suffix, self.downsample_npoints)
-        self.cache_suffix = "%s_ftrain%d" % \
-            (self.cache_suffix, self.num_fourier_coeffs_train)
+        self.cache_suffix = "%s_ftrain%d_fapply%d" % \
+            (self.cache_suffix, self.num_fourier_coeffs_train, self.num_fourier_coeffs_apply)
 
         self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.params["n_estimators"],
@@ -292,8 +297,8 @@ class XGBoostSettings:
         if self.downsample:
             self.suffix = "%s_dpoints%d" % \
                 (self.suffix, self.downsample_npoints)
-        self.suffix = "%s_ftrain%d" % \
-            (self.suffix, self.num_fourier_coeffs_train)
+        self.suffix = "%s_ftrain%d_fapply%d" % \
+            (self.suffix, self.num_fourier_coeffs_train, self.num_fourier_coeffs_apply)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
             os.makedirs("%s/%s" % (self.dirtree, self.suffix))

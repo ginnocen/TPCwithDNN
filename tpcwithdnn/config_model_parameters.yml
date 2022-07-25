@@ -6,8 +6,8 @@ common:
   dirhist: histograms
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
-  dirinput_bias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
-  dirinput_nobias: /mnt/temp/dsekihat/data/tpcml/data_20210414/noDistortions
+  dirinput_bias: /home/baba/data/tpcml/data_20210414/noDistortions
+  dirinput_nobias: /home/baba/data/tpcml/data_20210414/noDistortions
   train_bias: true
   validation_bias: true
   apply_bias: false
@@ -24,24 +24,26 @@ common:
   opt_predout: [1, 0, 0] # R, Rphi, z output distortion predictions
   nameopt_predout: [R, RPhi, Z] # R, RPhi, Z output distortion predictions
   maxrandomfiles: 1000 # this is the total number of random events generated
-  range_rnd_index_train: [0, 999] # min and max index of random SC configurations for training
-  range_rnd_index_nd_val: [0, 999] # min and max index of random SC configurations for nd validation
+  range_rnd_index_train: [0, 500] # min and max index of random SC configurations for training
+  range_rnd_index_nd_val: [500, 999] # min and max index of random SC configurations for nd validation
   range_mean_index: [0, 44] # min and max index of mean SC configurations
-  rnd_augment: false # use rnd-rnd augmentation instead of rnd-mean. Only used for model training
+  rnd_augment: true # use rnd-rnd augmentation instead of rnd-mean. Only used for model training
   num_fourier_coeffs_train: 40 # number of Fourier coefficients to take from the 1D IDC train input
   num_fourier_coeffs_apply: 40 # number of Fourier coefficients to take from the 1D IDC apply input
 
 xgboost:
-  active: True
-  train_events: [200]
-  validation_events: [100]
+  active: true
+  train_events: [200000]
+  xgbtype: RF  # Type of XGBoost regressor. "XGB", "RF" or "NN"
+  validation_events: [10]
   apply_events: [400]
   downsample: true
-  downsample_npoints: 100
+  downsample_npoints: 10
   plot_train: false
   train_plot_npoints: 10
-  cache_train: true
-  cache_events: 200
+  apply_tree: false # Create a TTree with all the apply results.
+  cache_train: false
+  cache_events: 200000
   cache_file_size: 10 # number of events, adjust to your RAM
   dircache: cache
   params:
@@ -64,7 +66,12 @@ xgboost:
     reg_lambda: 0.00005
     scale_pos_weight: 1
     base_score: 0.5
-
+  nn_params:
+    optimizer: "rmsprop"
+    loss: "mse"
+    metrics: "mae"
+    hidden_activation: "tanh" # Activation function for hidden layer.
+ 
 corr:
   active: false
 
