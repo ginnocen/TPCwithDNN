@@ -6,7 +6,7 @@ h5py<3.0.0
 keras==2.3.1
 PyYaml
 RootInteractive
-tensorflow>=2.4.0
+tensorflow-rocm
 pydot
 pylint
 psutil

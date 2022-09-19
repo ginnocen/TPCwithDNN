@@ -71,6 +71,8 @@ class XGBoostOptimiser(Optimiser):
         :param CommonSettings config: a singleton settings object
         """
         super().__init__(config)
+        self.fourierMean = np.empty(0)   #Member arrays to store Mean and Std. Dev. of the fourier coefficents in the training dataset.
+        self.fourierStdDev = np.empty(0) # Used in function normalize_inputs to standardize the inputs for the neural network.
         self.config.logger.info("XGBoostOptimiser::Init")
 
     def train(self):
@@ -82,9 +84,11 @@ class XGBoostOptimiser(Optimiser):
         start = timer()
         inputs, exp_outputs, _ = self.__get_data("train")
         inputs_val, outputs_val, _ = self.__get_data("validation")
-        if self.config.xgbtype=="NN":
-            inputs = self.__normalize_inputs(inputs)
-            inputs_val = self.__normalize_inputs(inputs_val)
+        #if self.config.xgbtype=="NN":
+            #inputs = self.normalize_inputs(inputs)
+            #inputs_val = self.normalize_inputs(inputs_val)
+            #inputs = self.ver_normalize_inputs(inputs, "train")
+            #inputs_val = self.ver_normalize_inputs(inputs_val, "validation")
         end = timer()
         log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
@@ -121,7 +125,8 @@ class XGBoostOptimiser(Optimiser):
             pos = np.empty((inputs.shape[0], 3))
             for i in range(3):
                 pos[:, i] = inputs[:,i]
-            inputs = self.__normalize_inputs(inputs)
+            #inputs = self.normalize_inputs(inputs)
+            #inputs = self.ver_normalize_inputs(inputs, "apply")
         log_memory_usage(((inputs, "Input apply data"), (exp_outputs, "Output apply data")))
         log_total_memory_usage("Memory usage after loading apply data")
         start = timer()
@@ -174,6 +179,8 @@ class XGBoostOptimiser(Optimiser):
             out_filename = "%s/NNmodel_%s_nEv%d" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
             model.save(out_filename)
+            np.save(out_filename+"/fourierCoeffMean", self.fourierMean)
+            np.save(out_filename+"/fourierCoeffStdDev", self.fourierStdDev)
 
 
     def load_model(self):
@@ -197,7 +204,23 @@ class XGBoostOptimiser(Optimiser):
             filename = "%s/NNmodel_%s_nEv%d" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
             model = keras.models.load_model(filename)
-        # Loading a snapshot
+            fourierCoeffMean = np.load(filename+"/fourierCoeffMean.npy")
+            fourierCoeffStdDev = np.load(filename+"/fourierCoeffStdDev.npy")
+            if fourierCoeffMean.shape==self.fourierMean.shape:
+                self.fourierMean = fourierCoeffMean
+            elif self.fourierMean.shape==(0,):
+                self.fourierMean = np.hstack([self.fourierMean, fourierCoeffMean])
+            else:
+                print("self.fourierMean.shape=", self.fourierMean.shape)
+                print("Shape of data read from numpy file:", fourierCoeffMean.shape)
+                self.config.logger.fatal("Number of fourier coefficents used for the last training does not match that used for training of the loaded model.")
+            if fourierCoeffStdDev.shape==self.fourierStdDev.shape:
+                self.fourierStdDev = fourierCoeffStdDev
+            elif self.fourierStdDev.shape==(0,):
+                self.fourierStdDev = np.hstack([self.fourierStdDev, fourierCoeffStdDev])
+            else:
+                self.config.logger.fatal("Number of fourier coefficents used for the last training does not match that used for training of the loaded model.")
+       # Loading a snapshot
         #filename = "%s/xgbmodel_%s_nEv%d.json" %\
         #        (self.config.dirmodel, self.config.suffix, self.config.train_events)
         #with open(filename, "rb") as file:
@@ -220,20 +243,56 @@ class XGBoostOptimiser(Optimiser):
             self.__save_cache(full_path, "train", self.config.downsample,
                              self.config.num_fourier_coeffs_train)
 
-    def __normalize_inputs(self, inputs):
+    def normalize_inputs(self, inputs):
         """
         Standardize the input data for the neural network (it may be effective for XGBoost or RF as well)
         :inputs: Input for the network.
         """
-        n = inputs.shape[1]
+        #n = inputs.shape[1]
+        n_points = inputs.shape[0]
         # inputs[:,0]~[:,2] are the positions. [:,3] is the derivative and [:,4] is the real part of the 0th Fourier coefficent.
         # This means [:,5] is the imaginary part of the 0th Fourier coeffficent, which is always 0 (i.e. std. dev. is also 0).
-        for i in range(n):
-            t = inputs[:,i]
+        inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
+        inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
+        inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
+
+        for i in range(n_points):
+            t = inputs[i,4:]
+            inputs[i,4:]=(inputs[i,4:]-t.mean())/t.std()
+        return inputs
+
+    def ver_normalize_inputs(self, inputs, partition):
+        """
+        Test function for a different way of doing the normalization for Neural Network.
+        Standardize the input data for the neural network (it may be effective for XGBoost or RF as well)
+        :inputs: Input for the network.
+        :partition: Partition. "train", "validation", "apply"
+        """
+        n_coeffs = inputs.shape[1] - 4
+        if partition=="train":
+            foMean = np.empty(n_coeffs)
+            foStdDev = np.empty(n_coeffs)
+            for i in range(4, inputs.shape[1]):
+                if i==5:
+                    foMean[i-4] = 0
+                    foStdDev[i-4] = 0
+                else:
+                    t = inputs[:,i]
+                    foMean[i-4] = t.mean()
+                    foStdDev[i-4] = t.std()
+            self.fourierMean = np.hstack([self.fourierMean, foMean])
+            self.fourierStdDev = np.hstack([self.fourierStdDev, foStdDev])
+        #n_points = inputs.shape[0]
+        # inputs[:,0]~[:,2] are the positions. [:,3] is the derivative and [:,4] is the real part of the 0th Fourier coefficent.
+        # This means [:,5] is the imaginary part of the 0th Fourier coeffficent, which is always 0 (i.e. std. dev. is also 0).
+        inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
+        inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
+        inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
+        for i in range(4, inputs.shape[1]):
             if i==5:
                 inputs[:,i] = inputs[:,i] 
             else:
-                inputs[:,i] = (inputs[:,i]-t.mean())/t.std()
+                inputs[:,i] = (inputs[:,i]-self.fourierMean[i-4])/self.fourierStdDev[i-4]
         return inputs
 
     def __get_data(self, partition):
@@ -256,6 +315,9 @@ class XGBoostOptimiser(Optimiser):
             if self.config.cache_train:
                 self.config.logger.warning("Cache insufficient, the train data will be read " +
                                            "from the original files")
+        elif partition=="validation":
+            downsample = self.config.downsample
+
         return self.__get_partition(partition, downsample, num_fourier_coeffs_apply, slice(None))
 
     def __get_partition(self, partition, downsample, num_fourier_coeffs_apply, part_range):
@@ -274,7 +336,13 @@ class XGBoostOptimiser(Optimiser):
         inputs = []
         exp_outputs = []
         indices = []
-
+        z_min = self.config.z_range[0]
+        z_max = self.config.z_range[1]
+        if partition=="train" and self.config.z_range[1] > 249:
+            self.config.z_range[1] = 248
+        if partition=="train" and self.config.z_range[0] < -249:
+            self.config.z_range[0] = -248
+        print(self.config.z_range)
         for indexev in self.config.partition[partition][part_range]:
             inputs_single, exp_outputs_single = load_data_oned_idc(self.config, dirinput,
                                                            indexev, downsample,
@@ -295,7 +363,10 @@ class XGBoostOptimiser(Optimiser):
         inputs = np.concatenate(inputs)
         exp_outputs = np.concatenate(exp_outputs)
         indices = np.concatenate(indices)
-
+        self.config.z_range[0] = z_min
+        self.config.z_range[1] = z_max
+        print(inputs[:,2].max())
+        print(self.config.z_range)
         return inputs, exp_outputs, indices
 
     def __save_cache(self, full_path, partition, downsample, num_fourier_coeffs_apply):
@@ -392,6 +463,7 @@ class XGBoostOptimiser(Optimiser):
                                                                 self.config.train_events)
         except FileNotFoundError:
             self.config.logger.fatal("Cache: %s does not exist, no data for training!", cache_file)
+
         return inputs, exp_outputs, indices
 
     def __plot_feature_importance(self, model):

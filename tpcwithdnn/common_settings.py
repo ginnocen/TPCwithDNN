@@ -274,7 +274,47 @@ class XGBoostSettings:
                 (self.cache_suffix, self.downsample_npoints)
         self.cache_suffix = "%s_ftrain%d_fapply%d" % \
             (self.cache_suffix, self.num_fourier_coeffs_train, self.num_fourier_coeffs_apply)
-
+        """
+        # Work in progress
+        if self.xgbtype=="XGB": 
+            self.suffix ="XGB_phi%d_r%d_z%d" % \
+                    (self.grid_phi, self.grid_r, self.grid_z)
+            self.suffix = "%s_nest%d_depth%d_lr%.3f_tm-%s" % \
+                    (self.suffix, self.params["n_estimators"],
+                    self.params["max_depth"], self.params["learning_rate"],
+                    self.params["tree_method"])
+            self.suffix = "%s_g%.2f_weight%.1f_d%.1f_sub%.2f" % \
+                    (self.suffix, self.params["gamma"], self.params["min_child_weight"],
+                    self.params["max_delta_step"], self.params["subsample"])
+            self.suffix = "%s_colTree%.1f_colLvl%.1f_colNode%.1f" %\
+                    (self.suffix, self.params["colsample_bynode"], self.params["colsample_bytree"],
+                    self.params["colsample_bylevel"])
+            self.suffix = "%s_a%.1f_l%.5f_scale%.1f_base%.2f" %\
+                    (self.suffix, self.params["reg_alpha"], self.params["reg_lambda"],
+                    self.params["scale_pos_weight"], self.params["base_score"])
+        elif self.xgbtype=="RF":
+            self.suffix ="RF_phi%d_r%d_z%d" % \
+                    (self.grid_phi, self.grid_r, self.grid_z)
+            self.suffix = "%s_nest%d_depth%d_lr%.3f_tm-%s" % \
+                    (self.suffix, self.params["n_estimators"],
+                    self.params["max_depth"], self.params["learning_rate"],
+                    self.params["tree_method"])
+            self.suffix = "%s_g%.2f_weight%.1f_d%.1f_sub%.2f" % \
+                    (self.suffix, self.params["gamma"], self.params["min_child_weight"],
+                    self.params["max_delta_step"], self.params["subsample"])
+            self.suffix = "%s_colTree%.1f_colLvl%.1f_colNode%.1f" %\
+                    (self.suffix, self.params["colsample_bynode"], self.params["colsample_bytree"],
+                    self.params["colsample_bylevel"])
+            self.suffix = "%s_a%.1f_l%.5f_scale%.1f_base%.2f" %\
+                    (self.suffix, self.params["reg_alpha"], self.params["reg_lambda"],
+            self.params["scale_pos_weight"], self.params["base_score"])
+       elif self.xgbtype=="NN": #  Parameters: optimizer, loss, metrics, hidden_activation, n_hidden_layers, batch_size, epochs 
+            self.suffix ="NN_phi%d_r%d_z%d" % \
+                    (self.grid_phi, self.grid_r, self.grid_z)
+            self.suffix = "%s_nHidLayers%d_%s_batch%d_epoch%d" % \
+                    (self.suffix, self.nn_params["n_hidden_layers"], self.nn_params["hidden_activation"],
+                    self.nn_params["batch_size"], self.nn_params["epochs"])
+        """
         self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
                 (self.grid_phi, self.grid_r, self.grid_z, self.params["n_estimators"],
                  self.params["max_depth"], self.params["learning_rate"],

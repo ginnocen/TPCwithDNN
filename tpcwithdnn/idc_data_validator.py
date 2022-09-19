@@ -133,6 +133,9 @@ class IDCDataValidator:
         vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
         inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                                 vec_der_ref_mean_corr, dft_coeffs)
+        #if self.config.xgbtype=="NN":
+            #inputs = self.model.normalize_inputs(inputs)
+            #inputs = self.model.ver_normalize_inputs(inputs, "ndvalidation") 
         df_single_map["flucCorrRPred"] = loaded_model.predict(inputs).astype('float32')
 
         dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
@@ -192,6 +195,33 @@ class IDCDataValidator:
             var_list.append('flucCorr' + dist_name + 'Diff')
 
         return var_list
+
+    def normalize_inputs(self, inputs):
+        """
+        Standardize the input data for the neural network (it may be effective for XGBoost or RF as well)
+        Exactly same function exists in xgboost optimiser. Make sure to update both versions when updating this function.
+        :inputs: Input for the network.
+        20th Aug. 2022. This function probably unnecessary.
+        """
+        #n = inputs.shape[1]
+        n_points = inputs.shape[0]
+        # inputs[:,0]~[:,2] are the positions. [:,3] is the derivative and [:,4] is the real part of the 0th Fourier coefficent.
+        # This means [:,5] is the imaginary part of the 0th Fourier coeffficent, which is always 0 (i.e. std. dev. is also 0).
+        inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
+        inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to 0 and phi=2*pi to 1
+        inputs[:,2] = (inputs[:,2] / 125) - 1 # Map z=0 to -1 and z=250 to 1
+        #for i in range(n):
+        #    t = inputs[:,i]
+        #    print("i=", i, "t=", t)
+        #    if i==5:
+        #        inputs[:,i] = inputs[:,i] 
+        #    else:
+        #        inputs[:,i] = (inputs[:,i]-t.mean())/t.std()
+        for i in range(n_points):
+            t = inputs[i,4:]
+            inputs[i,4:] = (inputs[i,4:]-t.mean())/t.std()
+        return inputs
+
 
     def create_nd_histogram(self, var, mean_id):
         """

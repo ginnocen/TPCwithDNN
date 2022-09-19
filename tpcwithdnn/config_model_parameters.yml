@@ -33,18 +33,18 @@ common:
 
 xgboost:
   active: true
-  train_events: [200000]
+  train_events: [500]
   xgbtype: RF  # Type of XGBoost regressor. "XGB", "RF" or "NN"
-  validation_events: [10]
+  validation_events: [50]
   apply_events: [400]
   downsample: true
   downsample_npoints: 10
   plot_train: false
   train_plot_npoints: 10
-  apply_tree: false # Create a TTree with all the apply results.
+  apply_tree: false # Create a TTree with all the apply results (a relatively short way of checking the inputs). 
   cache_train: false
-  cache_events: 200000
-  cache_file_size: 10 # number of events, adjust to your RAM
+  cache_events: 250000
+  cache_file_size: 500 # number of events, adjust to your RAM
   dircache: cache
   params:
     n_estimators: 100 # 850, 100 is better than 500
@@ -69,8 +69,11 @@ xgboost:
   nn_params:
     optimizer: "rmsprop"
     loss: "mse"
-    metrics: "mae"
-    hidden_activation: "tanh" # Activation function for hidden layer.
+    metrics: "mse"
+    hidden_activation: "relu" # Activation function for hidden layer.
+    n_hidden_layers: 2 # Number of hidden layers.
+    batch_size: 30
+    epochs: 30
  
 corr:
   active: false
