@@ -130,9 +130,13 @@ class IDCDataValidator:
             df_single_map["c%d_imag" % i_coeff] = np.tile((coeff_imag),
                                                           vec_z_pos.size).astype('float32')
 
-        vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
+        mat_der_ref_mean_corr_sel = np.array([mat_der_ref_mean_corr[0],
+                                              mat_der_ref_mean_corr[1],
+                                              mat_der_ref_mean_corr[2]])
+        mat_der_ref_mean_corr_sel = \
+            mat_der_ref_mean_corr_sel[np.array(self.config.opt_usederivative) > 0]
         inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                                vec_der_ref_mean_corr, dft_coeffs)
+                                               mat_der_ref_mean_corr_sel, dft_coeffs)
         #if self.config.xgbtype=="NN":
             #inputs = self.model.normalize_inputs(inputs)
             #inputs = self.model.ver_normalize_inputs(inputs, "ndvalidation") 
@@ -245,9 +249,9 @@ class IDCDataValidator:
         else:
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
-        df_val = tree_to_pandas("%s/%s/treeValidation_mean%.2f_nEv%d.root"
+        df_val = tree_to_pandas("%s/%s/validation_mean%.2f_nEv%d_fapply%d.root"
                                 % (self.config.dirtree, self.config.suffix, mean_factor,
-                                   self.config.train_events),
+                                   self.config.train_events, self.config.num_fourier_coeffs_apply),
                                 'validation', columns=column_names)
         if diff_index != -1:
             df_val[var] = \

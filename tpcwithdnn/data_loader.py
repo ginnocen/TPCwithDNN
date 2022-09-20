@@ -276,7 +276,7 @@ def get_fourier_coeffs(vec_oned_idc, num_fourier_coeffs_train, num_fourier_coeff
 
 
 def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                  vec_der_ref_mean_corr, dft_coeffs):
+                                  mat_der_ref_mean_corr, dft_coeffs):
     """
     Create the input sample for 1D BDT correction for a single event map pair.
 
@@ -288,23 +288,27 @@ def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
     :return: an input sample (a vector) for 1D BDT correction
     :rtype: np.ndarray
     """
-    inputs = np.zeros((vec_der_ref_mean_corr.size,
-                       4 + dft_coeffs.size))
+    inputs = np.zeros((vec_r_pos.size,
+                       3 + mat_der_ref_mean_corr.shape[0] + dft_coeffs.size))
     for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
         inputs[:, ind] = pos
-    inputs[:, 3] = vec_der_ref_mean_corr
+    inputs[:, 3:-dft_coeffs.size] = np.dstack(mat_der_ref_mean_corr)
     inputs[:, -dft_coeffs.size:] = dft_coeffs  # pylint: disable=invalid-unary-operand-type
     return inputs
 
 
-def get_input_names_oned_idc(num_fourier_coeffs):
+def get_input_names_oned_idc(opt_usederivative, num_fourier_coeffs):
     """
     Get an array with names of the input parameters.
 
     :return: a list of names
     :rtype: list
     """
-    input_names = ['r', 'phi', 'z', 'der_corr_r']
+    input_names = ['r', 'phi', 'z']
+    derivative_names = ['der_corr_r', 'der_corr_rphi', 'der_corr_z']
+    for i_der, use_der in enumerate(opt_usederivative):
+        if use_der == 1:
+            input_names.append(derivative_names[i_der])
     for i in range(num_fourier_coeffs):
         input_names = input_names + ['c_real%d' % i, 'c_imag%d' % i]
     return input_names
@@ -353,20 +357,29 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
                               vec_random_corr_phi - vec_mean_corr_phi,
                               vec_random_corr_z - vec_mean_corr_z))
 
-    vec_exp_corr_fluc, vec_der_ref_mean_corr =\
-        mat_to_vec(config.opt_predout, (mat_fluc_corr, mat_der_ref_mean_corr))
+    vec_exp_corr_fluc, =\
+        mat_to_vec(config.opt_predout, (mat_fluc_corr,))
     # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
     # distortion direction
+    vec_der_ref_mean_corr_r = mat_der_ref_mean_corr[0]
+    vec_der_ref_mean_corr_rphi = mat_der_ref_mean_corr[1]
+    vec_der_ref_mean_corr_z = mat_der_ref_mean_corr[2]
     if downsample:
         chosen_points = downsample_data(len(vec_z_pos), config.downsample_npoints)
         vec_r_pos = vec_r_pos[chosen_points]
         vec_phi_pos = vec_phi_pos[chosen_points]
         vec_z_pos = vec_z_pos[chosen_points]
-        vec_der_ref_mean_corr = vec_der_ref_mean_corr[chosen_points]
+        vec_der_ref_mean_corr_r = vec_der_ref_mean_corr_r[chosen_points]
+        vec_der_ref_mean_corr_rphi = vec_der_ref_mean_corr_rphi[chosen_points]
+        vec_der_ref_mean_corr_z = vec_der_ref_mean_corr_z[chosen_points]
         vec_exp_corr_fluc = vec_exp_corr_fluc[chosen_points]
 
+    mat_der_ref_mean_corr_sel = np.array([vec_der_ref_mean_corr_r,
+                                          vec_der_ref_mean_corr_rphi,
+                                          vec_der_ref_mean_corr_z])
+    mat_der_ref_mean_corr_sel = mat_der_ref_mean_corr_sel[np.array(config.opt_usederivative) > 0]
     inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                           vec_der_ref_mean_corr, dft_coeffs)
+                                           mat_der_ref_mean_corr_sel, dft_coeffs)
 
     return inputs, vec_exp_corr_fluc
 
