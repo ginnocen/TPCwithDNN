@@ -13,7 +13,10 @@ from tpcwithdnn.logger import get_logger
 SCALES_CONST = [0, 3, -3, 6, -6] # Indices of constant scaling of the mean maps
 SCALES_LINEAR = [0, 3, -3] # Indices of linear scaling of the mean maps
 SCALES_PARABOLIC = [0, 3, -3] # Indices of parabolic scaling of the mean maps
+
 NELE_PER_ADC = 670 # A constant for charge-to-ADC (digitized value) normalization
+
+NUM_FOURIER_COEFFS_MAX = 40
 
 def get_mean_desc(mean_id):
     """
@@ -330,11 +333,6 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
     :return: tuple of inputs and expected outputs
     :rtype: tuple
     """
-    dim_output = sum(config.opt_predout)
-    if dim_output > 1:
-        logger = get_logger()
-        logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
-
     [vec_r_pos, vec_phi_pos, vec_z_pos,
      *_,
      vec_mean_corr_r, vec_random_corr_r,
@@ -362,12 +360,10 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
     dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, num_fourier_coeffs_train,
                                     num_fourier_coeffs_apply)
 
-    mat_fluc_corr = np.array((vec_random_corr_r - vec_mean_corr_r,
-                              vec_random_corr_phi - vec_mean_corr_phi,
-                              vec_random_corr_z - vec_mean_corr_z))
+    vec_fluc_corr_r = vec_random_corr_r - vec_mean_corr_r
+    vec_fluc_corr_phi = vec_random_corr_phi - vec_mean_corr_phi
+    vec_fluc_corr_z = vec_random_corr_z - vec_mean_corr_z
 
-    vec_exp_corr_fluc, =\
-        mat_to_vec(config.opt_predout, (mat_fluc_corr,))
     # TODO: this will not work properly if vec_exp_corr_fluc containes more than one
     # distortion direction
     vec_der_ref_mean_corr_r = mat_der_ref_mean_corr[0]
@@ -381,10 +377,12 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
         vec_ref_mean_corr_r = vec_ref_mean_corr_r[chosen_points]
         vec_ref_mean_corr_phi = vec_ref_mean_corr_phi[chosen_points]
         vec_ref_mean_corr_z = vec_ref_mean_corr_z[chosen_points]
+        vec_fluc_corr_r = vec_fluc_corr_r[chosen_points]
+        vec_fluc_corr_phi = vec_fluc_corr_phi[chosen_points]
+        vec_fluc_corr_z = vec_fluc_corr_z[chosen_points]
         vec_der_ref_mean_corr_r = vec_der_ref_mean_corr_r[chosen_points]
         vec_der_ref_mean_corr_rphi = vec_der_ref_mean_corr_rphi[chosen_points]
         vec_der_ref_mean_corr_z = vec_der_ref_mean_corr_z[chosen_points]
-        vec_exp_corr_fluc = vec_exp_corr_fluc[chosen_points]
 
     mat_der_ref_mean_corr_sel = np.array([vec_der_ref_mean_corr_r,
                                           vec_der_ref_mean_corr_rphi,
@@ -393,12 +391,17 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
     inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                            mat_der_ref_mean_corr_sel, dft_coeffs)
 
+    mat_fluc_corr = np.array([vec_fluc_corr_r,
+                              vec_fluc_corr_phi,
+                              vec_fluc_corr_z])
+    mat_fluc_corr = np.dstack(mat_fluc_corr[np.array(config.opt_predout) > 0])[0]
+
     vec_ref_mean_zerod_idc = np.full(vec_ref_mean_corr_r.shape[0],
                                      num_ref_mean_zerod_idc.astype('float32'))
     mat_ref_mean_values = np.dstack(np.array([vec_ref_mean_corr_r, vec_ref_mean_corr_phi,
                                               vec_ref_mean_corr_z, vec_ref_mean_zerod_idc]))[0]
 
-    return inputs, vec_exp_corr_fluc, mat_ref_mean_values
+    return inputs, mat_fluc_corr, mat_ref_mean_values
 
 
 def load_data(dirinput, event_index, z_range):

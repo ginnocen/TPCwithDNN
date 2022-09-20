@@ -59,10 +59,10 @@ class CommonSettings:
         self.num_fourier_coeffs_train = data_param["num_fourier_coeffs_train"]
         self.num_fourier_coeffs_apply = data_param["num_fourier_coeffs_apply"]
 
-        if self.dim_output > 1:
-            self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
+        self.logger.info("Outputs: (dR, dRPhi, dZ) = (%d, %d, %d)",
+                         self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
 
         # Directories
         self.dirmodel = data_param["dirmodel"]
@@ -273,8 +273,6 @@ class XGBoostSettings:
         if self.downsample:
             self.cache_suffix = "%s_dpoints%d" % \
                 (self.cache_suffix, self.downsample_npoints)
-        self.cache_suffix = "%s_ftrain%d_fapply%d" % \
-            (self.cache_suffix, self.num_fourier_coeffs_train, self.num_fourier_coeffs_apply)
         """
         # Work in progress
         if self.xgbtype=="XGB": 
@@ -329,6 +327,9 @@ class XGBoostSettings:
         self.suffix = "%s_a%.1f_l%.5f_scale%.1f_base%.2f" %\
                 (self.suffix, self.params["reg_alpha"], self.params["reg_lambda"],
                  self.params["scale_pos_weight"], self.params["base_score"])
+        self.suffix = "%s_derR%dRPhi%dZ%d" % \
+            (self.suffix, self.opt_usederivative[0],
+             self.opt_usederivative[1], self.opt_usederivative[2])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
