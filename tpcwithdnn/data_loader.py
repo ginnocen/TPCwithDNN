@@ -347,9 +347,18 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
                                                                             config.z_range,
                                                                             config.rnd_augment)
 
-    vec_oned_idc_fluc,  = filter_idc_data( # pylint: disable=unbalanced-tuple-unpacking
-              (vec_random_oned_idc_a - vec_mean_oned_idc_a, ),
-              (vec_random_oned_idc_c - vec_mean_oned_idc_c, ), config.z_range)
+    # TODO: include also C side mean 0D IDC in case both sides to be used
+    [*_,
+     vec_ref_mean_corr_r, _,
+     vec_ref_mean_corr_phi, _,
+     vec_ref_mean_corr_z, _,
+     _, _,
+     num_ref_mean_zerod_idc_a, num_ref_mean_zerod_idc_c, _, _,
+     _, _, _, _] = load_data_original_idc(dirinput, [0, 0], config.z_range, False)
+
+    vec_oned_idc_fluc, num_ref_mean_zerod_idc = filter_idc_data(  # pylint: disable=unbalanced-tuple-unpacking
+        (vec_random_oned_idc_a - vec_mean_oned_idc_a, num_ref_mean_zerod_idc_a),
+        (vec_random_oned_idc_c - vec_mean_oned_idc_c, num_ref_mean_zerod_idc_c), config.z_range)
     dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, num_fourier_coeffs_train,
                                     num_fourier_coeffs_apply)
 
@@ -369,6 +378,9 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
         vec_r_pos = vec_r_pos[chosen_points]
         vec_phi_pos = vec_phi_pos[chosen_points]
         vec_z_pos = vec_z_pos[chosen_points]
+        vec_ref_mean_corr_r = vec_ref_mean_corr_r[chosen_points]
+        vec_ref_mean_corr_phi = vec_ref_mean_corr_phi[chosen_points]
+        vec_ref_mean_corr_z = vec_ref_mean_corr_z[chosen_points]
         vec_der_ref_mean_corr_r = vec_der_ref_mean_corr_r[chosen_points]
         vec_der_ref_mean_corr_rphi = vec_der_ref_mean_corr_rphi[chosen_points]
         vec_der_ref_mean_corr_z = vec_der_ref_mean_corr_z[chosen_points]
@@ -381,7 +393,12 @@ def load_data_oned_idc(config, dirinput, event_index, downsample, num_fourier_co
     inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                            mat_der_ref_mean_corr_sel, dft_coeffs)
 
-    return inputs, vec_exp_corr_fluc
+    vec_ref_mean_zerod_idc = np.full(vec_ref_mean_corr_r.shape[0],
+                                     num_ref_mean_zerod_idc.astype('float32'))
+    mat_ref_mean_values = np.dstack(np.array([vec_ref_mean_corr_r, vec_ref_mean_corr_phi,
+                                              vec_ref_mean_corr_z, vec_ref_mean_zerod_idc]))[0]
+
+    return inputs, vec_exp_corr_fluc, mat_ref_mean_values
 
 
 def load_data(dirinput, event_index, z_range):
