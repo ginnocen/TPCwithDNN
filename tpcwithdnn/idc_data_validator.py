@@ -17,7 +17,7 @@ from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=imp
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original_idc, get_input_oned_idc_single_map
-from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coeffs
+from tpcwithdnn.data_loader import filter_idc_data, get_fourier_coeffs
 
 class IDCDataValidator:
     """
