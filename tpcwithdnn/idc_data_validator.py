@@ -141,8 +141,9 @@ class IDCDataValidator:
         dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
         if not os.path.isdir(dir_name):
             os.makedirs(dir_name)
-        tree_filename = "%s/validation_mean%.2f_nEv%d.root" \
-            % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events)
+        tree_filename = "%s/validation_mean%.2f_nEv%d_fapply%d.root" \
+            % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events,
+               self.config.num_fourier_coeffs_apply)
         pandas_to_tree(df_single_map, tree_filename, 'validation')
 
 

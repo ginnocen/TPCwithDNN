@@ -395,7 +395,7 @@ class XGBoostOptimiser(Optimiser):
             input_data = np.hstack((indices, inputs, exp_outputs.reshape(-1, 1)))
             cache_data = pd.DataFrame(input_data,
                                       columns=["eventId", "meanId", "randomId",
-                                               "r", "phi", "z", "derRefMeanCorr"] +\
+                                               "r", "phi", "z", "derRefMeanCorrR"] +\
                                               fourier_names + fluc_corr_names)
             batch_file = "%s_%d.root" % (full_path, i)
             batch_file_names.append(batch_file)
