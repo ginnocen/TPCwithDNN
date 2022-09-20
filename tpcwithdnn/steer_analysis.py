@@ -180,6 +180,9 @@ def main():
                         help="Set the number of trees for xgboost models")
     parser.add_argument("--maxdepth", dest="max_depth", type=int, default=argparse.SUPPRESS,
                         help="Set maximum depth of trees for xgboost models")
+    parser.add_argument("--nfftidcs", dest="num_fft_idcs", type=int,
+                        default=argparse.SUPPRESS, help="Set number of 1D IDCs used for" \
+                        " the FFT. Corresponds to the ion drift time (ms) used in simulation.")
     parser.add_argument("--nfouriertrain", dest="num_fourier_coeffs_train", type=int,
                         default=argparse.SUPPRESS, help="Set number of Fourier coefficients" \
                         " to take from the 1D IDC train input")
@@ -230,6 +233,8 @@ def main():
         config_parameters["xgboost"]["params"]["n_estimators"] = args.n_estimators
     if "max_depth" in args:
         config_parameters["xgboost"]["params"]["max_depth"] = args.max_depth
+    if "num_fft_idcs" in args:
+        config_parameters["common"]["num_fft_idcs"] = args.num_fft_idcs
     if "num_fourier_coeffs_train" in args:
         config_parameters["common"]["num_fourier_coeffs_train"] = args.num_fourier_coeffs_train
     if "num_fourier_coeffs_apply" in args:

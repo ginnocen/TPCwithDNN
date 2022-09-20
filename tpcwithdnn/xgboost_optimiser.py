@@ -356,7 +356,7 @@ class XGBoostOptimiser(Optimiser):
             inputs_single, exp_outputs_single, mean_values_single  = load_data_oned_idc(
                 self.config, dirinput,
                 indexev, downsample,
-                num_fourier_coeffs_train, num_fourier_coeffs_apply)
+                self.config.num_fft_idcs, num_fourier_coeffs_train, num_fourier_coeffs_apply)
             inputs.append(inputs_single)
             exp_outputs.append(exp_outputs_single)
             mean_values.append(mean_values_single)
