@@ -30,7 +30,7 @@ from tpcwithdnn.data_loader import load_data_oned_idc, get_input_names_oned_idc,
     NUM_FOURIER_COEFFS_MAX
 from tpcwithdnn.hadd import hadd
 
-from tpcwithdnn.nn_utils import nn_1d
+from tpcwithdnn.nn_utils import nn_1d, nn_1d_with_validation
 
 class Fitter():
     """
@@ -50,15 +50,18 @@ class Fitter():
         else:
             config.logger.fatal("Unknown Optimiser type! (param xgbtype must be 'XGB', 'RF' or 'NN')")
  
-    def fitModel(self, config, inputs, exp_outputs, inputs_val, outputs_val):
+    def fitModel(self, config, inputs, exp_outputs):
         if config.xgbtype=="XGB" or config.xgbtype=="RF":
             self.model.fit(inputs, exp_outputs)
         elif config.xgbtype=="NN":
-            self.model=nn_1d(self, config, inputs, exp_outputs, inputs_val, outputs_val)
-            #config.logger.fatal("Neural network not implemented yet!")
+            self.model=nn_1d(self, config, inputs, exp_outputs)
         else:
             config.logger.fatal("Unknown optimiser type! (param xgbtype must be 'XGB', 'RF' or 'NN')")
 
+    def fitNNModelVal(self, config, inputs, exp_outputs, inputs_val, outputs_val):
+        if config.xgbtype!="NN":
+            config.logger.fatal("Wrong function for wrong model!")
+        self.model = nn_1d_with_validation(self, config, inputs, exp_outputs, inputs_val, outputs_val)
 
 class XGBoostOptimiser(Optimiser):
     """
@@ -89,7 +92,7 @@ class XGBoostOptimiser(Optimiser):
         fitter = Fitter(self.config)
         start = timer()
         inputs, exp_outputs, *_ = self.__get_data("train")
-        inputs_val, outputs_val, *_ = self.__get_data("validation")
+        #inputs_val, outputs_val, *_ = self.__get_data("validation")
         #if self.config.xgbtype=="NN":
             #inputs = self.normalize_inputs(inputs)
             #inputs_val = self.normalize_inputs(inputs_val)
@@ -98,18 +101,20 @@ class XGBoostOptimiser(Optimiser):
         end = timer()
         log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
-        log_memory_usage(((inputs_val, "Input validation data"), (outputs_val, "Output validation data")))
-        log_total_memory_usage("Memory usage after loading data")
-        """
+        
         if self.config.plot_train:
             inputs_val, outputs_val, *_ = self.__get_data("validation")
             log_memory_usage(((inputs_val, "Input validation data"),
                               (outputs_val, "Output validation data")))
             log_total_memory_usage("Memory usage after loading validation data")
-            self.__plot_train(model, inputs, exp_outputs, inputs_val, outputs_val)
-        """
+            if self.config.xgbtype!="NN":
+                self.__plot_train(model, inputs, exp_outputs, inputs_val, outputs_val)
+
         start = timer()
-        fitter.fitModel(self.config, inputs, exp_outputs, inputs_val, outputs_val)
+        if self.config.plot_train and self.config.xgbtype=="NN":
+            fitter.fitNNModelVal(self.config, inputs, exp_outputs, inputs_val, outputs_val)
+        else:
+            fitter.fitModel(self.config, inputs, exp_outputs)
         end = timer()
         log_time(start, end, "actual train")
         if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":

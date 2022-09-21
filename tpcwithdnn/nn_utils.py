@@ -7,7 +7,7 @@ from tensorflow.keras.layers import Dense, Activation, InputLayer
 import matplotlib.pyplot as plt
 import os
 
-def nn_1d_without_validation(self, config, inputs, exp_outputs):
+def nn_1d(self, config, inputs, exp_outputs):
     """
     Construction of a simple neural network without loading validation data.
     Perhaps change this version to nn_1d and the original one to nn_1d_with_validation in the future?
@@ -24,12 +24,12 @@ def nn_1d_without_validation(self, config, inputs, exp_outputs):
 
     config.logger.info("nn_1d(), Neural network model compilation succeeded! Proceeding to training.")
 
-    model.fit(inputs, exp_outputs, epochs=config.nn_params["epochs"], batch_size=config.nn_params["batch_size"])
+    model.fit(inputs, exp_outputs, epochs=config.nn_params["epochs"], batch_size=config.nn_params["batch_size"], validation_split=0.0)
 
     config.logger.info("nn_1d(), Neural network model.fit succeeded!")
     return model
 
-def nn_1d(self, config, inputs, exp_outputs, inputs_val, outputs_val):
+def nn_1d_with_validation(self, config, inputs, exp_outputs, inputs_val, outputs_val):
     """
     Construction of a simple neural network.
     """
