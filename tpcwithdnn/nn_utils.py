@@ -5,6 +5,7 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Activation, InputLayer
 
 import matplotlib.pyplot as plt
+import os
 
 def nn_1d_without_validation(self, config, inputs, exp_outputs):
     """
@@ -32,6 +33,9 @@ def nn_1d(self, config, inputs, exp_outputs, inputs_val, outputs_val):
     """
     Construction of a simple neural network.
     """
+    if not os.path.isdir("NN_training/%s" % (config.suffix)):
+            os.makedirs("NN_training/%s" % (config.suffix))
+
     print(inputs.shape, inputs_val.shape)
     model = Sequential()
     model.add(Dense(units=inputs.shape[1], input_dim=inputs.shape[1], activation='linear'))
@@ -55,8 +59,8 @@ def nn_1d(self, config, inputs, exp_outputs, inputs_val, outputs_val):
     plt.xlabel('Epoch')
     plt.legend(['Train', 'Validation'], loc='upper right')
 
-    plt.savefig("./NN_training/training_loss.pdf")
-    plt.savefig("./NN_training/training_loss.eps")
+    plt.savefig("NN_training/%s/training_loss.pdf" % config.suffix)
+    plt.savefig("NN_training/%s/training_loss.eps" % config.suffix)
 
     config.logger.info("nn_1d(), Training drawn in Training/training_loss.pdf")
     config.logger.info("nn_1d(), Neural network model.fit succeeded!")
