@@ -325,7 +325,7 @@ class XGBoostOptimiser(Optimiser):
             if self.config.cache_train:
                 self.config.logger.warning("Cache insufficient, the train data will be read " +
                                            "from the original files")
-        elif partition=="validation":
+        elif self.config.xgbtype=="NN" and partition=="validation":
             downsample = self.config.downsample
 
         return self.__get_partition(partition, downsample,
