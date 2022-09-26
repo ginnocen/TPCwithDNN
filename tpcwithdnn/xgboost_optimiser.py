@@ -92,18 +92,18 @@ class XGBoostOptimiser(Optimiser):
         fitter = Fitter(self.config)
         start = timer()
         inputs, exp_outputs, *_ = self.__get_data("train")
-        #inputs_val, outputs_val, *_ = self.__get_data("validation")
         #if self.config.xgbtype=="NN":
             #inputs = self.normalize_inputs(inputs)
-            #inputs_val = self.normalize_inputs(inputs_val)
             #inputs = self.ver_normalize_inputs(inputs, "train")
-            #inputs_val = self.ver_normalize_inputs(inputs_val, "validation")
         end = timer()
         log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
         
         if self.config.plot_train:
             inputs_val, outputs_val, *_ = self.__get_data("validation")
+            #if self.config.xgbtype=="NN":
+                #inputs_val = self.normalize_inputs(inputs_val)
+                #inputs_val = self.ver_normalize_inputs(inputs_val, "validation")
             log_memory_usage(((inputs_val, "Input validation data"),
                               (outputs_val, "Output validation data")))
             log_total_memory_usage("Memory usage after loading validation data")
@@ -173,21 +173,16 @@ class XGBoostOptimiser(Optimiser):
         :param xgboost.sklearn.XGBModel model: the XGBoost model to be saved
         """
         # Snapshot - can be used for further training
-        if self.config.xgbtype=="XGB":
-            out_filename = "%s/xgbmodel_%s_nEv%d.json" %\
+        if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":
+            out_filename = "%s/model_%s_nEv%d.json" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
             with open(out_filename, "wb") as out_file:
                 pickle.dump(model, out_file, protocol=4)
 
-        elif self.config.xgbtype=="RF":
-            out_filename = "%s/RFmodel_%s_nEv%d.json" %\
-                    (self.config.dirmodel, self.config.suffix, self.config.train_events)
-            with open(out_filename, "wb") as out_file:
-                pickle.dump(model, out_file, protocol=4)
         # For Keras neural network, only the architecture of the model can be saved into a json file. By using model.save, 
         # we can save the entire information including the set of weight values, etc.
         elif self.config.xgbtype=="NN":
-            out_filename = "%s/NNmodel_%s_nEv%d" %\
+            out_filename = "%s/model_%s_nEv%d" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
             model.save(out_filename)
             np.save(out_filename+"/fourierCoeffMean", self.fourierMean)

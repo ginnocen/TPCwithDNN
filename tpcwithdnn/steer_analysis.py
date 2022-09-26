@@ -45,16 +45,16 @@ def setup_tf():
     """
     if os.environ.get("TPCwithDNNSETMEMLIMIT"):
         gpus = tf.config.experimental.list_physical_devices("GPU")
-#        if gpus:
-#            try:
-#                tf.config.experimental.set_virtual_device_configuration(gpus[0], \
-#                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit= \
-#                    int(os.environ.get("TPCwithDNNSETMEMLIMIT")))])
-#                # for gpu in gpus:
-#                #     tf.config.experimental.set_memory_growth(gpu, True)
-#            except RuntimeError as e:
-#                logger = get_logger()
-#                logger.error(e)
+        if gpus:
+            try:
+                tf.config.experimental.set_virtual_device_configuration(gpus[0], \
+                    [tf.config.experimental.VirtualDeviceConfiguration(memory_limit= \
+                    int(os.environ.get("TPCwithDNNSETMEMLIMIT")))])
+                # for gpu in gpus:
+                #     tf.config.experimental.set_memory_growth(gpu, True)
+            except RuntimeError as e:
+                logger = get_logger()
+                logger.error(e)
 
 def init_models(config_parameters):
     """
