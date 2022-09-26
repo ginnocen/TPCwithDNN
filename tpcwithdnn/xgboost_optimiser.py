@@ -196,18 +196,13 @@ class XGBoostOptimiser(Optimiser):
         :return: the loaded model
         :rtype: xgboost.sklearn.XGBModel
         """
-        if self.config.xgbtype=="XGB":
-            filename = "%s/xgbmodel_%s_nEv%d.json" %\
+        if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":
+            filename = "%s/model_%s_nEv%d.json" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
             with open(filename, "rb") as file:
                 model = pickle.load(file)
-        if self.config.xgbtype=="RF":
-            filename = "%s/RFmodel_%s_nEv%d.json" %\
-                    (self.config.dirmodel, self.config.suffix, self.config.train_events)
-            with open(filename, "rb") as file:
-                model = pickle.load(file)
-        if self.config.xgbtype=="NN":
-            filename = "%s/NNmodel_%s_nEv%d" %\
+        elif self.config.xgbtype=="NN":
+            filename = "%s/model_%s_nEv%d" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
             model = keras.models.load_model(filename)
             fourierCoeffMean = np.load(filename+"/fourierCoeffMean.npy")
