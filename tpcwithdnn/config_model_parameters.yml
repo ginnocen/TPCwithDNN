@@ -6,8 +6,8 @@ common:
   dirhist: histograms
   #dirinput_bias: /data/tpcml/data_20200518/bias
   #dirinput_nobias: /data/tpcml/data_20200518/nobias
-  dirinput_bias: /home/baba/data/tpcml/data_20210414/noDistortions
-  dirinput_nobias: /home/baba/data/tpcml/data_20210414/noDistortions
+  dirinput_bias: /mnt/data/dsekihat/data/tpcml/data_20210414/noDistortions
+  dirinput_nobias: /mnt/data/dsekihat/data/tpcml/data_20210414/noDistortions
   train_bias: true
   validation_bias: true
   apply_bias: false
@@ -74,6 +74,7 @@ xgboost:
     metrics: "mse"
     hidden_activation: "relu" # Activation function for hidden layer.
     n_hidden_layers: 2 # Number of hidden layers.
+    do_normalization: true # Whether or not to normalize the input for the neural network.
     batch_size: 30
     epochs: 30
  

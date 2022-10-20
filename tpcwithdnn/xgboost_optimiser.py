@@ -14,12 +14,11 @@ import pandas as pd
 from xgboost import XGBRFRegressor
 from xgboost import XGBRegressor
 
-import tensorflow 
-from tensorflow import keras
-
 from sklearn.metrics import mean_squared_error
 
 from ROOT import TFile, TTree # pylint: disable=import-error, no-name-in-module
+
+from tensorflow.keras.models import model_from_json
 
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn import plot_utils
@@ -34,7 +33,7 @@ from tpcwithdnn.nn_utils import nn_1d, nn_1d_with_validation
 
 class Fitter():
     """
-    class for ML network switching. Still work in progress(2.6.2022).
+    class for ML network switching.
     """
     def __init__(self, config):
         if config.xgbtype=="XGB":
@@ -44,24 +43,23 @@ class Fitter():
             self.model = XGBRFRegressor(verbosity=1, **(config.params))
             config.logger.info("XGBoostOptimiser::train, XGBoost type: XGBRFRegressor")
         elif config.xgbtype=="NN":
-            #self.model = nn_1d()
-            # self.model will be declared in fitModel()
+            # self.model will be declared in fit_model()
             config.logger.info("XGBoostOptimiser::train, XGBoost type: Neural Network(keras)")
         else:
-            config.logger.fatal("Unknown Optimiser type! (param xgbtype must be 'XGB', 'RF' or 'NN')")
- 
-    def fitModel(self, config, inputs, exp_outputs):
+            config.logger.fatal("Unknown Optimiser type! (xgbtype must be 'XGB', 'RF' or 'NN')")
+
+    def fit_model(self, config, inputs, exp_outputs):
         if config.xgbtype=="XGB" or config.xgbtype=="RF":
             self.model.fit(inputs, exp_outputs)
         elif config.xgbtype=="NN":
-            self.model=nn_1d(self, config, inputs, exp_outputs)
+            self.model=nn_1d(config, inputs, exp_outputs)
         else:
-            config.logger.fatal("Unknown optimiser type! (param xgbtype must be 'XGB', 'RF' or 'NN')")
+            config.logger.fatal("Unknown optimiser type! (xgbtype must be 'XGB', 'RF' or 'NN')")
 
-    def fitNNModelVal(self, config, inputs, exp_outputs, inputs_val, outputs_val):
+    def fit_nnmodel_val(self, config, inputs, exp_outputs, inputs_val, outputs_val):
         if config.xgbtype!="NN":
             config.logger.fatal("Wrong function for wrong model!")
-        self.model = nn_1d_with_validation(self, config, inputs, exp_outputs, inputs_val, outputs_val)
+        self.model = nn_1d_with_validation(config, inputs, exp_outputs, inputs_val, outputs_val)
 
 class XGBoostOptimiser(Optimiser):
     """
@@ -76,15 +74,17 @@ class XGBoostOptimiser(Optimiser):
         :param CommonSettings config: a singleton settings object
         """
         super().__init__(config)
-        self.fourierMean = np.empty(0)   #Member arrays to store Mean and Std. Dev. of the fourier coefficents in the training dataset.
-        self.fourierStdDev = np.empty(0) # Used in function normalize_inputs to standardize the inputs for the neural network.
+        # Member arrays to store Mean and Std. Dev. of the fourier coeffs in the training dataset.
+        # Used in function normalize_inputs to standardize the inputs for the neural network.
+        self.fourier_mean = np.empty(0)
+        self.fourier_stddev = np.empty(0)
         self.config.logger.info("XGBoostOptimiser::Init")
 
     def train(self):
         """
         Train the optimizer.
         """
-        self.config.logger.info("XGBoostOptimiser::train") 
+        self.config.logger.info("XGBoostOptimiser::train")
         if self.config.dim_output > 1:
             logger = get_logger()
             logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. dim_output is bigger than 1.")
@@ -92,38 +92,34 @@ class XGBoostOptimiser(Optimiser):
         fitter = Fitter(self.config)
         start = timer()
         inputs, exp_outputs, *_ = self.__get_data("train")
-        #if self.config.xgbtype=="NN":
-            #inputs = self.normalize_inputs(inputs)
-            #inputs = self.ver_normalize_inputs(inputs, "train")
+        if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
+            inputs = self.ver_normalize_inputs(inputs, "train")
         end = timer()
         log_time(start, end, "for loading training data")
         log_memory_usage(((inputs, "Input train data"), (exp_outputs, "Output train data")))
-        
+
         if self.config.plot_train:
             inputs_val, outputs_val, *_ = self.__get_data("validation")
-            #if self.config.xgbtype=="NN":
-                #inputs_val = self.normalize_inputs(inputs_val)
-                #inputs_val = self.ver_normalize_inputs(inputs_val, "validation")
+            if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
+                inputs_val = self.ver_normalize_inputs(inputs_val, "validation")
             log_memory_usage(((inputs_val, "Input validation data"),
                               (outputs_val, "Output validation data")))
             log_total_memory_usage("Memory usage after loading validation data")
             if self.config.xgbtype!="NN":
-                self.__plot_train(model, inputs, exp_outputs, inputs_val, outputs_val)
+                self.__plot_train(fitter.model, inputs, exp_outputs, inputs_val, outputs_val)
 
         start = timer()
         if self.config.plot_train and self.config.xgbtype=="NN":
-            fitter.fitNNModelVal(self.config, inputs, exp_outputs, inputs_val, outputs_val)
+            fitter.fit_nnmodel_val(self.config, inputs, exp_outputs, inputs_val, outputs_val)
         else:
-            fitter.fitModel(self.config, inputs, exp_outputs)
+            fitter.fit_model(self.config, inputs, exp_outputs)
         end = timer()
         log_time(start, end, "actual train")
         if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":
             fitter.model.get_booster().feature_names = get_input_names_oned_idc(
                 self.config.opt_usederivative, self.config.num_fourier_coeffs_train)
             self.__plot_feature_importance(fitter.model)
-            self.save_model(fitter.model)
-        elif self.config.xgbtype=="NN":
-            self.save_model(fitter.model)
+        self.save_model(fitter.model)
 
     def apply(self):
         """
@@ -131,23 +127,22 @@ class XGBoostOptimiser(Optimiser):
         """
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
         loaded_model = self.load_model()
-        inputs, exp_outputs, indices, _= self.__get_data("apply")
-        if self.config.xgbtype=="NN":
+        inputs, exp_outputs, _, _= self.__get_data("apply")
+        if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
             pos = np.empty((inputs.shape[0], 3))
             for i in range(3):
                 pos[:, i] = inputs[:,i]
-            #inputs = self.normalize_inputs(inputs)
-            #inputs = self.ver_normalize_inputs(inputs, "apply")
+            inputs = self.ver_normalize_inputs(inputs, "apply")
         log_memory_usage(((inputs, "Input apply data"), (exp_outputs, "Output apply data")))
         log_total_memory_usage("Memory usage after loading apply data")
         start = timer()
         pred_outputs = loaded_model.predict(inputs)
         end = timer()
         log_time(start, end, "actual predict")
-        if self.config.xgbtype=="NN":
+        if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
             for i in range(3):
                 inputs[:,i] = pos[:,i]
-        self.__plot_apply(inputs, exp_outputs, pred_outputs, indices)
+        self.__plot_apply(inputs, exp_outputs, pred_outputs)
         self.config.logger.info("Done apply")
 
     def search_grid(self):
@@ -179,14 +174,19 @@ class XGBoostOptimiser(Optimiser):
             with open(out_filename, "wb") as out_file:
                 pickle.dump(model, out_file, protocol=4)
 
-        # For Keras neural network, only the architecture of the model can be saved into a json file. By using model.save, 
-        # we can save the entire information including the set of weight values, etc.
         elif self.config.xgbtype=="NN":
             out_filename = "%s/model_%s_nEv%d" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
-            model.save(out_filename)
-            np.save(out_filename+"/fourierCoeffMean", self.fourierMean)
-            np.save(out_filename+"/fourierCoeffStdDev", self.fourierStdDev)
+            model_json = model.to_json()
+            with open("%s/model_%s_nEv%d.json" % (self.config.dirmodel, self.config.suffix,
+                                                  self.config.train_events), "w", encoding="utf-8")\
+                as json_file:
+                json_file.write(model_json)
+            model.save_weights("%s/model_%s_nEv%d.h5" % (self.config.dirmodel, self.config.suffix,
+                                                         self.config.train_events))
+            np.save(out_filename+"_fourier_coeff_mean", self.fourier_mean)
+            np.save(out_filename+"_fourier_coeff_stddev", self.fourier_stddev)
+            self.config.logger.info("Saved trained NN model to disk")
 
 
     def load_model(self):
@@ -194,7 +194,7 @@ class XGBoostOptimiser(Optimiser):
         Load the XGBoost model from a JSON file
 
         :return: the loaded model
-        :rtype: xgboost.sklearn.XGBModel
+        :rtype: xgboost.sklearn.XGBModel or tensorflow.keras.model
         """
         if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":
             filename = "%s/model_%s_nEv%d.json" %\
@@ -204,28 +204,38 @@ class XGBoostOptimiser(Optimiser):
         elif self.config.xgbtype=="NN":
             filename = "%s/model_%s_nEv%d" %\
                     (self.config.dirmodel, self.config.suffix, self.config.train_events)
-            model = keras.models.load_model(filename)
-            fourierCoeffMean = np.load(filename+"/fourierCoeffMean.npy")
-            fourierCoeffStdDev = np.load(filename+"/fourierCoeffStdDev.npy")
-            if fourierCoeffMean.shape==self.fourierMean.shape:
-                self.fourierMean = fourierCoeffMean
-            elif self.fourierMean.shape==(0,):
-                self.fourierMean = np.hstack([self.fourierMean, fourierCoeffMean])
+
+            with open("%s/model_%s_nEv%d.json" % \
+                      (self.config.dirmodel, self.config.suffix, self.config.train_events), "r",
+                      encoding="utf-8") as f:
+                loaded_model_json = f.read()
+            model = \
+                model_from_json(loaded_model_json)
+            model.load_weights("%s/model_%s_nEv%d.h5" % \
+                                (self.config.dirmodel, self.config.suffix,
+                                 self.config.train_events))
+
+            loaded_fourier_coeff_mean = np.load(filename+"_fourier_coeff_mean.npy")
+            loaded_fourier_coeff_stddev = np.load(filename+"_fourier_coeff_stddev.npy")
+            if loaded_fourier_coeff_mean.shape==self.fourier_mean.shape:
+                self.fourier_mean = loaded_fourier_coeff_mean
+            elif self.fourier_mean.shape==(0,):
+                self.fourier_mean = np.hstack([self.fourier_mean, loaded_fourier_coeff_mean])
             else:
-                print("self.fourierMean.shape=", self.fourierMean.shape)
-                print("Shape of data read from numpy file:", fourierCoeffMean.shape)
-                self.config.logger.fatal("Number of fourier coefficents used for the last training does not match that used for training of the loaded model.")
-            if fourierCoeffStdDev.shape==self.fourierStdDev.shape:
-                self.fourierStdDev = fourierCoeffStdDev
-            elif self.fourierStdDev.shape==(0,):
-                self.fourierStdDev = np.hstack([self.fourierStdDev, fourierCoeffStdDev])
+                print("self.fourier_mean.shape=", self.fourier_mean.shape)
+                print("Shape of data read from numpy file:", loaded_fourier_coeff_mean.shape)
+                self.config.logger.fatal("Number of fourier coefficents used"\
+                                         "for the last training does not match that"\
+                                         "used for training of the loaded model.")
+            if loaded_fourier_coeff_stddev.shape==self.fourier_stddev.shape:
+                self.fourier_stddev = loaded_fourier_coeff_stddev
+            elif self.fourier_stddev.shape==(0,):
+                self.fourier_stddev = np.hstack([self.fourier_stddev, loaded_fourier_coeff_stddev])
             else:
-                self.config.logger.fatal("Number of fourier coefficents used for the last training does not match that used for training of the loaded model.")
-       # Loading a snapshot
-        #filename = "%s/xgbmodel_%s_nEv%d.json" %\
-        #        (self.config.dirmodel, self.config.suffix, self.config.train_events)
-        #with open(filename, "rb") as file:
-        #    model = pickle.load(file)
+                self.config.logger.fatal("Number of fourier coefficents used"\
+                                         "for the last training does not match that"\
+                                         "used for training of the loaded model.")
+
         return model
 
     def cache_train_data(self):
@@ -243,56 +253,41 @@ class XGBoostOptimiser(Optimiser):
             self.config.set_cache_ranges()
             self.__save_cache(full_path, "train", self.config.downsample)
 
-    def normalize_inputs(self, inputs):
-        """
-        Standardize the input data for the neural network (it may be effective for XGBoost or RF as well)
-        :inputs: Input for the network.
-        """
-        #n = inputs.shape[1]
-        n_points = inputs.shape[0]
-        # inputs[:,0]~[:,2] are the positions. [:,3] is the derivative and [:,4] is the real part of the 0th Fourier coefficent.
-        # This means [:,5] is the imaginary part of the 0th Fourier coeffficent, which is always 0 (i.e. std. dev. is also 0).
-        inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
-        inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
-        inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
-
-        for i in range(n_points):
-            t = inputs[i,4:]
-            inputs[i,4:]=(inputs[i,4:]-t.mean())/t.std()
-        return inputs
 
     def ver_normalize_inputs(self, inputs, partition):
         """
-        Test function for a different way of doing the normalization for Neural Network.
-        Standardize the input data for the neural network (it may be effective for XGBoost or RF as well)
+        Test function for normalizing input for the Neural Network.
+        Standardize the input data for the neural network
         :inputs: Input for the network.
-        :partition: Partition. "train", "validation", "apply"
+        :partition: Usage of the input data. Value used to distinguish between training and others
         """
         n_coeffs = inputs.shape[1] - 4
+        index_derivative = 2 + sum(self.config.opt_usederivative)
         if partition=="train":
             foMean = np.empty(n_coeffs)
             foStdDev = np.empty(n_coeffs)
             for i in range(4, inputs.shape[1]):
-                if i==5:
+                if i==index_derivative+2:
                     foMean[i-4] = 0
                     foStdDev[i-4] = 0
                 else:
                     t = inputs[:,i]
                     foMean[i-4] = t.mean()
                     foStdDev[i-4] = t.std()
-            self.fourierMean = np.hstack([self.fourierMean, foMean])
-            self.fourierStdDev = np.hstack([self.fourierStdDev, foStdDev])
-        #n_points = inputs.shape[0]
-        # inputs[:,0]~[:,2] are the positions. [:,3] is the derivative and [:,4] is the real part of the 0th Fourier coefficent.
-        # This means [:,5] is the imaginary part of the 0th Fourier coeffficent, which is always 0 (i.e. std. dev. is also 0).
+            self.fourier_mean = np.hstack([self.fourier_mean, foMean])
+            self.fourier_stddev = np.hstack([self.fourier_stddev, foStdDev])
+        # inputs[:,0]~[:,2] are the positions. [:,3] ~ [:,index_derivative] are
+        # the derivatives and [:,index_derivative+1] is the real part of the 0th Fourier coefficent.
+        # This means [:,index_derivative] is the imaginary part of the 0th Fourier coeffficent,
+        # which is always 0 (i.e. std. dev. is also 0).
         inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
         inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
         inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
         for i in range(4, inputs.shape[1]):
-            if i==5:
-                inputs[:,i] = inputs[:,i] 
+            if i==index_derivative+2:
+                inputs[:,i] = inputs[:,i]
             else:
-                inputs[:,i] = (inputs[:,i]-self.fourierMean[i-4])/self.fourierStdDev[i-4]
+                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-4])/self.fourier_stddev[i-4]
         return inputs
 
     def __get_data(self, partition):
@@ -342,10 +337,9 @@ class XGBoostOptimiser(Optimiser):
         z_min = self.config.z_range[0]
         z_max = self.config.z_range[1]
         if partition=="train" and self.config.z_range[1] > 249:
-            self.config.z_range[1] = 248
+            self.config.z_range[1] = 249
         if partition=="train" and self.config.z_range[0] < -249:
-            self.config.z_range[0] = -248
-        print(self.config.z_range)
+            self.config.z_range[0] = -249
         mean_values = []
         for indexev in self.config.partition[partition][part_range]:
             inputs_single, exp_outputs_single, mean_values_single  = load_data_oned_idc(
@@ -371,8 +365,6 @@ class XGBoostOptimiser(Optimiser):
         indices = np.concatenate(indices)
         self.config.z_range[0] = z_min
         self.config.z_range[1] = z_max
-        print(inputs[:,2].max())
-        print(self.config.z_range)
         return inputs, exp_outputs, indices, mean_values
 
     def __save_cache(self, full_path, partition, downsample):
@@ -554,7 +546,7 @@ class XGBoostOptimiser(Optimiser):
                         (self.config.dirplots, importance_suffix, self.config.suffix,
                          self.config.train_events))
 
-    def __plot_apply(self, inputs, exp_outputs, pred_outputs, indices):
+    def __plot_apply(self, inputs, exp_outputs, pred_outputs):
         """
         Create result histograms in the output ROOT file after applying the model.
         Function used internally.
@@ -563,7 +555,9 @@ class XGBoostOptimiser(Optimiser):
         :param np.ndarray exp_outputs: vector of expected outputs
         :param np.ndarray pred_outputs: vector of network predictions
         """
-        myfile = TFile.Open("%s/output_%s_nEv%d.root" % (self.config.dirapply, self.config.suffix, self.config.train_events), "recreate")
+        myfile = TFile.Open("%s/output_%s_nEv%d.root" % \
+                            (self.config.dirapply, self.config.suffix, self.config.train_events),
+                             "recreate")
         h_dist_all_events, h_deltas_all_events, h_deltas_vs_dist_all_events =\
                 plot_utils.create_apply_histos(self.config, self.config.suffix, infix="all_events_")
         distortion_numeric_flat_m, distortion_predict_flat_m, deltas_flat_a, deltas_flat_m =\
@@ -578,27 +572,28 @@ class XGBoostOptimiser(Optimiser):
             tree = TTree("apply_tree", "Apply Results")
 
             eventID_array = array.array("l", [0])
-            PosR_array = array.array("f", [0])
-            PosPhi_array = array.array("f", [0])
-            PosZ_array = array.array("f", [0])
+            posR_array = array.array("f", [0])
+            posPhi_array = array.array("f", [0])
+            posZ_array = array.array("f", [0])
             exp_out_array = array.array("f", [0])
             pred_out_array = array.array("f", [0])
 
             tree.Branch("EventID", eventID_array, "EventID/L")
-            tree.Branch("PosR", PosR_array, "PosR/F")
-            tree.Branch("PosPhi", PosPhi_array, "PosPhi/F")
-            tree.Branch("PosZ", PosZ_array, "PosZ/F")
+            tree.Branch("PosR", posR_array, "PosR/F")
+            tree.Branch("PosPhi", posPhi_array, "PosPhi/F")
+            tree.Branch("PosZ", posZ_array, "PosZ/F")
             tree.Branch("exp_out", exp_out_array, "exp_out/F")
             tree.Branch("pred_out", pred_out_array, "pred_out/F")
 
             nPerEvent = len(inputs) // self.config.apply_events
-            for i in range(0, len(pred_outputs)):
+            #for i in range(0, len(pred_outputs)):
+            for i, pred in enumerate(pred_outputs):
                 eventID_array[0]= i // nPerEvent
-                PosR_array[0]=inputs[i,0]
-                PosPhi_array[0]=inputs[i,1]
-                PosZ_array[0]=inputs[i,2]
+                posR_array[0]=inputs[i,0]
+                posPhi_array[0]=inputs[i,1]
+                posZ_array[0]=inputs[i,2]
                 exp_out_array[0]=exp_outputs[i]
-                pred_out_array[0]=pred_outputs[i]
+                pred_out_array[0]=pred
                 tree.Fill()
 
             tree.Write()

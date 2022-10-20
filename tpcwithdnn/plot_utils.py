@@ -124,13 +124,11 @@ def plot(config):
     sel_opts = np.array(config.opt_predout)
     sel_opts_names = np.array(config.nameopt_predout)
     sel_opts_names = sel_opts_names[sel_opts == 1]
-    #print("config.suffix = ", config.suffix)
     for opt_name in sel_opts_names:
         myfile = TFile.Open("%s/output_%s_fapply%d_nEv%d.root" %
                             (config.dirapply, config.suffix,
                              config.num_fourier_coeffs_apply,
                              config.train_events), "open")
-        #print("TObject name = %s_all_events_%s" % (config.h_dist_name, config.suffix))
         h_dist_all_events = myfile.Get("%s_all_events_%s" % (config.h_dist_name,
                                                              config.suffix))
         h_deltas_all_events = myfile.Get("%s_all_events_%s" % \
