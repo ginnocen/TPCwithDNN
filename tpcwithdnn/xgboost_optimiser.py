@@ -261,33 +261,33 @@ class XGBoostOptimiser(Optimiser):
         :inputs: Input for the network.
         :partition: Usage of the input data. Value used to distinguish between training and others
         """
-        n_coeffs = inputs.shape[1] - 4
+        n_coeffs = 2*self.config.num_fourier_coeffs_train
         index_derivative = 2 + sum(self.config.opt_usederivative)
         if partition=="train":
             foMean = np.empty(n_coeffs)
             foStdDev = np.empty(n_coeffs)
-            for i in range(4, inputs.shape[1]):
+            for i in range(index_derivative+1, inputs.shape[1]):
                 if i==index_derivative+2:
-                    foMean[i-4] = 0
-                    foStdDev[i-4] = 0
+                    foMean[i-index_derivative-1] = 0
+                    foStdDev[i-index_derivative-1] = 0
                 else:
                     t = inputs[:,i]
-                    foMean[i-4] = t.mean()
-                    foStdDev[i-4] = t.std()
+                    foMean[i-index_derivative-1] = t.mean()
+                    foStdDev[i-index_derivative-1] = t.std()
             self.fourier_mean = np.hstack([self.fourier_mean, foMean])
             self.fourier_stddev = np.hstack([self.fourier_stddev, foStdDev])
         # inputs[:,0]~[:,2] are the positions. [:,3] ~ [:,index_derivative] are
         # the derivatives and [:,index_derivative+1] is the real part of the 0th Fourier coefficent.
-        # This means [:,index_derivative] is the imaginary part of the 0th Fourier coeffficent,
+        # This means [:,index_derivative+2] is the imaginary part of the 0th Fourier coeffficent,
         # which is always 0 (i.e. std. dev. is also 0).
         inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
         inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
         inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
-        for i in range(4, inputs.shape[1]):
+        for i in range(index_derivative+1, inputs.shape[1]):
             if i==index_derivative+2:
                 inputs[:,i] = inputs[:,i]
             else:
-                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-4])/self.fourier_stddev[i-4]
+                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-index_derivative-1])/self.fourier_stddev[i-index_derivative-1]
         return inputs
 
     def __get_data(self, partition):

@@ -284,8 +284,8 @@ class XGBoostSettings:
                      self.params["learning_rate"], self.params["tree_method"],
                      self.params["gamma"], self.params["min_child_weight"],
                      self.params["max_delta_step"], self.params["subsample"],
-                     self.params["colsample_bynode"], self.params["colsample_bytree"],
-                     self.params["colsample_bylevel"], self.params["reg_alpha"],
+                     self.params["colsample_bytree"], self.params["colsample_bylevel"],
+                     self.params["colsample_bynode"], self.params["reg_alpha"],
                      self.params["reg_lambda"], self.params["scale_pos_weight"],
                      self.params["base_score"])
 
@@ -298,8 +298,8 @@ class XGBoostSettings:
                      self.params["learning_rate"], self.params["tree_method"],
                      self.params["gamma"], self.params["min_child_weight"],
                      self.params["max_delta_step"], self.params["subsample"],
-                     self.params["colsample_bynode"], self.params["colsample_bytree"],
-                     self.params["colsample_bylevel"], self.params["reg_alpha"],
+                     self.params["colsample_bytree"], self.params["colsample_bylevel"],
+                     self.params["colsample_bynode"], self.params["reg_alpha"],
                      self.params["reg_lambda"], self.params["scale_pos_weight"],
                      self.params["base_score"])
 

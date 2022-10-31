@@ -35,7 +35,7 @@ common:
 
 xgboost:
   active: true
-  train_events: [100]
+  train_events: [200000]
   xgbtype: RF  # Type of XGBoost regressor. "XGB", "RF" or "NN"
   validation_events: [10]
   apply_events: [400]
