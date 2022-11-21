@@ -117,7 +117,7 @@ class XGBoostOptimiser(Optimiser):
         log_time(start, end, "actual train")
         if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":
             fitter.model.get_booster().feature_names = get_input_names_oned_idc(
-                self.config.opt_usederivative, self.config.num_fourier_coeffs_train)
+                self.config.opt_usederivative, self.config.opt_predout, self.config.num_fourier_coeffs_train)
             self.__plot_feature_importance(fitter.model)
         self.save_model(fitter.model)
 
@@ -127,7 +127,7 @@ class XGBoostOptimiser(Optimiser):
         """
         self.config.logger.info("XGBoostOptimiser::apply, input size: %d", self.config.dim_input)
         loaded_model = self.load_model()
-        inputs, exp_outputs, _, _= self.__get_data("apply")
+        inputs, exp_outputs, indices, _= self.__get_data("apply")
         if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
             pos = np.empty((inputs.shape[0], 3))
             for i in range(3):
@@ -142,7 +142,7 @@ class XGBoostOptimiser(Optimiser):
         if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
             for i in range(3):
                 inputs[:,i] = pos[:,i]
-        self.__plot_apply(inputs, exp_outputs, pred_outputs)
+        self.__plot_apply(inputs, exp_outputs, pred_outputs, indices)
         self.config.logger.info("Done apply")
 
     def search_grid(self):
@@ -262,32 +262,37 @@ class XGBoostOptimiser(Optimiser):
         :partition: Usage of the input data. Value used to distinguish between training and others
         """
         n_coeffs = 2*self.config.num_fourier_coeffs_train
+        # Index of last derivative.
         index_derivative = 2 + sum(self.config.opt_usederivative)
+        # Index of last mean0 value (corrs and oned_idc)
+        index_mean0 = index_derivative + sum(self.config.opt_predout) + 1
         if partition=="train":
             foMean = np.empty(n_coeffs)
             foStdDev = np.empty(n_coeffs)
-            for i in range(index_derivative+1, inputs.shape[1]):
-                if i==index_derivative+2:
-                    foMean[i-index_derivative-1] = 0
-                    foStdDev[i-index_derivative-1] = 0
+            for i in range(index_mean0+1, inputs.shape[1]):
+                if i==index_mean0+2:
+                    foMean[i-index_mean0-1] = 0
+                    foStdDev[i-index_mean0-1] = 0
                 else:
                     t = inputs[:,i]
-                    foMean[i-index_derivative-1] = t.mean()
-                    foStdDev[i-index_derivative-1] = t.std()
+                    foMean[i-index_mean0-1] = t.mean()
+                    foStdDev[i-index_mean0-1] = t.std()
             self.fourier_mean = np.hstack([self.fourier_mean, foMean])
             self.fourier_stddev = np.hstack([self.fourier_stddev, foStdDev])
         # inputs[:,0]~[:,2] are the positions. [:,3] ~ [:,index_derivative] are
-        # the derivatives and [:,index_derivative+1] is the real part of the 0th Fourier coefficent.
-        # This means [:,index_derivative+2] is the imaginary part of the 0th Fourier coeffficent,
+        # the derivatives, [:,index_derivative+1] ~ [:,index_mean0]  are
+        # the values related to mean0.
+        #[:,index_mean0+1] is the real part of the 0th Fourier coefficent.
+        # This means [:,index_mean0+2] is the imaginary part of the 0th Fourier coeffficent,
         # which is always 0 (i.e. std. dev. is also 0).
         inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
         inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
         inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
-        for i in range(index_derivative+1, inputs.shape[1]):
-            if i==index_derivative+2:
+        for i in range(index_mean0+1, inputs.shape[1]):
+            if i==index_mean0+2:
                 inputs[:,i] = inputs[:,i]
             else:
-                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-index_derivative-1])/self.fourier_stddev[i-index_derivative-1]
+                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-index_mean0-1])/self.fourier_stddev[i-index_mean0-1]
         return inputs
 
     def __get_data(self, partition):
@@ -306,10 +311,14 @@ class XGBoostOptimiser(Optimiser):
             # Take all Fourier coefficients for training
             num_fourier_coeffs_apply = self.config.num_fourier_coeffs_train
             if self.config.cache_train and self.config.train_events <= self.config.cache_events:
-                return self.__get_cache()
+                #return self.__get_cache()
+                return self.__get_cache("train")
             if self.config.cache_train:
                 self.config.logger.warning("Cache insufficient, the train data will be read " +
                                            "from the original files")
+        elif self.config.xgbtype=="NN" and partition=="validation" and self.config.cache_val and self.config.train_events + self.config.val_events <= self.config.cache_events:
+            return self.__get_cache("validation")
+
         elif self.config.xgbtype=="NN" and partition=="validation":
             downsample = self.config.downsample
 
@@ -384,6 +393,7 @@ class XGBoostOptimiser(Optimiser):
         sel_der_names = np.array(self.config.opt_usederivative) > 0
         der_ref_mean_corr_names = ["derRefMeanCorr" +
                                    dist_name for dist_name in dist_names[sel_der_names]]
+        
         num_fourier_coeffs = NUM_FOURIER_COEFFS_MAX
         fourier_names = list(chain.from_iterable(("c%d_real" % i, "c%d_imag" % i)
                              for i in range(num_fourier_coeffs)))
@@ -391,6 +401,9 @@ class XGBoostOptimiser(Optimiser):
         sel_dist_names = np.array(self.config.opt_predout) > 0
         fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_dist_names]]
 
+        mean0_corr_names = ["mean0Corr" + dist_name for dist_name in dist_names[sel_dist_names]]
+        mean0_idc_name = ["mean0_oned_idc"]
+        
         batch_file_names = []
         batch_size = self.config.cache_file_size
         for i, part_range in enumerate(self.__get_batch_range(partition, batch_size)):
@@ -401,8 +414,8 @@ class XGBoostOptimiser(Optimiser):
                                    exp_outputs.reshape(-1, sum(self.config.opt_predout))))
             cache_data = pd.DataFrame(input_data,
                                       columns=["eventId", "meanId", "randomId", "r", "phi", "z"] +
-                                      der_ref_mean_corr_names + fourier_names + mean_value_names +
-                                      fluc_corr_names)
+                                      der_ref_mean_corr_names + mean0_corr_names + mean0_idc_name +
+                                      fourier_names + mean_value_names + fluc_corr_names)
             batch_file = "%s_%d.root" % (full_path, i)
             batch_file_names.append(batch_file)
             pandas_to_tree(cache_data, batch_file, "cache")
@@ -428,7 +441,8 @@ class XGBoostOptimiser(Optimiser):
         if last_full_end < data_size:
             yield slice(last_full_end, data_size)
 
-    def __read_cache_from_file(self, filepath, events_count):
+    def __read_cache_from_file(self, filepath, events_count_train, events_count_val, partition):
+    #def __read_cache_from_file(self, filepath, events_count):
         """
         Read the cached data from the file specified. Function used internally.
 
@@ -441,10 +455,23 @@ class XGBoostOptimiser(Optimiser):
         points_per_event = self.config.downsample_npoints
         if not self.config.downsample:
             points_per_event = self.config.phi * self.config.r * self.config.z
-        data_size = points_per_event * events_count
-        input_data = tree_to_pandas(filepath, "cache")
-        input_data = input_data.iloc[:data_size, :]
+        train_data_size = points_per_event * events_count_train
+        whole_data_size = points_per_event * (events_count_train + events_count_val)
+        #data_size = points_per_event * events_count
+        if partition == "train":
+           input_data = tree_to_pandas(filepath, "cache")
+           input_data = input_data.iloc[:train_data_size, :]
+        elif partition == "validation":
+           input_data = tree_to_pandas(filepath, "cache")
+           input_data = input_data.iloc[train_data_size:whole_data_size, :]
+        #input_data = tree_to_pandas(filepath, "cache")
+        #input_data = input_data.iloc[:data_size, :]
         indices = input_data[["eventId", "meanId", "randomId"]].to_numpy()
+        # Option to train network only with certain maps.
+        #if partition == "train" and self.config.train_large:
+        #   inputs = (input_data.flucCorrR<-0.1) | (input_data.flucCorrR>0.1)
+        #   inputs = inputs.filter(regex="^(?!flucCorr).*")
+        #else: (indent the next row)
         inputs = input_data.filter(regex="^(?!flucCorr).*")
         inputs = inputs.drop(["eventId", "meanId", "randomId"], axis=1, errors='ignore')
         dist_names = np.array(self.config.nameopt_predout)
@@ -461,7 +488,10 @@ class XGBoostOptimiser(Optimiser):
         # check if all required inputs are provided
         if len(inputs.columns) != len(get_input_names_oned_idc(
                 self.config.opt_usederivative,
+                self.config.opt_predout,
                 self.config.num_fourier_coeffs_train)):
+            print(len(inputs.columns))
+            print(len(get_input_names_oned_idc(self.config.opt_usederivative, self.config.opt_predout, self.config.num_fourier_coeffs_train)))
             self.config.logger.fatal("Mismatch between length of loaded input variables and " \
                 "defined number of input variables.")
         inputs = inputs.to_numpy()
@@ -471,7 +501,8 @@ class XGBoostOptimiser(Optimiser):
         self.config.logger.info("Data read from cache: %s", filepath)
         return inputs, exp_outputs, indices
 
-    def __get_cache(self):
+    def __get_cache(self, partition):
+    #def __get_cache(self):
         """
         Get the cached data. Function used internally.
 
@@ -484,8 +515,11 @@ class XGBoostOptimiser(Optimiser):
         full_path = "%s/%s" % (self.config.dircache, filename)
         cache_file = "%s.root" % full_path
         try:
+            #inputs, exp_outputs, indices = self.__read_cache_from_file(cache_file,
+            #                                                    self.config.train_events)
             inputs, exp_outputs, indices = self.__read_cache_from_file(cache_file,
-                                                                self.config.train_events)
+                                                                self.config.train_events,
+                                                                self.config.val_events, partition)
         except FileNotFoundError:
             self.config.logger.fatal("Cache: %s does not exist, no data for training!", cache_file)
 
@@ -546,7 +580,7 @@ class XGBoostOptimiser(Optimiser):
                         (self.config.dirplots, importance_suffix, self.config.suffix,
                          self.config.train_events))
 
-    def __plot_apply(self, inputs, exp_outputs, pred_outputs):
+    def __plot_apply(self, inputs, exp_outputs, pred_outputs, indices):
         """
         Create result histograms in the output ROOT file after applying the model.
         Function used internally.
@@ -570,8 +604,9 @@ class XGBoostOptimiser(Optimiser):
         # Create a TTree with all the Apply data.
         if self.config.apply_tree:
             tree = TTree("apply_tree", "Apply Results")
-
             eventID_array = array.array("l", [0])
+            meanID_array = array.array("l", [0])
+            randID_array = array.array("l", [0])
             posR_array = array.array("f", [0])
             posPhi_array = array.array("f", [0])
             posZ_array = array.array("f", [0])
@@ -579,6 +614,8 @@ class XGBoostOptimiser(Optimiser):
             pred_out_array = array.array("f", [0])
 
             tree.Branch("EventID", eventID_array, "EventID/L")
+            tree.Branch("MeanID", meanID_array, "MeanID/L")
+            tree.Branch("RandID", randID_array, "RandID/L")
             tree.Branch("PosR", posR_array, "PosR/F")
             tree.Branch("PosPhi", posPhi_array, "PosPhi/F")
             tree.Branch("PosZ", posZ_array, "PosZ/F")
@@ -589,6 +626,8 @@ class XGBoostOptimiser(Optimiser):
             #for i in range(0, len(pred_outputs)):
             for i, pred in enumerate(pred_outputs):
                 eventID_array[0]= i // nPerEvent
+                meanID_array[0]= indices[i,1] #// 1000
+                randID_array[0]=indices[i,2] #% 1000 
                 posR_array[0]=inputs[i,0]
                 posPhi_array[0]=inputs[i,1]
                 posZ_array[0]=inputs[i,2]

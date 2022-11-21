@@ -195,6 +195,9 @@ def main():
     parser.add_argument("--apply-tree", action="store_true", default=argparse.SUPPRESS,
                         help="Make a TTree with all the apply results.")
 
+    parser.add_argument("--lr", dest="learning_rate", type=float,
+                        default=argparse.SUPPRESS, help="Set learning rate for RF and XGB")
+
     # parameters for caching
     parser.add_argument("--cache-events", dest="cache_events", type=int, default=argparse.SUPPRESS,
                         help="Set the number of events to cache")
@@ -203,6 +206,11 @@ def main():
     parser.add_argument("--cache-file-size", dest="cache_file_size", type=int,
                         default=argparse.SUPPRESS,
                         help="Set the number of events per single temporary cache file")
+
+    # parameters for neural network structure
+    parser.add_argument("--nHidLay", dest="n_hidden_layers", type=int,
+                        default=argparse.SUPPRESS, help="Set number of hidden layers in NN")
+
     args = parser.parse_args()
 
     logger.info("Using configuration: %s steer file: %s", args.config_file, args.steer_file)
@@ -243,6 +251,8 @@ def main():
         config_parameters["xgboost"]["xgbtype"] = args.xgbtype
     if "apply_tree" in args:
         config_parameters["xgboost"]["apply_tree"] = True
+    if "learning_rate" in args:
+        config_parameters["xgboost"]["learning_rate"] = args.learning_rate
     #
     if "cache_events" in args:
         config_parameters["xgboost"]["cache_events"] = args.cache_events
@@ -250,6 +260,9 @@ def main():
         config_parameters["xgboost"]["cache_train"] = True
     if "cache_file_size" in args:
         config_parameters["xgboost"]["cache_file_size"] = args.cache_file_size
+    #
+    if "n_hidden_layers" in args:
+        config_parameters["xgboost"]["nn_params"]["n_hidden_layers"] = args.n_hidden_layers
 
     models, corr, dataval = init_models(config_parameters)
     events_counts = (get_events_counts(config_parameters[model.name]["train_events"],
@@ -259,7 +272,7 @@ def main():
     ranges_rnd = config_parameters["common"]["range_rnd_index_train"]
     ranges_mean = config_parameters["common"]["range_mean_index"]
     if config_parameters["common"]["rnd_augment"]:
-        max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * (ranges_rnd[1] - ranges_rnd[0])
+        max_available_events = ((ranges_rnd[1] + 1 - ranges_rnd[0]) * (ranges_rnd[1] - ranges_rnd[0])) / 2
     else:
         max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * \
             (ranges_mean[1] + 1 - ranges_mean[0])

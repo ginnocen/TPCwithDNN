@@ -85,6 +85,19 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
              "%s/Random/%d-vecRandomOneDIDCA.npy" % (dirinput, event_index[0]),
              "%s/Random/%d-vecRandomOneDIDCC.npy" % (dirinput, event_index[0])]
 
+    # Get mean map 0 in order to give model info about absolute size of fluctuation
+    mean_map0_index = get_mean_desc(0)
+    files_mean0 = ["%s/Mean/%s-vecMeanDistR.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanDistRPhi.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanDistZ.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanCorrR.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanCorrRPhi.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanCorrZ.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-numMeanZeroDIDCA.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-numMeanZeroDIDCC.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanOneDIDCA.npy" % (dirinput, mean_map0_index),
+                   "%s/Mean/%s-vecMeanOneDIDCC.npy" % (dirinput, mean_map0_index)]
+    
     vec_z_pos_tmp = np.load(files[2])
     vec_sel_in_z = (z_range[0] <= vec_z_pos_tmp) & (vec_z_pos_tmp < z_range[1])
 
@@ -112,7 +125,10 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
 
     data = [np.load(f)[vec_sel_in_z] for f in files[:-8]] + \
         [vec_der_ref_mean_sc, mat_der_ref_mean_corr] + \
+        [np.load(f)[vec_sel_in_z] for f in files_mean0[:6]] + \
+        [np.load(f) for f in files_mean0[6:]] + \
         [np.load(f) for f in files[-8:]]
+
     return data
 
 def filter_idc_data(data_a, data_c, z_range):
@@ -274,8 +290,9 @@ def get_fourier_coeffs(vec_oned_idc, num_fft_idcs,
     return np.dstack((dft_real, dft_imag)).reshape(2 * num_fourier_coeffs_train)
 
 
-def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                  mat_der_ref_mean_corr, dft_coeffs):
+def get_input_oned_idc_single_map(config, vec_r_pos, vec_phi_pos, vec_z_pos,
+                                  mat_der_ref_mean_corr, vec_mean0_corr,
+                                  vec_mean0_oned_idc, dft_coeffs):
     """
     Create the input sample for 1D BDT correction for a single event map pair.
 
@@ -288,15 +305,17 @@ def get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
     :rtype: np.ndarray
     """
     inputs = np.zeros((vec_r_pos.size,
-                       3 + mat_der_ref_mean_corr.shape[0] + dft_coeffs.size))
+                       4 + mat_der_ref_mean_corr.shape[0] + vec_mean0_corr.shape[0] + dft_coeffs.size))
     for ind, pos in enumerate((vec_r_pos, vec_phi_pos, vec_z_pos)):
         inputs[:, ind] = pos
-    inputs[:, 3:-dft_coeffs.size] = np.dstack(mat_der_ref_mean_corr)
+    inputs[:, 3:3+sum(config.opt_usederivative)] = np.dstack(mat_der_ref_mean_corr)
+    inputs[:, 3+sum(config.opt_usederivative):-(dft_coeffs.size+1)] = np.dstack(vec_mean0_corr)
+    inputs[:, -(dft_coeffs.size+1)] = np.dstack(vec_mean0_oned_idc)
     inputs[:, -dft_coeffs.size:] = dft_coeffs  # pylint: disable=invalid-unary-operand-type
     return inputs
 
 
-def get_input_names_oned_idc(opt_usederivative, num_fourier_coeffs):
+def get_input_names_oned_idc(opt_usederivative, opt_predout, num_fourier_coeffs):
     """
     Get an array with names of the input parameters.
 
@@ -305,9 +324,14 @@ def get_input_names_oned_idc(opt_usederivative, num_fourier_coeffs):
     """
     input_names = ['r', 'phi', 'z']
     derivative_names = ['der_corr_r', 'der_corr_rphi', 'der_corr_z']
+    mean0_names = ['mean0_corr_r', 'mean0_corr_rphi', 'mean0_corr_z', 'mean0_oned_idc']
     for i_der, use_der in enumerate(opt_usederivative):
         if use_der == 1:
             input_names.append(derivative_names[i_der])
+    for i_mean0, use_mean0 in enumerate(opt_predout):
+        if use_mean0 == 1:
+            input_names.append(mean0_names[i_mean0])
+    input_names.append(mean0_names[3])
     for i in range(num_fourier_coeffs):
         input_names = input_names + ['c_real%d' % i, 'c_imag%d' % i]
     return input_names
@@ -335,6 +359,10 @@ def load_data_oned_idc(config, dirinput, event_index, downsample,
      vec_mean_corr_phi, vec_random_corr_phi,
      vec_mean_corr_z, vec_random_corr_z,
      _, mat_der_ref_mean_corr,
+     _, _, _,
+     vec_mean0_corr_r, vec_mean0_corr_phi, vec_mean0_corr_z,
+     _, _,
+     vec_mean0_oned_idc_a, vec_mean0_oned_idc_c,
      _, _, _, _,
      vec_mean_oned_idc_a, vec_mean_oned_idc_c,
      vec_random_oned_idc_a, vec_random_oned_idc_c] = load_data_original_idc(dirinput, event_index,
@@ -347,14 +375,23 @@ def load_data_oned_idc(config, dirinput, event_index, downsample,
      vec_ref_mean_corr_phi, _,
      vec_ref_mean_corr_z, _,
      _, _,
+     _, _, _,
+     _, _, _,
+     num_mean0_zerod_idc_a, num_mean0_zero0_idc_c,
+     _, _,
      num_ref_mean_zerod_idc_a, num_ref_mean_zerod_idc_c, _, _,
      _, _, _, _] = load_data_original_idc(dirinput, [0, 0], config.z_range, False)
+
 
     vec_oned_idc_fluc, num_ref_mean_zerod_idc = filter_idc_data(  # pylint: disable=unbalanced-tuple-unpacking
         (vec_random_oned_idc_a - vec_mean_oned_idc_a, num_ref_mean_zerod_idc_a),
         (vec_random_oned_idc_c - vec_mean_oned_idc_c, num_ref_mean_zerod_idc_c), config.z_range)
     dft_coeffs = get_fourier_coeffs(vec_oned_idc_fluc, num_fft_idcs, num_fourier_coeffs_train,
                                     num_fourier_coeffs_apply)
+
+    vec_mean0_oned_idc_array = filter_idc_data(vec_mean0_oned_idc_a, vec_mean0_oned_idc_c, config.z_range)
+    vec_mean0_oned_idc = vec_mean0_oned_idc_array[0]
+    
 
     vec_fluc_corr_r = vec_random_corr_r - vec_mean_corr_r
     vec_fluc_corr_phi = vec_random_corr_phi - vec_mean_corr_phi
@@ -379,13 +416,21 @@ def load_data_oned_idc(config, dirinput, event_index, downsample,
         vec_der_ref_mean_corr_r = vec_der_ref_mean_corr_r[chosen_points]
         vec_der_ref_mean_corr_rphi = vec_der_ref_mean_corr_rphi[chosen_points]
         vec_der_ref_mean_corr_z = vec_der_ref_mean_corr_z[chosen_points]
+        vec_mean0_corr_r = vec_mean0_corr_r[chosen_points]
+        vec_mean0_corr_phi = vec_mean0_corr_phi[chosen_points]
+        vec_mean0_corr_z = vec_mean0_corr_z[chosen_points]
 
     mat_der_ref_mean_corr_sel = np.array([vec_der_ref_mean_corr_r,
                                           vec_der_ref_mean_corr_rphi,
                                           vec_der_ref_mean_corr_z])
     mat_der_ref_mean_corr_sel = mat_der_ref_mean_corr_sel[np.array(config.opt_usederivative) > 0]
-    inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                           mat_der_ref_mean_corr_sel, dft_coeffs)
+
+    vec_mean0_corr_sel = np.array([vec_mean0_corr_r, vec_mean0_corr_phi, vec_mean0_corr_z])
+    vec_mean0_corr_sel = vec_mean0_corr_sel[np.array(config.opt_predout) > 0]
+
+    inputs = get_input_oned_idc_single_map(config, vec_r_pos, vec_phi_pos, vec_z_pos,
+                                           mat_der_ref_mean_corr_sel, vec_mean0_corr_sel,
+                                           vec_mean0_oned_idc, dft_coeffs)
 
     mat_fluc_corr = np.array([vec_fluc_corr_r,
                               vec_fluc_corr_phi,
@@ -507,9 +552,13 @@ def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_
         range_ref_index = range_rnd_index_train
     for ievent in np.arange(range_rnd_index_train[0], range_rnd_index_train[1] + 1):
         for iref in np.arange(range_ref_index[0], range_ref_index[1] + 1):
-            if use_rnd_augment and ievent == iref:
+            #if use_rnd_augment and ievent == iref:
+            if use_rnd_augment and ievent <= iref:
                 continue
             all_indices_events_means.append([ievent, iref])
+    print("range_rnd_index_train=", range_rnd_index_train)
+    print("range_ref_index=", range_ref_index)
+    print("len(all_indices_events_means)=", len(all_indices_events_means))
     sel_indices_events_means = random.sample(all_indices_events_means, ranges["apply"][1] + 1)
 
     indices_train = sel_indices_events_means[ranges["train"][0]:ranges["train"][1]]

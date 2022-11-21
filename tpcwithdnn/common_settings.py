@@ -262,6 +262,7 @@ class XGBoostSettings:
         self.apply_tree = data_param["apply_tree"]
 
         self.cache_train = data_param["cache_train"]
+        self.cache_val = data_param["cache_val"]
         self.cache_events = data_param["cache_events"]
         self.cache_file_size = data_param["cache_file_size"]
         self.dircache = data_param["dircache"]
@@ -275,40 +276,54 @@ class XGBoostSettings:
             self.cache_suffix = "%s_dpoints%d" % \
                 (self.cache_suffix, self.downsample_npoints)
 
+        #if self.xgbtype=="XGB":
+        #    self.suffix ="XGB_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f"\
+        #            "_tm-%s_g%.2f_weight%.1f_d%.1f_sub%.2f"\
+        #            "_colTree%.1f_colLvl%.1f_colNode%.1f_a%.1f_l%.5f_scale%.1f_base%.2f" % \
+        #            (self.grid_phi, self.grid_r, self.grid_z,
+        #             self.params["n_estimators"], self.params["max_depth"],
+        #             self.params["learning_rate"], self.params["tree_method"],
+        #             self.params["gamma"], self.params["min_child_weight"],
+        #             self.params["max_delta_step"], self.params["subsample"],
+        #             self.params["colsample_bytree"], self.params["colsample_bylevel"],
+        #             self.params["colsample_bynode"], self.params["reg_alpha"],
+        #             self.params["reg_lambda"], self.params["scale_pos_weight"],
+        #             self.params["base_score"])
+
         if self.xgbtype=="XGB":
-            self.suffix ="XGB_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f"\
-                    "_tm-%s_g%.2f_weight%.1f_d%.1f_sub%.2f"\
-                    "_colTree%.1f_colLvl%.1f_colNode%.1f_a%.1f_l%.5f_scale%.1f_base%.2f" % \
+            self.suffix ="XGB_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f" % \
                     (self.grid_phi, self.grid_r, self.grid_z,
                      self.params["n_estimators"], self.params["max_depth"],
-                     self.params["learning_rate"], self.params["tree_method"],
-                     self.params["gamma"], self.params["min_child_weight"],
-                     self.params["max_delta_step"], self.params["subsample"],
-                     self.params["colsample_bytree"], self.params["colsample_bylevel"],
-                     self.params["colsample_bynode"], self.params["reg_alpha"],
-                     self.params["reg_lambda"], self.params["scale_pos_weight"],
-                     self.params["base_score"])
+                     self.params["learning_rate"])
+
 
         elif self.xgbtype=="RF":
-            self.suffix ="RF_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f"\
-                    "_tm-%s_g%.2f_weight%.1f_d%.1f_sub%.2f"\
-                    "_colTree%.1f_colLvl%.1f_colNode%.1f_a%.1f_l%.5f_scale%.1f_base%.2f" % \
+            self.suffix ="RF_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f" % \
                     (self.grid_phi, self.grid_r, self.grid_z,
                      self.params["n_estimators"], self.params["max_depth"],
-                     self.params["learning_rate"], self.params["tree_method"],
-                     self.params["gamma"], self.params["min_child_weight"],
-                     self.params["max_delta_step"], self.params["subsample"],
-                     self.params["colsample_bytree"], self.params["colsample_bylevel"],
-                     self.params["colsample_bynode"], self.params["reg_alpha"],
-                     self.params["reg_lambda"], self.params["scale_pos_weight"],
-                     self.params["base_score"])
-
+                     self.params["learning_rate"])
+        #elif self.xgbtype=="RF":
+        #    self.suffix ="RF_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f"\
+        #            "_tm-%s_g%.2f_weight%.1f_d%.1f_sub%.2f"\
+        #            "_colTree%.1f_colLvl%.1f_colNode%.1f_a%.1f_l%.5f_scale%.1f_base%.2f" % \
+        #            (self.grid_phi, self.grid_r, self.grid_z,
+        #             self.params["n_estimators"], self.params["max_depth"],
+        #             self.params["learning_rate"], self.params["tree_method"],
+        #             self.params["gamma"], self.params["min_child_weight"],
+        #             self.params["max_delta_step"], self.params["subsample"],
+        #             self.params["colsample_bytree"], self.params["colsample_bylevel"],
+        #             self.params["colsample_bynode"], self.params["reg_alpha"],
+        #             self.params["reg_lambda"], self.params["scale_pos_weight"],
+        #             self.params["base_score"])
         elif self.xgbtype=="NN":
             self.suffix ="NN_phi%d_r%d_z%d" % \
                     (self.grid_phi, self.grid_r, self.grid_z)
-            self.suffix = "%s_nHidLay%d_%s_batch%d_epoch%d" % \
+            self.suffix = "%s_nHidLay%d_%s_%s_nrn%.3f_dr%.3f_batch%d_epoch%d" % \
                     (self.suffix, self.nn_params["n_hidden_layers"],
                      self.nn_params["hidden_activation"],
+                     self.nn_params["optimizer"],
+                     self.nn_params["n_neurons"],
+                     self.nn_params["dropout_rate"],
                      self.nn_params["batch_size"],
                      self.nn_params["epochs"])
             if self.nn_params["do_normalization"]:
