@@ -252,7 +252,7 @@ def main():
     if "apply_tree" in args:
         config_parameters["xgboost"]["apply_tree"] = True
     if "learning_rate" in args:
-        config_parameters["xgboost"]["learning_rate"] = args.learning_rate
+        config_parameters["xgboost"]["params"]["learning_rate"] = args.learning_rate
     #
     if "cache_events" in args:
         config_parameters["xgboost"]["cache_events"] = args.cache_events

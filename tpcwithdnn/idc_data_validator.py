@@ -69,7 +69,7 @@ class IDCDataValidator:
          _, _, _,
          vec_mean0_corr_r, vec_mean0_corr_phi, vec_mean0_corr_z,
          num_mean0_zerod_idc_a, num_mean0_zerod_idc_c,
-         vec_mean0_oned_idc_a, mean_oned_idc_c,
+         vec_mean0_oned_idc_a, vec_mean0_oned_idc_c,
          num_mean_zerod_idc_a, num_mean_zerod_idc_c, num_random_zerod_idc_a, num_random_zerod_idc_c,
          vec_mean_oned_idc_a, vec_mean_oned_idc_c, vec_random_oned_idc_a, vec_random_oned_idc_c] = \
             load_data_original_idc(self.config.dirinput_nd_val,
@@ -96,6 +96,9 @@ class IDCDataValidator:
                                         self.config.num_fft_idcs,
                                         self.config.num_fourier_coeffs_train,
                                         self.config.num_fourier_coeffs_apply)
+
+        vec_mean0_oned_idc_array= filter_idc_data(vec_mean0_oned_idc_a, vec_mean0_oned_idc_c, self.config.z_range)
+        vec_mean0_oned_idc = vec_mean0_oned_idc_array[0]
 
         vec_index_random = np.empty(vec_z_pos.size)
         vec_index_random[:] = irnd
@@ -145,7 +148,7 @@ class IDCDataValidator:
         vec_mean0_corr_sel = vec_mean0_corr_sel[np.array(self.config.opt_predout) > 0]
 
         inputs = get_input_oned_idc_single_map(self.config, vec_r_pos, vec_phi_pos, vec_z_pos,
-                                               mat_der_ref_mean_corr_sel, vec_mean0_corr,
+                                               mat_der_ref_mean_corr_sel, vec_mean0_corr_sel,
                                                vec_mean0_oned_idc, dft_coeffs)
         if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
             inputs = self.model.ver_normalize_inputs(inputs, "ndvalidation")
