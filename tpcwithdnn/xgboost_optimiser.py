@@ -117,7 +117,7 @@ class XGBoostOptimiser(Optimiser):
         log_time(start, end, "actual train")
         if self.config.xgbtype=="XGB" or self.config.xgbtype=="RF":
             fitter.model.get_booster().feature_names = get_input_names_oned_idc(
-                self.config.opt_usederivative, self.config.opt_predout, self.config.num_fourier_coeffs_train)
+                self.config.opt_usederivative, self.config.num_fourier_coeffs_train)
             self.__plot_feature_importance(fitter.model)
         self.save_model(fitter.model)
 
@@ -264,35 +264,31 @@ class XGBoostOptimiser(Optimiser):
         n_coeffs = 2*self.config.num_fourier_coeffs_train
         # Index of last derivative.
         index_derivative = 2 + sum(self.config.opt_usederivative)
-        # Index of last mean0 value (corrs and oned_idc)
-        index_mean0 = index_derivative + sum(self.config.opt_predout) + 1
         if partition=="train":
             foMean = np.empty(n_coeffs)
             foStdDev = np.empty(n_coeffs)
-            for i in range(index_mean0+1, inputs.shape[1]):
-                if i==index_mean0+2:
-                    foMean[i-index_mean0-1] = 0
-                    foStdDev[i-index_mean0-1] = 0
+            for i in range(index_derivative+1, inputs.shape[1]):
+                if i==index_derivative+2:
+                    foMean[i-index_derivative-1] = 0
+                    foStdDev[i-index_derivative-1] = 0
                 else:
                     t = inputs[:,i]
-                    foMean[i-index_mean0-1] = t.mean()
-                    foStdDev[i-index_mean0-1] = t.std()
+                    foMean[i-index_derivative-1] = t.mean()
+                    foStdDev[i-index_derivative-1] = t.std()
             self.fourier_mean = np.hstack([self.fourier_mean, foMean])
             self.fourier_stddev = np.hstack([self.fourier_stddev, foStdDev])
         # inputs[:,0]~[:,2] are the positions. [:,3] ~ [:,index_derivative] are
-        # the derivatives, [:,index_derivative+1] ~ [:,index_mean0]  are
-        # the values related to mean0.
-        #[:,index_mean0+1] is the real part of the 0th Fourier coefficent.
-        # This means [:,index_mean0+2] is the imaginary part of the 0th Fourier coeffficent,
+        # the derivatives, [:,index_derivative+1] is the real part of the 0th Fourier coefficent.
+        # This means [:,index_derivative+2] is the imaginary part of the 0th Fourier coeffficent,
         # which is always 0 (i.e. std. dev. is also 0).
         inputs[:,0] = (inputs[:,0]-169) / 86 # Trying to map r= 83 to -1 and r=255 to 1
         inputs[:,1] = (inputs[:,1] / math.pi) - 1 # Map  phi=0 to -1 and phi=2*pi to 1
         inputs[:,2] = (inputs[:,2] / 125)  - 1 # Map z=0 to -1 and z=250 to 1
-        for i in range(index_mean0+1, inputs.shape[1]):
-            if i==index_mean0+2:
+        for i in range(index_derivative+1, inputs.shape[1]):
+            if i==index_derivative+2:
                 inputs[:,i] = inputs[:,i]
             else:
-                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-index_mean0-1])/self.fourier_stddev[i-index_mean0-1]
+                inputs[:,i] = (inputs[:,i]-self.fourier_mean[i-index_derivative-1])/self.fourier_stddev[i-index_derivative-1]
         return inputs
 
     def __get_data(self, partition):
@@ -401,9 +397,6 @@ class XGBoostOptimiser(Optimiser):
         sel_dist_names = np.array(self.config.opt_predout) > 0
         fluc_corr_names = ["flucCorr" + dist_name for dist_name in dist_names[sel_dist_names]]
 
-        mean0_corr_names = ["mean0Corr" + dist_name for dist_name in dist_names[sel_dist_names]]
-        mean0_idc_name = ["mean0_oned_idc"]
-        
         batch_file_names = []
         batch_size = self.config.cache_file_size
         for i, part_range in enumerate(self.__get_batch_range(partition, batch_size)):
@@ -414,8 +407,8 @@ class XGBoostOptimiser(Optimiser):
                                    exp_outputs.reshape(-1, sum(self.config.opt_predout))))
             cache_data = pd.DataFrame(input_data,
                                       columns=["eventId", "meanId", "randomId", "r", "phi", "z"] +
-                                      der_ref_mean_corr_names + mean0_corr_names + mean0_idc_name +
-                                      fourier_names + mean_value_names + fluc_corr_names)
+                                      der_ref_mean_corr_names + fourier_names + mean_value_names +
+                                      fluc_corr_names)
             batch_file = "%s_%d.root" % (full_path, i)
             batch_file_names.append(batch_file)
             pandas_to_tree(cache_data, batch_file, "cache")
@@ -488,10 +481,7 @@ class XGBoostOptimiser(Optimiser):
         # check if all required inputs are provided
         if len(inputs.columns) != len(get_input_names_oned_idc(
                 self.config.opt_usederivative,
-                self.config.opt_predout,
                 self.config.num_fourier_coeffs_train)):
-            print(len(inputs.columns))
-            print(len(get_input_names_oned_idc(self.config.opt_usederivative, self.config.opt_predout, self.config.num_fourier_coeffs_train)))
             self.config.logger.fatal("Mismatch between length of loaded input variables and " \
                 "defined number of input variables.")
         inputs = inputs.to_numpy()
