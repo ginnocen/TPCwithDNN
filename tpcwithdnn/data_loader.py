@@ -113,6 +113,7 @@ def load_data_original_idc(dirinput, event_index, z_range, use_rnd_augment):
     data = [np.load(f)[vec_sel_in_z] for f in files[:-8]] + \
         [vec_der_ref_mean_sc, mat_der_ref_mean_corr] + \
         [np.load(f) for f in files[-8:]]
+
     return data
 
 def filter_idc_data(data_a, data_c, z_range):
@@ -159,17 +160,19 @@ def load_data_original(dirinput, event_index):
              and r, rphi, z mean and random distortions, unrestricted
     :rtype: list
     """
-    files = ["%s/data/Pos/0-vecRPos.npy" % dirinput,
-             "%s/data/Pos/0-vecPhiPos.npy" % dirinput,
-             "%s/data/Pos/0-vecZPos.npy" % dirinput,
-             "%s/data/Mean/%d-vecMeanSC.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistR.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistRPhi.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
-             "%s/data/Mean/%d-vecMeanDistZ.npy" % (dirinput, event_index[1]),
-             "%s/data/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0])]
+
+    ref_map_index = get_mean_desc(event_index[1])
+    files = ["%s/Pos/vecRPos.npy" % dirinput,
+             "%s/Pos/vecPhiPos.npy" % dirinput,
+             "%s/Pos/vecZPos.npy" % dirinput,
+             "%s/Mean/%s-vecMeanSC.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomSC.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%s-vecMeanDistR.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomDistR.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%s-vecMeanDistRPhi.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomDistRPhi.npy" % (dirinput, event_index[0]),
+             "%s/Mean/%s-vecMeanDistZ.npy" % (dirinput, ref_map_index),
+             "%s/Random/%d-vecRandomDistZ.npy" % (dirinput, event_index[0])]
 
     return [np.load(f) for f in files]
 
@@ -382,6 +385,7 @@ def load_data_oned_idc(config, dirinput, event_index, downsample,
                                           vec_der_ref_mean_corr_rphi,
                                           vec_der_ref_mean_corr_z])
     mat_der_ref_mean_corr_sel = mat_der_ref_mean_corr_sel[np.array(config.opt_usederivative) > 0]
+
     inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                            mat_der_ref_mean_corr_sel, dft_coeffs)
 
@@ -505,7 +509,7 @@ def get_event_mean_indices(range_rnd_index_train, range_mean_index, ranges, use_
         range_ref_index = range_rnd_index_train
     for ievent in np.arange(range_rnd_index_train[0], range_rnd_index_train[1] + 1):
         for iref in np.arange(range_ref_index[0], range_ref_index[1] + 1):
-            if use_rnd_augment and ievent == iref:
+            if use_rnd_augment and ievent <= iref:
                 continue
             all_indices_events_means.append([ievent, iref])
     sel_indices_events_means = random.sample(all_indices_events_means, ranges["apply"][1] + 1)

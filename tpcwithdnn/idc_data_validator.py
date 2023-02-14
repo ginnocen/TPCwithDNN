@@ -136,8 +136,11 @@ class IDCDataValidator:
                                               mat_der_ref_mean_corr[2]])
         mat_der_ref_mean_corr_sel = \
             mat_der_ref_mean_corr_sel[np.array(self.config.opt_usederivative) > 0]
+
         inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
                                                mat_der_ref_mean_corr_sel, dft_coeffs)
+        if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
+            inputs = self.model.ver_normalize_inputs(inputs, "ndvalidation")
         df_single_map["flucCorrRPred"] = loaded_model.predict(inputs).astype('float32')
 
         dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
