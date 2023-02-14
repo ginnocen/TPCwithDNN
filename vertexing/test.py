@@ -5,9 +5,9 @@ from keras.models import Sequential
 from keras.layers import Dense
 from sklearn.model_selection import train_test_split
 #from sklearn.model_selection import cross_validate
-from root_numpy import fill_hist # pylint: disable=import-error
 from ROOT import TH2F, TFile # pylint: disable=import-error, no-name-in-module
 #import xgboost # pylint: disable=import-error
+from tpcwithdnn.plot_utils import fill_hist_2d
 
 Xvar = ["fXTrack1", "fAlphaTrack1", "fYTrack1", "fZTrack1", "fSnpTrack1", \
         "fTglTrack1", "fSigned1PtTrack1", \
@@ -56,7 +56,7 @@ y_test["fXSecondaryVertex_pred"] = y_pred[:,0]
 #y_test["fZSecondaryVertex_pred"] = y_pred[:,2]
 df_rd = y_test[["fXSecondaryVertex", "fXSecondaryVertex_pred"]]
 arr2 = df_rd.to_numpy()
-fill_hist(histo, arr2)
+fill_hist_2d(histo, arr2)
 fileout = TFile("fileout.root", "recreate")
 fileout.cd()
 histo.Write()

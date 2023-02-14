@@ -17,7 +17,7 @@ from RootInteractive.Tools.makePDFMaps import makePdfMaps  # pylint: disable=imp
 from tpcwithdnn.logger import get_logger
 from tpcwithdnn.tree_df_utils import pandas_to_tree, tree_to_pandas
 from tpcwithdnn.data_loader import load_data_original_idc, get_input_oned_idc_single_map
-from tpcwithdnn.data_loader import filter_idc_data, mat_to_vec, get_fourier_coeffs
+from tpcwithdnn.data_loader import filter_idc_data, get_fourier_coeffs
 
 class IDCDataValidator:
     """
@@ -89,6 +89,7 @@ class IDCDataValidator:
         vec_fluc_oned_idc = vec_random_oned_idc - vec_mean_oned_idc
         num_fluc_zerod_idc = num_random_zerod_idc - num_mean_zerod_idc
         dft_coeffs = get_fourier_coeffs(vec_fluc_oned_idc,
+                                        self.config.num_fft_idcs,
                                         self.config.num_fourier_coeffs_train,
                                         self.config.num_fourier_coeffs_apply)
 
@@ -130,16 +131,24 @@ class IDCDataValidator:
             df_single_map["c%d_imag" % i_coeff] = np.tile((coeff_imag),
                                                           vec_z_pos.size).astype('float32')
 
-        vec_der_ref_mean_corr,  = mat_to_vec(self.config.opt_predout, (mat_der_ref_mean_corr,))
+        mat_der_ref_mean_corr_sel = np.array([mat_der_ref_mean_corr[0],
+                                              mat_der_ref_mean_corr[1],
+                                              mat_der_ref_mean_corr[2]])
+        mat_der_ref_mean_corr_sel = \
+            mat_der_ref_mean_corr_sel[np.array(self.config.opt_usederivative) > 0]
+
         inputs = get_input_oned_idc_single_map(vec_r_pos, vec_phi_pos, vec_z_pos,
-                                                vec_der_ref_mean_corr, dft_coeffs)
+                                               mat_der_ref_mean_corr_sel, dft_coeffs)
+        if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
+            inputs = self.model.ver_normalize_inputs(inputs, "ndvalidation")
         df_single_map["flucCorrRPred"] = loaded_model.predict(inputs).astype('float32')
 
         dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
         if not os.path.isdir(dir_name):
             os.makedirs(dir_name)
-        tree_filename = "%s/validation_mean%.2f_nEv%d.root" \
-            % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events)
+        tree_filename = "%s/validation_mean%.2f_nEv%d_fapply%d_nfftidcs%d.root" \
+            % (dir_name, self.mean_factors[self.mean_ids.index(mean_id)], self.config.train_events,
+               self.config.num_fourier_coeffs_apply, self.config.num_fft_idcs)
         pandas_to_tree(df_single_map, tree_filename, 'validation')
 
 
@@ -150,6 +159,9 @@ class IDCDataValidator:
         loaded_model = self.model.load_model()
         dir_name = "%s/%s" % (self.config.dirtree, self.config.suffix)
 
+        # TODO: parallelize mean_ids
+        # TODO: provide possibility for rnd-rnd augment and mix
+        # TODO: provide usage of cached data
         for mean_id in self.mean_ids:
             counter = 0
 
@@ -214,9 +226,9 @@ class IDCDataValidator:
         else:
             column_names = column_names + [var[:diff_index], var[:diff_index] + "Pred"]
 
-        df_val = tree_to_pandas("%s/%s/treeValidation_mean%.2f_nEv%d.root"
+        df_val = tree_to_pandas("%s/%s/validation_mean%.2f_nEv%d_fapply%d.root"
                                 % (self.config.dirtree, self.config.suffix, mean_factor,
-                                   self.config.train_events),
+                                   self.config.train_events, self.config.num_fourier_coeffs_apply),
                                 'validation', columns=column_names)
         if diff_index != -1:
             df_val[var] = \

@@ -51,17 +51,19 @@ class CommonSettings:
         self.z_range = data_param["z_range"]
         self.opt_train = data_param["opt_train"]
         self.opt_predout = data_param["opt_predout"]
+        self.opt_usederivative = data_param["opt_usederivative"]
         self.nameopt_predout = data_param["nameopt_predout"]
         self.dim_input = sum(self.opt_train)
         self.dim_output = sum(self.opt_predout)
 
+        self.num_fft_idcs = data_param["num_fft_idcs"]
         self.num_fourier_coeffs_train = data_param["num_fourier_coeffs_train"]
         self.num_fourier_coeffs_apply = data_param["num_fourier_coeffs_apply"]
 
-        if self.dim_output > 1:
-            self.logger.fatal("YOU CAN PREDICT ONLY 1 DISTORTION. The sum of opt_predout == 1")
         self.logger.info("Inputs active for training: (SCMean, SCFluctuations)=(%d, %d)",
                          self.opt_train[0], self.opt_train[1])
+        self.logger.info("Outputs: (dR, dRPhi, dZ) = (%d, %d, %d)",
+                         self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
 
         # Directories
         self.dirmodel = data_param["dirmodel"]
@@ -248,13 +250,19 @@ class XGBoostSettings:
 
         self.params = data_param["params"]
 
+        self.xgbtype = data_param["xgbtype"]
+        self.nn_params = data_param["nn_params"]
+
         self.per_event_hists = False
         self.downsample = data_param["downsample"]
         self.downsample_npoints = data_param["downsample_npoints"]
         self.plot_train = data_param["plot_train"]
         self.train_plot_npoints = data_param["train_plot_npoints"]
 
+        self.apply_tree = data_param["apply_tree"]
+
         self.cache_train = data_param["cache_train"]
+        self.cache_val = data_param["cache_val"]
         self.cache_events = data_param["cache_events"]
         self.cache_file_size = data_param["cache_file_size"]
         self.dircache = data_param["dircache"]
@@ -267,22 +275,64 @@ class XGBoostSettings:
         if self.downsample:
             self.cache_suffix = "%s_dpoints%d" % \
                 (self.cache_suffix, self.downsample_npoints)
-        self.cache_suffix = "%s_ftrain%d" % \
-            (self.cache_suffix, self.num_fourier_coeffs_train)
 
-        self.suffix = "phi%d_r%d_z%d_nest%d_depth%d_lr%.3f_tm-%s" % \
-                (self.grid_phi, self.grid_r, self.grid_z, self.params["n_estimators"],
-                 self.params["max_depth"], self.params["learning_rate"],
-                 self.params["tree_method"])
-        self.suffix = "%s_g%.2f_weight%.1f_d%.1f_sub%.2f" % \
-                (self.suffix, self.params["gamma"], self.params["min_child_weight"],
-                 self.params["max_delta_step"], self.params["subsample"])
-        self.suffix = "%s_colTree%.1f_colLvl%.1f_colNode%.1f" %\
-                (self.suffix, self.params["colsample_bynode"], self.params["colsample_bytree"],
-                 self.params["colsample_bylevel"])
-        self.suffix = "%s_a%.1f_l%.5f_scale%.1f_base%.2f" %\
-                (self.suffix, self.params["reg_alpha"], self.params["reg_lambda"],
-                 self.params["scale_pos_weight"], self.params["base_score"])
+        #if self.xgbtype=="XGB":
+        #    self.suffix ="XGB_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f"\
+        #            "_tm-%s_g%.2f_weight%.1f_d%.1f_sub%.2f"\
+        #            "_colTree%.1f_colLvl%.1f_colNode%.1f_a%.1f_l%.5f_scale%.1f_base%.2f" % \
+        #            (self.grid_phi, self.grid_r, self.grid_z,
+        #             self.params["n_estimators"], self.params["max_depth"],
+        #             self.params["learning_rate"], self.params["tree_method"],
+        #             self.params["gamma"], self.params["min_child_weight"],
+        #             self.params["max_delta_step"], self.params["subsample"],
+        #             self.params["colsample_bytree"], self.params["colsample_bylevel"],
+        #             self.params["colsample_bynode"], self.params["reg_alpha"],
+        #             self.params["reg_lambda"], self.params["scale_pos_weight"],
+        #             self.params["base_score"])
+
+        if self.xgbtype=="XGB":
+            self.suffix ="XGB_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f" % \
+                    (self.grid_phi, self.grid_r, self.grid_z,
+                     self.params["n_estimators"], self.params["max_depth"],
+                     self.params["learning_rate"])
+
+
+        elif self.xgbtype=="RF":
+            self.suffix ="RF_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f" % \
+                    (self.grid_phi, self.grid_r, self.grid_z,
+                     self.params["n_estimators"], self.params["max_depth"],
+                     self.params["learning_rate"])
+        #elif self.xgbtype=="RF":
+        #    self.suffix ="RF_phi%d_r%d_z%d_nest%d_depth%d_lr%.3f"\
+        #            "_tm-%s_g%.2f_weight%.1f_d%.1f_sub%.2f"\
+        #            "_colTree%.1f_colLvl%.1f_colNode%.1f_a%.1f_l%.5f_scale%.1f_base%.2f" % \
+        #            (self.grid_phi, self.grid_r, self.grid_z,
+        #             self.params["n_estimators"], self.params["max_depth"],
+        #             self.params["learning_rate"], self.params["tree_method"],
+        #             self.params["gamma"], self.params["min_child_weight"],
+        #             self.params["max_delta_step"], self.params["subsample"],
+        #             self.params["colsample_bytree"], self.params["colsample_bylevel"],
+        #             self.params["colsample_bynode"], self.params["reg_alpha"],
+        #             self.params["reg_lambda"], self.params["scale_pos_weight"],
+        #             self.params["base_score"])
+        elif self.xgbtype=="NN":
+            self.suffix ="NN_phi%d_r%d_z%d" % \
+                    (self.grid_phi, self.grid_r, self.grid_z)
+            self.suffix = "%s_nHidLay%d_%s_%s_nrn%.3f_dr%.3f_batch%d_epoch%d" % \
+                    (self.suffix, self.nn_params["n_hidden_layers"],
+                     self.nn_params["hidden_activation"],
+                     self.nn_params["optimizer"],
+                     self.nn_params["n_neurons"],
+                     self.nn_params["dropout_rate"],
+                     self.nn_params["batch_size"],
+                     self.nn_params["epochs"])
+            if self.nn_params["do_normalization"]:
+                self.suffix = "%s_norm" % self.suffix
+            else:
+                self.suffix = "%s_noNorm" % self.suffix
+        self.suffix = "%s_derR%dRPhi%dZ%d" % \
+            (self.suffix, self.opt_usederivative[0],
+             self.opt_usederivative[1], self.opt_usederivative[2])
         self.suffix = "%s_pred_doR%d_dophi%d_doz%d" % \
                 (self.suffix, self.opt_predout[0], self.opt_predout[1], self.opt_predout[2])
         self.suffix = "%s_input_z%.1f-%.1f" % \
@@ -292,8 +342,8 @@ class XGBoostSettings:
         if self.downsample:
             self.suffix = "%s_dpoints%d" % \
                 (self.suffix, self.downsample_npoints)
-        self.suffix = "%s_ftrain%d" % \
-            (self.suffix, self.num_fourier_coeffs_train)
+        self.suffix = "%s_ftrain%d_fapply%d" % \
+            (self.suffix, self.num_fourier_coeffs_train, self.num_fourier_coeffs_apply)
 
         if not os.path.isdir("%s/%s" % (self.dirtree, self.suffix)):
             os.makedirs("%s/%s" % (self.dirtree, self.suffix))
