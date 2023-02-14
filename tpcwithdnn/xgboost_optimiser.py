@@ -372,6 +372,8 @@ class XGBoostOptimiser(Optimiser):
         self.config.z_range[1] = z_max
         return inputs, exp_outputs, indices, mean_values
 
+        return inputs, exp_outputs, indices, mean_values
+
     def __save_cache(self, full_path, partition, downsample):
         """
         Save the cache for given partition. Function used internally.
