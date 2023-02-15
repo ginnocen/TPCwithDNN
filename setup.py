@@ -53,10 +53,10 @@ setup(
   # your project is installed. For an analysis of "install_requires" vs pip's
   # requirements files see:
   # https://packaging.python.org/en/latest/requirements.html
-  install_requires=[ "bokeh==2.2.3", "numpy==1.19.2", "pandas", "matplotlib", "scipy==1.4.1", "h5py<3.0.0",
-                     "keras==2.3.1", "PyYaml", "RootInteractive", "tensorflow>=2.4",
+  install_requires=[ "bokeh==2.2.3", "numpy", "pandas", "matplotlib", "scipy", "h5py",
+                     "keras", "PyYaml", "RootInteractive", "tensorflow",
                      "pydot", "pylint", "psutil", "notebook", "torch", "xgboost", "uproot3",
-                     "zstandard"],
+                     "uproot", "zstandard"],
 
   python_requires='>=3.6',
 

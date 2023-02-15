@@ -1,12 +1,13 @@
-numpy==1.19.2
+bokeh==2.2.3
+numpy
 pandas
 matplotlib
-scipy==1.4.1
-h5py<3.0.0
-keras==2.3.1
+scipy
+h5py
+keras
 PyYaml
 RootInteractive
-tensorflow>=2.4.0
+tensorflow
 pydot
 pylint
 psutil
@@ -14,3 +15,5 @@ notebook
 torch
 xgboost
 uproot3
+uproot
+zstandard
