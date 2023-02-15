@@ -5,6 +5,8 @@ It is adapted to both DNN and XGBoost optimizers, but, since DNN does not use ID
 the old validator must be used for DNN validation.
 """
 # pylint: disable=too-many-statements, fixme
+# pylint: disable=consider-using-f-string
+
 import os
 import gzip
 import pickle

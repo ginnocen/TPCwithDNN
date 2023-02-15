@@ -2,6 +2,8 @@
 Utilities for constructing U-Net.
 """
 # pylint: disable=too-many-arguments, invalid-name
+# pylint: disable=consider-using-f-string
+
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Input, concatenate, UpSampling3D
 from tensorflow.keras.layers import AveragePooling3D, Conv3DTranspose

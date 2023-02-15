@@ -2,6 +2,8 @@
 Plotting functions for optimization results
 """
 # pylint: disable=fixme
+# pylint: disable=consider-using-f-string
+
 import datetime
 
 import numpy as np

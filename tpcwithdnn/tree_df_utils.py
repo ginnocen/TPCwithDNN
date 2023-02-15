@@ -1,6 +1,8 @@
 """
 Convert between ROOT files and Python pandas dataframes
 """
+# pylint: disable=consider-using-f-string
+
 import re
 import pandas as pd
 import uproot3

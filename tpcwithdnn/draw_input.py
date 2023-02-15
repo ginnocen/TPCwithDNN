@@ -2,6 +2,8 @@
 Plot the results of the input validation.
 """
 # pylint: disable=too-many-statements
+# pylint: disable=consider-using-f-string
+
 import os
 
 from ROOT import TFile, TCanvas # pylint: disable=import-error, no-name-in-module
