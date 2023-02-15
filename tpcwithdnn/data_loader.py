@@ -3,6 +3,7 @@ Load the input maps for the correction and validation.
 Currently some functions are duplicated for IDC. Later, the old functions should be removed.
 """
 # pylint: disable=fixme, too-many-locals
+# pylint: disable=consider-using-f-string
 import random
 import numpy as np
 import scipy.constants

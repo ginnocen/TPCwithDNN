@@ -2,6 +2,8 @@
 Plot TensorBoard comparison of models learning curves,
 with a prettier formatting than the TensorBoard's one.
 """
+# pylint: disable=consider-using-f-string
+
 import os
 import datetime
 import re

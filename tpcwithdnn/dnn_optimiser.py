@@ -4,6 +4,8 @@ Deep neural network for 3D IDC distortion correction.
 NOTE: This code is based on old data, it needs to be adjusted to IDC.
 """
 # pylint: disable=protected-access
+# pylint: disable=consider-using-f-string
+
 import matplotlib.pyplot as plt
 
 import numpy as np

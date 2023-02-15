@@ -1,6 +1,8 @@
 """
 Utilities for constructing the neural network for 1D correction.
 """
+# pylint: disable=consider-using-f-string
+
 import os
 
 from tensorflow.keras.models import Sequential

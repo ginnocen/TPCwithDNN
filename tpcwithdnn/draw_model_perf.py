@@ -2,6 +2,8 @@
 Plot the results of model prediction validation.
 """
 # pylint: disable=too-many-locals, too-many-statements, fixme
+# pylint: disable=consider-using-f-string
+
 import datetime
 from ROOT import TFile, TCanvas, TLegend, TLatex, TPaveText # pylint: disable=import-error, no-name-in-module
 from ROOT import gStyle, kBlue, kGreen, kRed, kOrange, kWhite # pylint: disable=import-error, no-name-in-module

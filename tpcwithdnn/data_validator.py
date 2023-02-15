@@ -1,5 +1,6 @@
 # pylint: disable=missing-module-docstring, missing-function-docstring, missing-class-docstring
 # pylint: disable=too-many-statements
+# pylint: disable=consider-using-f-string
 import os
 import shutil
 import gzip

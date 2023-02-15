@@ -2,6 +2,7 @@
 User settings from the config_model_parameters.yml
 """
 # pylint: disable=too-many-instance-attributes, too-few-public-methods, unused-private-member
+# pylint: disable=consider-using-f-string
 import os
 
 import numpy as np
@@ -77,14 +78,11 @@ class CommonSettings:
                     else data_param["dirinput_nobias"]
         apply_dir = data_param["dirinput_bias"] if data_param["apply_bias"] \
                     else data_param["dirinput_nobias"]
-        self.dirinput_train = "%s/SC-%d-%d-%d" % \
-                              (train_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_validation = "%s/SC-%d-%d-%d" % \
-                                   (val_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_apply = "%s/SC-%d-%d-%d" % \
-                              (apply_dir, self.grid_z, self.grid_r, self.grid_phi)
-        self.dirinput_nd_val = "%s/SC-%d-%d-%d" % (data_param["dirinput_nobias"],
-                               self.grid_z, self.grid_r, self.grid_phi)
+        sc_prefix = f'SC-{self.grid_z}-{self.grid_r}-{self.grid_phi}'
+        self.dirinput_train = f'{train_dir}/{sc_prefix}'
+        self.dirinput_validation = f'{val_dir}/{sc_prefix}'
+        self.dirinput_apply = f'{apply_dir}/{sc_prefix}'
+        self.dirinput_nd_val = f'{data_param["dirinput_nobias"]}/{sc_prefix}'
 
         for dirname in (self.dirmodel, self.dirapply, self.dirplots, self.dirtree, self.dirhist):
             if not os.path.isdir(dirname):

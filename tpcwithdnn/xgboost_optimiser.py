@@ -1,6 +1,8 @@
 """
 XGBoost optimizer for 1D IDC distortion correction
 """
+# pylint: disable=consider-using-f-string
+
 from timeit import default_timer as timer
 
 import array
@@ -389,7 +391,7 @@ class XGBoostOptimiser(Optimiser):
         sel_der_names = np.array(self.config.opt_usederivative) > 0
         der_ref_mean_corr_names = ["derRefMeanCorr" +
                                    dist_name for dist_name in dist_names[sel_der_names]]
-        
+
         num_fourier_coeffs = NUM_FOURIER_COEFFS_MAX
         fourier_names = list(chain.from_iterable(("c%d_real" % i, "c%d_imag" % i)
                              for i in range(num_fourier_coeffs)))
@@ -617,7 +619,7 @@ class XGBoostOptimiser(Optimiser):
             for i, pred in enumerate(pred_outputs):
                 eventID_array[0]= i // nPerEvent
                 meanID_array[0]= indices[i,1] #// 1000
-                randID_array[0]=indices[i,2] #% 1000 
+                randID_array[0]=indices[i,2] #% 1000
                 posR_array[0]=inputs[i,0]
                 posPhi_array[0]=inputs[i,1]
                 posZ_array[0]=inputs[i,2]
