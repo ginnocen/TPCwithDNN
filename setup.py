@@ -35,7 +35,7 @@ setup(
 
     # Specify the Python versions you support here. In particular, ensure
     # that you indicate whether you support Python 2, Python 3 or both.
-    'Programming Language :: Python :: 3.6',
+    'Programming Language :: Python :: 3.8',
     ],
 
   # What does your project relate to?
@@ -58,7 +58,7 @@ setup(
                      "pydot", "pylint", "psutil", "notebook", "torch", "xgboost", "uproot3",
                      "uproot", "zstandard"],
 
-  python_requires='>=3.6',
+  python_requires='>=3.8',
 
   # List additional groups of dependencies here (e.g. development
   # dependencies). You can install these using the following syntax,

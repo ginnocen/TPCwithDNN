@@ -272,7 +272,8 @@ def main():
     ranges_rnd = config_parameters["common"]["range_rnd_index_train"]
     ranges_mean = config_parameters["common"]["range_mean_index"]
     if config_parameters["common"]["rnd_augment"]:
-        max_available_events = ((ranges_rnd[1] + 1 - ranges_rnd[0]) * (ranges_rnd[1] - ranges_rnd[0])) / 2
+        max_available_events = \
+            ((ranges_rnd[1] + 1 - ranges_rnd[0]) * (ranges_rnd[1] - ranges_rnd[0])) / 2
     else:
         max_available_events = (ranges_rnd[1] + 1 - ranges_rnd[0]) * \
             (ranges_mean[1] + 1 - ranges_mean[0])

@@ -2,7 +2,7 @@
 Custom symmetric cube padding.
 """
 import tensorflow as tf
-from tensorflow.keras.layers import Layer
+from keras.layers import Layer
 
 class SymmetryPadding3d(Layer):
     """
@@ -42,7 +42,7 @@ class SymmetryPadding3d(Layer):
         self.output_dim = [(out.shape[0], out.shape[1], out.shape[2], out.shape[3], out.shape[4])]
         return out
 
-    def compute_output_shape(self, input_shape):
+    def compute_output_shape(self):
         """
         Overriden function from the base class to get the output shape.
 

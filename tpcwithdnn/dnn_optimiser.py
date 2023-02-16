@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 
 import numpy as np
 
-from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.optimizers import Adam
-from tensorflow.keras.metrics import RootMeanSquaredError
-from tensorflow.keras.models import model_from_json
-from tensorflow.keras.utils import plot_model
+from keras.callbacks import TensorBoard
+from keras.optimizers import Adam
+from keras.metrics import RootMeanSquaredError
+from keras.models import model_from_json
+from keras.utils import plot_model
 
 from ROOT import TFile # pylint: disable=import-error, no-name-in-module
 
