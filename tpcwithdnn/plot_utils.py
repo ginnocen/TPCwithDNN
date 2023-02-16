@@ -116,8 +116,8 @@ def get_apply_results_single_event(pred_outputs, exp_outputs):
     distortion_numeric_flat_m = distortion_numeric_group.reshape(-1, 1)
     distortion_numeric_flat_a = distortion_numeric_group.flatten()
 
-    deltas_flat_a = (distortion_predict_flat_a - distortion_numeric_flat_a)
-    deltas_flat_m = (distortion_predict_flat_m - distortion_numeric_flat_m)
+    deltas_flat_a = distortion_predict_flat_a - distortion_numeric_flat_a
+    deltas_flat_m = distortion_predict_flat_m - distortion_numeric_flat_m
 
     return distortion_numeric_flat_m, distortion_predict_flat_m, deltas_flat_a, deltas_flat_m
 

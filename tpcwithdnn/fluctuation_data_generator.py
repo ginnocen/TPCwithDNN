@@ -4,12 +4,12 @@ A data generator for lazy input loading for DNN.
 # pylint: disable=too-many-instance-attributes, too-many-arguments
 import numpy as np
 
-import tensorflow.keras
+import keras
 
 from tpcwithdnn.data_loader import load_train_apply
 
 #https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly
-class FluctuationDataGenerator(tensorflow.keras.utils.Sequence):
+class FluctuationDataGenerator(keras.utils.Sequence):
     """
     The class defining a lazy data generator.
     """
