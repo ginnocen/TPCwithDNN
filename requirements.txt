@@ -17,3 +17,4 @@ xgboost
 uproot3
 uproot
 zstandard
+scikit-learn
