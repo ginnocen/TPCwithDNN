@@ -143,7 +143,13 @@ class IDCDataValidator:
                                                mat_der_ref_mean_corr_sel, dft_coeffs)
         if self.config.xgbtype=="NN" and self.config.nn_params["do_normalization"]:
             inputs = self.model.ver_normalize_inputs(inputs, "ndvalidation")
-        df_single_map["flucCorrRPred"] = loaded_model.predict(inputs).astype('float32')
+
+        dist_names = np.array(self.config.nameopt_predout)
+        sel_pred_names = np.array(self.config.opt_predout) == 1
+        # TODO: at the moment, only one correction can be trained / predicted.
+        # to be adjusted if several corrections (dr, drphi, dz) predicted at once
+        fluc_pred_name = f'flucCorr{dist_names[sel_pred_names][0]}Pred'
+        df_single_map[fluc_pred_name] = loaded_model.predict(inputs).astype('float32')
 
         dir_name = "%s/%s/parts/%d" % (self.config.dirtree, self.config.suffix, irnd)
         if not os.path.isdir(dir_name):
