@@ -56,7 +56,7 @@ setup(
   install_requires=[ "bokeh==2.2.3", "numpy", "pandas", "matplotlib", "scipy", "h5py",
                      "keras", "PyYaml", "RootInteractive", "tensorflow",
                      "pydot", "pylint", "psutil", "notebook", "torch", "xgboost", "uproot3",
-                     "uproot", "zstandard"],
+                     "uproot", "zstandard", "scikit-learn"],
 
   python_requires='>=3.8',
 
