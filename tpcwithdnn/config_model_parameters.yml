@@ -41,9 +41,9 @@ xgboost:
   apply_events: [400]
   downsample: true
   downsample_npoints: 10 #(NN)10 is better than 100
-  plot_train: true
+  plot_train: false
   train_plot_npoints: 10
-  apply_tree: false # Create a TTree with all the apply results (a relatively short way of checking the predictions). 
+  apply_tree: false # Create a TTree with all the apply results (a relatively short way of checking the predictions).
   cache_train: false
   cache_val: true # Take validation data from cache data (available only for NN and when train_events+val_events<=cache_events).
   cache_events: 250000
@@ -80,7 +80,7 @@ xgboost:
     do_normalization: true # Whether or not to normalize the input for the neural network.
     batch_size: 30
     epochs: 30
- 
+
 corr:
   active: false
 
